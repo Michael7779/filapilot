@@ -25,7 +25,8 @@ export function connectToBambuPrinter(
     username: "bblp",
     password: params.accessCode,
     rejectUnauthorized: false,
-    reconnectPeriod: 5000
+    reconnectPeriod: 5000,
+    connectTimeout: 5000
   });
 
   client.on("connect", () => {

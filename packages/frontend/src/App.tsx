@@ -13,14 +13,20 @@ import { Sidebar } from "./components/Sidebar.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage.js";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage.js";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage.js";
 import { SpoolsPage } from "./pages/SpoolsPage.js";
+import { SettingsPage } from "./pages/SettingsPage.js";
+import { PrintersPage } from "./pages/PrintersPage.js";
 import { apiRequest } from "./lib/api.js";
 import { useAuthStore } from "./stores/useAuthStore.js";
 import { useThemeStore } from "./stores/useThemeStore.js";
 
 const TITLE_BY_PATH: Record<string, string> = {
   "/": "nav.dashboard",
-  "/spools": "nav.spools"
+  "/spools": "nav.spools",
+  "/printers": "nav.printers",
+  "/settings": "nav.settings"
 };
 
 function TopBar(): React.JSX.Element {
@@ -45,6 +51,8 @@ function AppShell(): React.JSX.Element {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/spools" element={<SpoolsPage />} />
+            <Route path="/printers" element={<PrintersPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>
       </div>
@@ -96,6 +104,8 @@ export default function App(): React.JSX.Element {
       <AuthBootstrap>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/passwort-vergessen" element={<ForgotPasswordPage />} />
+          <Route path="/passwort-zuruecksetzen" element={<ResetPasswordPage />} />
           <Route
             path="/passwort-aendern"
             element={

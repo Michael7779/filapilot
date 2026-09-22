@@ -94,4 +94,30 @@ describe("Auth - Negativ-Tests", () => {
     const allowedNow = await request(app).get("/api/users").set("Cookie", cookie);
     assert.equal(allowedNow.status, 200);
   });
+
+  it("gibt das Start-Passwort in der Antwort zurueck, wenn kein SMTP konfiguriert ist (sonst nie)", async () => {
+    await prisma.user.deleteMany({ where: { username: "adminFuerUserTest" } });
+    await prisma.user.create({
+      data: {
+        username: "adminFuerUserTest",
+        email: "admin-user-test@example.test",
+        passwordHash: await hashPassword("correct-horse-battery-staple"),
+        role: "ADMIN",
+        mustChangePassword: false
+      }
+    });
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "adminFuerUserTest", password: "correct-horse-battery-staple" });
+    const cookie = login.headers["set-cookie"];
+
+    const res = await request(app)
+      .post("/api/users")
+      .set("Cookie", cookie)
+      .send({ username: "brandneuernutzer", email: "brandneu@example.test", role: "USER" });
+
+    assert.equal(res.status, 201);
+    assert.equal(typeof res.body.data.temporaryPassword, "string");
+    assert.ok(res.body.data.temporaryPassword.length > 0);
+  });
 });

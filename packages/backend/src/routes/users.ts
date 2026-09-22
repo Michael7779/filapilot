@@ -60,8 +60,15 @@ usersRouter.post(
           passwordHash
         }
       });
-      await sendNewAccountEmail(created.email, created.username, temporaryPassword);
-      sendData(res, toPublicUser(created), 201);
+      const emailSent = await sendNewAccountEmail(created.email, created.username, temporaryPassword);
+      sendData(
+        res,
+        {
+          ...toPublicUser(created),
+          ...(emailSent ? {} : { temporaryPassword })
+        },
+        201
+      );
     } catch (err) {
       next(err);
     }

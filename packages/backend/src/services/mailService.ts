@@ -23,7 +23,10 @@ export async function sendPasswordResetEmail(toEmail: string, rawToken: string):
   const resetLink = `${env.FRONTEND_ORIGIN}/passwort-zuruecksetzen?token=${rawToken}`;
 
   if (!transport || !settings.smtp) {
-    logger.warn("Kein SMTP konfiguriert - Passwort-Reset-Link wird nur geloggt.", { toEmail });
+    logger.warn("Kein SMTP konfiguriert - Passwort-Reset-Link wird nur geloggt.", {
+      toEmail,
+      resetLink
+    });
     return;
   }
 
@@ -35,18 +38,21 @@ export async function sendPasswordResetEmail(toEmail: string, rawToken: string):
   });
 }
 
+// Gibt zurueck, ob die Mail wirklich verschickt wurde - der Aufrufer nutzt das, um das
+// Start-Passwort ausnahmsweise in der API-Antwort mitzugeben, wenn es sonst niemand erreicht
+// (kein SMTP konfiguriert).
 export async function sendNewAccountEmail(
   toEmail: string,
   username: string,
   temporaryPassword: string
-): Promise<void> {
+): Promise<boolean> {
   const transport = await getTransport();
   const settings = await getSettings();
   const loginLink = `${env.FRONTEND_ORIGIN}/login`;
 
   if (!transport || !settings.smtp) {
     logger.warn("Kein SMTP konfiguriert - Zugangsdaten werden nur geloggt.", { toEmail, username });
-    return;
+    return false;
   }
 
   await transport.sendMail({
@@ -55,4 +61,5 @@ export async function sendNewAccountEmail(
     subject: "Dein FilaPilot-Zugang",
     text: `Dein Zugang wurde erstellt.\n\nBenutzername: ${username}\nStart-Passwort: ${temporaryPassword}\n\nAnmelden: ${loginLink}`
   });
+  return true;
 }

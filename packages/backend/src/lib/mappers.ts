@@ -2,9 +2,17 @@ import type {
   User,
   Spool as PrismaSpool,
   Material as PrismaMaterial,
-  Manufacturer as PrismaManufacturer
+  Manufacturer as PrismaManufacturer,
+  Printer as PrismaPrinter
 } from "@prisma/client";
-import type { UserPublic, Material, Manufacturer, Spool, SpoolWithRelations } from "@filapilot/shared";
+import type {
+  UserPublic,
+  Material,
+  Manufacturer,
+  Spool,
+  SpoolWithRelations,
+  PrinterPublic
+} from "@filapilot/shared";
 
 // Mappt explizit Feld fuer Feld - nie ein rohes Prisma-Objekt an den Client (kein passwordHash,
 // kein resetToken).
@@ -51,6 +59,19 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
     purchasedAt: spool.purchasedAt,
     location: spool.location,
     createdAt: spool.createdAt
+  };
+}
+
+// Nie accessCode mitschicken - das ist das Passwort des Druckers.
+export function toPublicPrinter(printer: PrismaPrinter): PrinterPublic {
+  return {
+    id: printer.id,
+    name: printer.name,
+    ipAddress: printer.ipAddress,
+    serialNumber: printer.serialNumber,
+    syncMode: printer.syncMode,
+    syncIntervalSeconds: printer.syncIntervalSeconds,
+    createdAt: printer.createdAt
   };
 }
 

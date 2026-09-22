@@ -14,12 +14,22 @@
 
 ## 1.1 Offene Punkte
 - OP-A2: Sitzungs-Ablauf (30 Tage) ist hart codiert - soll das konfigurierbar sein?
-- OP-A4: Kein Test fuer R4 (eigene Akzentfarbe aendern) vorhanden.
 
 Ausserdem: Login-Seite (`packages/frontend/src/pages/LoginPage.tsx`), Passwort-Aendern-Seite
 (`ChangePasswordPage.tsx`) und Bootstrap-Skript fuer den allerersten Admin-Account
 (`packages/backend/src/scripts/seedAdmin.ts`, `pnpm run seed:admin`) sind fertig und end-to-end
 verifiziert (Login -> 403 vor Passwortwechsel -> Passwortwechsel -> Zugriff frei -> Logout -> 401).
+
+Passwort-vergessen-Flow jetzt komplett inkl. Frontend: `ForgotPasswordPage.tsx`
+(`/passwort-vergessen`) und `ResetPasswordPage.tsx` (`/passwort-zuruecksetzen?token=...`, Pfad
+muss zum in `mailService.ts` gebauten Link passen). Nutzerverwaltung (Liste + Anlegen) und eigene
+Akzentfarbe jetzt ueber `SettingsPage.tsx` erreichbar, nicht mehr nur per API.
+
+**Neu**: `POST /api/users` gibt das Start-Passwort in der Antwort zurueck (`temporaryPassword`),
+aber NUR wenn kein SMTP konfiguriert ist (sonst bleibt es leer, geht ausschliesslich per Mail
+raus) - sonst haette ein frisch angelegter Nutzer ohne SMTP-Konfiguration keine Moeglichkeit,
+an sein Passwort zu kommen. Siehe `mailService.ts` (`sendNewAccountEmail` gibt jetzt zurueck, ob
+wirklich verschickt wurde).
 
 ## 1.2 Anforderungen
 - **R1**: Ein Login mit korrekten Zugangsdaten setzt ein Sitzungs-Cookie und liefert die
@@ -30,10 +40,12 @@ verifiziert (Login -> 403 vor Passwortwechsel -> Passwortwechsel -> Zugriff frei
 - **R3**: Nur Nutzer mit Rolle `ADMIN` duerfen neue Nutzer anlegen.
   Test: `packages/backend/tests/security/auth.test.ts`
 - **R4**: Ein Nutzer kann ausschliesslich seine eigene Akzentfarbe aendern, nie die eines anderen
-  Kontos. Test: noch zu schreiben.
+  Kontos. Test: `packages/backend/tests/security/theming.test.ts` (Details siehe `theming.md`).
 - **R4b**: Ein Nutzer mit `mustChangePassword=true` erreicht ausschliesslich `POST /api/auth/change-password`
   und `POST /api/auth/logout` - jede andere geschuetzte Route liefert 403
   (`requirePasswordAlreadyChanged`). Test: `packages/backend/tests/security/auth.test.ts`
 - **R5**: `pnpm run seed:admin` legt genau dann einen ersten Admin-Account mit zufaelligem
   Start-Passwort an, wenn die Nutzer-Tabelle leer ist; bei bereits vorhandenen Nutzern passiert
   nichts. Test: noch zu schreiben.
+- **R6**: `POST /api/users` gibt `temporaryPassword` nur zurueck, wenn kein SMTP konfiguriert ist.
+  Test: `packages/backend/tests/security/auth.test.ts`

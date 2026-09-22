@@ -18,6 +18,10 @@ export const userPublicSchema = z.object({
 });
 export type UserPublic = z.infer<typeof userPublicSchema>;
 
+// Nur bei Neuanlage: das Start-Passwort ist NUR gesetzt, wenn kein SMTP konfiguriert ist und die
+// Zugangsdaten deshalb sonst niemanden erreichen wuerden (siehe routes/users.ts).
+export type CreateUserResult = UserPublic & { temporaryPassword?: string };
+
 export const createUserInputSchema = z.object({
   username: z.string().min(3).max(32),
   email: z.string().email(),

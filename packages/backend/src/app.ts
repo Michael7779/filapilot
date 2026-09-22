@@ -11,6 +11,7 @@ import { settingsRouter } from "./routes/settings.js";
 import { materialsRouter } from "./routes/materials.js";
 import { manufacturersRouter } from "./routes/manufacturers.js";
 import { spoolsRouter } from "./routes/spools.js";
+import { printersRouter } from "./routes/printers.js";
 import { sendData } from "./lib/apiResult.js";
 
 export function createApp() {
@@ -33,6 +34,7 @@ export function createApp() {
   app.use("/api/materials", materialsRouter);
   app.use("/api/manufacturers", manufacturersRouter);
   app.use("/api/spools", spoolsRouter);
+  app.use("/api/printers", printersRouter);
 
   app.use(errorHandler);
 

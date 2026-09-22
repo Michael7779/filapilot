@@ -7,9 +7,9 @@ import { useThemeStore } from "../stores/useThemeStore.js";
 const NAV_ITEMS = [
   { key: "dashboard", href: "/", enabled: true },
   { key: "spools", href: "/spools", enabled: true },
-  { key: "printers", href: "/printers", enabled: false },
+  { key: "printers", href: "/printers", enabled: true },
   { key: "stats", href: "/stats", enabled: false },
-  { key: "settings", href: "/settings", enabled: false }
+  { key: "settings", href: "/settings", enabled: true }
 ] as const;
 
 function initialsFor(name: string): string {

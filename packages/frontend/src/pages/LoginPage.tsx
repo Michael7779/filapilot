@@ -89,6 +89,14 @@ export function LoginPage(): React.JSX.Element {
         >
           {t("auth.login")}
         </button>
+
+        <a
+          href="/passwort-vergessen"
+          className="self-center text-xs font-medium"
+          style={{ color: "var(--accent)" }}
+        >
+          {t("auth.forgotPassword")}
+        </a>
       </form>
     </div>
   );

@@ -7,6 +7,7 @@ import { hashPassword } from "../../src/services/authService.js";
 
 describe("Settings - Negativ-Tests", () => {
   const app = createApp();
+  let adminCookie: string[] = [];
 
   before(async () => {
     await prisma.user.deleteMany();
@@ -19,6 +20,20 @@ describe("Settings - Negativ-Tests", () => {
         mustChangePassword: false
       }
     });
+    await prisma.user.create({
+      data: {
+        username: "settingsadmin",
+        email: "settingsadmin@example.test",
+        passwordHash: await hashPassword("correct-horse-battery-staple"),
+        role: "ADMIN",
+        mustChangePassword: false
+      }
+    });
+
+    const adminLogin = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "settingsadmin", password: "correct-horse-battery-staple" });
+    adminCookie = adminLogin.headers["set-cookie"];
   });
 
   after(async () => {
@@ -49,5 +64,26 @@ describe("Settings - Negativ-Tests", () => {
     const res = await request(app).post("/api/settings/backup").set("Cookie", cookie);
 
     assert.equal(res.status, 403);
+  });
+
+  it("gibt das SMTP-Passwort nie an den Client zurueck, auch nicht dem Admin", async () => {
+    await request(app)
+      .patch("/api/settings")
+      .set("Cookie", adminCookie)
+      .send({
+        smtp: {
+          host: "smtp.example.test",
+          port: 587,
+          secure: true,
+          username: "bot@example.test",
+          fromAddress: "bot@example.test",
+          password: "super-geheimes-smtp-passwort"
+        }
+      });
+
+    const res = await request(app).get("/api/settings").set("Cookie", adminCookie);
+    assert.equal(res.status, 200);
+    assert.equal("password" in res.body.data.smtp, false);
+    assert.equal(JSON.stringify(res.body).includes("super-geheimes-smtp-passwort"), false);
   });
 });

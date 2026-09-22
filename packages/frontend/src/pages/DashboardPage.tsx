@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Material, SpoolWithRelations } from "@filapilot/shared";
+import type { Material, PrinterLiveStatus, PrinterPublic, SpoolWithRelations } from "@filapilot/shared";
 import { apiRequest } from "../lib/api.js";
 
 interface StatCardProps {
@@ -21,10 +21,19 @@ export function DashboardPage(): React.JSX.Element {
   const { t } = useTranslation();
   const [spools, setSpools] = useState<SpoolWithRelations[] | null>(null);
   const [materials, setMaterials] = useState<Material[] | null>(null);
+  const [activePrints, setActivePrints] = useState<number | null>(null);
 
   useEffect(() => {
     apiRequest<SpoolWithRelations[]>("/spools").then(setSpools).catch(() => setSpools([]));
     apiRequest<Material[]>("/materials").then(setMaterials).catch(() => setMaterials([]));
+    apiRequest<PrinterPublic[]>("/printers")
+      .then(async (printers) => {
+        const statuses = await Promise.all(
+          printers.map((printer) => apiRequest<PrinterLiveStatus>(`/printers/${printer.id}/status`))
+        );
+        setActivePrints(statuses.filter((status) => status.printing).length);
+      })
+      .catch(() => setActivePrints(0));
   }, []);
 
   const totalWeightKg = spools
@@ -35,7 +44,10 @@ export function DashboardPage(): React.JSX.Element {
     <div className="grid grid-cols-4 gap-3.5">
       <StatCard label={t("dashboard.totalSpools")} value={spools ? String(spools.length) : "…"} />
       <StatCard label={t("dashboard.totalWeight")} value={spools ? `${totalWeightKg} kg` : "…"} />
-      <StatCard label={t("dashboard.activePrints")} value="0" />
+      <StatCard
+        label={t("dashboard.activePrints")}
+        value={activePrints !== null ? String(activePrints) : "…"}
+      />
       <StatCard
         label={t("dashboard.materialTypes")}
         value={materials ? String(materials.length) : "…"}

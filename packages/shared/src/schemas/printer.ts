@@ -15,8 +15,17 @@ export const printerSchema = z.object({
 });
 export type Printer = z.infer<typeof printerSchema>;
 
+// Oeffentliche Sicht ohne accessCode - der Access-Code ist das Passwort des Druckers und geht
+// nie an den Client zurueck, nur einmalig beim Anlegen/Aendern vom Client zum Server (siehe
+// CLAUDE.md: "DB-Felder explizit gemappt, kein ganzes DB-Objekt an Client").
+export const printerPublicSchema = printerSchema.omit({ accessCode: true });
+export type PrinterPublic = z.infer<typeof printerPublicSchema>;
+
 export const createPrinterInputSchema = printerSchema.omit({ id: true, createdAt: true });
 export type CreatePrinterInput = z.infer<typeof createPrinterInputSchema>;
+
+export const updatePrinterInputSchema = createPrinterInputSchema.partial();
+export type UpdatePrinterInput = z.infer<typeof updatePrinterInputSchema>;
 
 export const amsSlotStatusSchema = z.object({
   slotIndex: z.number().int().min(0).max(3),
