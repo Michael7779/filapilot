@@ -34,6 +34,30 @@
   },
   "common": {
     "loading": "Lädt…",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten"
+  },
+  "spools": {
+    "title": "Filament-Bestand",
+    "addSpool": "Neue Spule",
+    "editSpool": "Spule bearbeiten",
+    "empty": "Noch keine Spulen angelegt.",
+    "manufacturer": "Hersteller",
+    "colorName": "Farbe",
+    "colorHex": "Farbcode (optional)",
+    "material": "Material",
+    "newMaterialToggle": "+ Neues Material anlegen",
+    "newMaterialName": "Name",
+    "newMaterialMinTemp": "Min. Temp (°C)",
+    "newMaterialMaxTemp": "Max. Temp (°C)",
+    "initialWeight": "Ursprungsgewicht (g)",
+    "remainingWeight": "Restgewicht (g)",
+    "location": "Lagerort (optional)",
+    "purchasePrice": "Kaufpreis in Euro (optional)",
+    "confirmDelete": "Diese Spule wirklich löschen?",
+    "selectMaterial": "Bitte auswählen"
   }
 }

@@ -13,15 +13,23 @@ import { Sidebar } from "./components/Sidebar.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage.js";
+import { SpoolsPage } from "./pages/SpoolsPage.js";
 import { apiRequest } from "./lib/api.js";
 import { useAuthStore } from "./stores/useAuthStore.js";
 import { useThemeStore } from "./stores/useThemeStore.js";
 
+const TITLE_BY_PATH: Record<string, string> = {
+  "/": "nav.dashboard",
+  "/spools": "nav.spools"
+};
+
 function TopBar(): React.JSX.Element {
   const { t } = useTranslation();
+  const location: Location = useLocation();
+  const titleKey = TITLE_BY_PATH[location.pathname] ?? "nav.dashboard";
   return (
     <header className="flex h-[68px] shrink-0 items-center border-b border-[var(--color-border)] px-7">
-      <h1 className="text-[19px] font-bold">{t("nav.dashboard")}</h1>
+      <h1 className="text-[19px] font-bold">{t(titleKey)}</h1>
     </header>
   );
 }
@@ -35,6 +43,7 @@ function AppShell(): React.JSX.Element {
         <main className="flex-1 overflow-auto p-7">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/spools" element={<SpoolsPage />} />
           </Routes>
         </main>
       </div>

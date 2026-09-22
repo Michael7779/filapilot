@@ -1,15 +1,15 @@
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
 import { useThemeStore, DEFAULT_ACCENT } from "../stores/useThemeStore.js";
 
 const NAV_ITEMS = [
-  { key: "dashboard", href: "/" },
-  { key: "spools", href: "/spools" },
-  { key: "printers", href: "/printers" },
-  { key: "stats", href: "/stats" },
-  { key: "settings", href: "/settings" }
+  { key: "dashboard", href: "/", enabled: true },
+  { key: "spools", href: "/spools", enabled: true },
+  { key: "printers", href: "/printers", enabled: false },
+  { key: "stats", href: "/stats", enabled: false },
+  { key: "settings", href: "/settings", enabled: false }
 ] as const;
 
 function initialsFor(name: string): string {
@@ -19,6 +19,7 @@ function initialsFor(name: string): string {
 export function Sidebar(): React.JSX.Element {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const setStatus = useAuthStore((state) => state.setStatus);
@@ -46,15 +47,33 @@ export function Sidebar(): React.JSX.Element {
         <span className="text-base font-semibold tracking-tight">{t("app.name")}</span>
       </div>
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => (
-          <a
-            key={item.key}
-            href={item.href}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"
-          >
-            {t(`nav.${item.key}`)}
-          </a>
-        ))}
+        {NAV_ITEMS.map((item) => {
+          const isActive = location.pathname === item.href;
+          if (!item.enabled) {
+            return (
+              <span
+                key={item.key}
+                className="cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-text-muted)]"
+              >
+                {t(`nav.${item.key}`)}
+              </span>
+            );
+          }
+          return (
+            <Link
+              key={item.key}
+              to={item.href}
+              className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-[var(--color-bg)]"
+              style={
+                isActive
+                  ? { color: "var(--accent)", backgroundColor: "var(--color-accent-bg)" }
+                  : { color: "var(--color-text-secondary)" }
+              }
+            >
+              {t(`nav.${item.key}`)}
+            </Link>
+          );
+        })}
       </nav>
       {user && (
         <div className="mt-auto flex items-center gap-2 border-t border-[var(--color-border)] px-2 pt-3">

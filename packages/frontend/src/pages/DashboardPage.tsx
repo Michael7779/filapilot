@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { Material, SpoolWithMaterial } from "@filapilot/shared";
+import { apiRequest } from "../lib/api.js";
 
 interface StatCardProps {
   label: string;
@@ -16,13 +19,27 @@ function StatCard({ label, value }: StatCardProps): React.JSX.Element {
 
 export function DashboardPage(): React.JSX.Element {
   const { t } = useTranslation();
+  const [spools, setSpools] = useState<SpoolWithMaterial[] | null>(null);
+  const [materials, setMaterials] = useState<Material[] | null>(null);
+
+  useEffect(() => {
+    apiRequest<SpoolWithMaterial[]>("/spools").then(setSpools).catch(() => setSpools([]));
+    apiRequest<Material[]>("/materials").then(setMaterials).catch(() => setMaterials([]));
+  }, []);
+
+  const totalWeightKg = spools
+    ? (spools.reduce((sum, spool) => sum + spool.remainingWeightG, 0) / 1000).toFixed(1)
+    : "0";
 
   return (
     <div className="grid grid-cols-4 gap-3.5">
-      <StatCard label={t("dashboard.totalSpools")} value="0" />
-      <StatCard label={t("dashboard.totalWeight")} value="0 kg" />
+      <StatCard label={t("dashboard.totalSpools")} value={spools ? String(spools.length) : "…"} />
+      <StatCard label={t("dashboard.totalWeight")} value={spools ? `${totalWeightKg} kg` : "…"} />
       <StatCard label={t("dashboard.activePrints")} value="0" />
-      <StatCard label={t("dashboard.materialTypes")} value="0" />
+      <StatCard
+        label={t("dashboard.materialTypes")}
+        value={materials ? String(materials.length) : "…"}
+      />
     </div>
   );
 }

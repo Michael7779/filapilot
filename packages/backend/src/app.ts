@@ -8,6 +8,8 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { authRouter } from "./routes/auth.js";
 import { usersRouter } from "./routes/users.js";
 import { settingsRouter } from "./routes/settings.js";
+import { materialsRouter } from "./routes/materials.js";
+import { spoolsRouter } from "./routes/spools.js";
 import { sendData } from "./lib/apiResult.js";
 
 export function createApp() {
@@ -27,6 +29,8 @@ export function createApp() {
   app.use("/api/auth", authRateLimiter, authRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/settings", settingsRouter);
+  app.use("/api/materials", materialsRouter);
+  app.use("/api/spools", spoolsRouter);
 
   app.use(errorHandler);
 

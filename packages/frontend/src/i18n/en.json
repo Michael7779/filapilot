@@ -34,6 +34,30 @@
   },
   "common": {
     "loading": "Loading…",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "spools": {
+    "title": "Filament inventory",
+    "addSpool": "New spool",
+    "editSpool": "Edit spool",
+    "empty": "No spools yet.",
+    "manufacturer": "Manufacturer",
+    "colorName": "Color",
+    "colorHex": "Color code (optional)",
+    "material": "Material",
+    "newMaterialToggle": "+ Add new material",
+    "newMaterialName": "Name",
+    "newMaterialMinTemp": "Min temp (°C)",
+    "newMaterialMaxTemp": "Max temp (°C)",
+    "initialWeight": "Initial weight (g)",
+    "remainingWeight": "Remaining weight (g)",
+    "location": "Location (optional)",
+    "purchasePrice": "Purchase price in euros (optional)",
+    "confirmDelete": "Really delete this spool?",
+    "selectMaterial": "Please select"
   }
 }

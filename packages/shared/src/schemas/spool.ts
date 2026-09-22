@@ -25,4 +25,9 @@ export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;
 export const updateSpoolInputSchema = createSpoolInputSchema.partial();
 export type UpdateSpoolInput = z.infer<typeof updateSpoolInputSchema>;
 
+export const spoolWithMaterialSchema = spoolSchema.extend({
+  materialName: z.string()
+});
+export type SpoolWithMaterial = z.infer<typeof spoolWithMaterialSchema>;
+
 export const LOW_STOCK_THRESHOLD_RATIO = 0.15;
