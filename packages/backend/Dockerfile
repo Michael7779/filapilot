@@ -12,13 +12,17 @@ FROM deps AS build
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY packages/backend packages/backend
+RUN pnpm --filter @filapilot/shared build
 RUN pnpm --filter @filapilot/backend exec prisma generate
 RUN pnpm --filter @filapilot/backend build
 
 FROM base AS runtime
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/packages/shared /app/packages/shared
+COPY --from=build /app/packages/shared/package.json /app/packages/shared/package.json
+COPY --from=build /app/packages/shared/dist /app/packages/shared/dist
+COPY --from=build /app/packages/shared/node_modules /app/packages/shared/node_modules
+COPY --from=build /app/packages/backend/node_modules /app/packages/backend/node_modules
 COPY --from=build /app/packages/backend/dist /app/packages/backend/dist
 COPY --from=build /app/packages/backend/prisma /app/packages/backend/prisma
 COPY --from=build /app/packages/backend/package.json /app/packages/backend/package.json

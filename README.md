@@ -27,14 +27,25 @@ Voraussetzung: Docker + Docker Compose auf dem Zielsystem, `git` verfügbar (z.B
 "Git Server").
 
 ```bash
-git clone https://github.com/<dein-github-name>/filapilot.git
+git clone https://github.com/Michael7779/filapilot.git
 cd filapilot
 cp .env.example .env
-# .env ausfüllen: POSTGRES_PASSWORD, SESSION_SECRET (siehe Kommentare in der Datei)
-docker compose up -d
+# .env ausfüllen: POSTGRES_PASSWORD, SESSION_SECRET, FRONTEND_ORIGIN, FRONTEND_PORT
+# WICHTIG: FRONTEND_ORIGIN muss die tatsächlich erreichbare Adresse sein
+# (nicht "localhost"), z.B. http://<synology-ip>:8090
+docker compose up -d --build
 ```
 
-Die App ist danach unter `http://<synology-ip>:8080` erreichbar.
+Einmalig Datenbank-Schema anlegen und ersten Admin-Account erstellen:
+
+```bash
+docker compose exec backend node_modules/.bin/prisma db push --schema=prisma/schema.prisma
+docker compose exec backend node dist/scripts/seedAdmin.js
+```
+
+Die zweite Zeile gibt einmalig Benutzername + Start-Passwort aus — notieren, wird nirgends
+gespeichert. Die App ist danach unter `http://<synology-ip>:<FRONTEND_PORT>` erreichbar; beim
+ersten Login wird ein neues Passwort erzwungen.
 
 ## Updates
 

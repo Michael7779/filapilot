@@ -12,6 +12,7 @@ FROM deps AS build
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY packages/frontend packages/frontend
+RUN pnpm --filter @filapilot/shared build
 RUN pnpm --filter @filapilot/frontend build
 
 FROM nginx:alpine AS runtime
