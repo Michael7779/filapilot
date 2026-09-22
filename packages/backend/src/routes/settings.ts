@@ -1,0 +1,38 @@
+import { Router } from "express";
+import { updateSettingsInputSchema } from "@filapilot/shared";
+import { sendData } from "../lib/apiResult.js";
+import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../middleware/auth.js";
+import { getSettings, updateSettings } from "../services/settingsService.js";
+import { createBackup } from "../services/backupService.js";
+
+export const settingsRouter = Router();
+
+const requireAdmin = [requireAuth, requirePasswordAlreadyChanged, requireRole("ADMIN")] as const;
+
+// SCOPE: global
+settingsRouter.get("/", ...requireAdmin, async (_req, res) => {
+  sendData(res, await getSettings());
+});
+
+// Threat-Model: Ein Nutzer ohne Admin-Rolle koennte versuchen, SMTP-Zugangsdaten oder den
+// Backup-Pfad zu aendern. Serverseitig erzwungen: requireRole("ADMIN"). Negativ-Test: Nutzer mit
+// Rolle USER erhaelt 403.
+// SCOPE: global
+settingsRouter.patch("/", ...requireAdmin, async (req, res, next) => {
+  try {
+    const input = updateSettingsInputSchema.parse(req.body);
+    sendData(res, await updateSettings(input));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// SCOPE: global
+settingsRouter.post("/backup", ...requireAdmin, async (_req, res, next) => {
+  try {
+    const timestamp = await createBackup();
+    sendData(res, { timestamp }, 201);
+  } catch (err) {
+    next(err);
+  }
+});

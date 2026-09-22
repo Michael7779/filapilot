@@ -1,0 +1,36 @@
+{
+  "name": "filapilot",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Selbst-gehostete Filament-Verwaltung fuer 3D-Drucker mit Bambu Lab AMS-Integration",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev:backend": "pnpm --filter @filapilot/backend dev",
+    "dev:frontend": "pnpm --filter @filapilot/frontend dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "eslint": "^9.19.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-sonarjs": "^3.0.1",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-tailwindcss": "^4.4.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.21.0"
+  }
+}

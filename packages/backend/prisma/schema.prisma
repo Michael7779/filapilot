@@ -1,0 +1,144 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum PrinterSyncMode {
+  LIVE
+  PERIODIC
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  username            String    @unique
+  email               String    @unique
+  passwordHash        String
+  role                UserRole  @default(USER)
+  mustChangePassword  Boolean   @default(true)
+  themeAccentColor    String?
+  resetToken          String?   @unique
+  resetTokenExpiresAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  sessions            Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Material {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  printTempMinC Int
+  printTempMaxC Int
+  bedTempC      Int?
+  spools        Spool[]
+  createdAt     DateTime @default(now())
+
+  @@map("materials")
+}
+
+model Spool {
+  id                  String     @id @default(uuid())
+  materialId          String
+  material            Material   @relation(fields: [materialId], references: [id])
+  manufacturer        String
+  colorName           String
+  colorHex            String?
+  initialWeightG      Int
+  remainingWeightG    Int
+  photoUrl            String?
+  purchasePriceCents  Int?
+  purchasedAt         DateTime?
+  location            String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  printJobs           PrintJob[]
+  amsSlotAssignments  AmsSlotAssignment[]
+
+  @@index([materialId])
+  @@map("spools")
+}
+
+model Printer {
+  id                  String              @id @default(uuid())
+  name                String
+  ipAddress           String
+  serialNumber        String              @unique
+  accessCode          String
+  syncMode            PrinterSyncMode     @default(PERIODIC)
+  syncIntervalSeconds Int                 @default(60)
+  createdAt           DateTime            @default(now())
+  printJobs           PrintJob[]
+  amsSlots            AmsSlotAssignment[]
+
+  @@map("printers")
+}
+
+model AmsSlotAssignment {
+  id        String  @id @default(uuid())
+  printerId String
+  printer   Printer @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  slotIndex Int
+  spoolId   String?
+  spool     Spool?  @relation(fields: [spoolId], references: [id])
+
+  @@unique([printerId, slotIndex])
+  @@map("ams_slot_assignments")
+}
+
+model PrintJob {
+  id            String    @id @default(uuid())
+  printerId     String
+  printer       Printer   @relation(fields: [printerId], references: [id])
+  spoolId       String
+  spool         Spool     @relation(fields: [spoolId], references: [id])
+  name          String
+  filamentUsedG Float
+  startedAt     DateTime
+  finishedAt    DateTime?
+
+  @@index([printerId])
+  @@index([spoolId])
+  @@map("print_jobs")
+}
+
+model Settings {
+  id                                 Int      @id @default(1)
+  photoUploadEnabled                 Boolean  @default(true)
+  defaultPrinterSyncIntervalSeconds  Int      @default(60)
+  smtpHost                           String?
+  smtpPort                           Int?
+  smtpSecure                         Boolean  @default(true)
+  smtpUsername                       String?
+  smtpPasswordEncrypted              String?
+  smtpFromAddress                    String?
+  backupFolderPath                   String   @default("/data/backups")
+  backupEnabled                      Boolean  @default(true)
+  // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt.
+  licenseKey                         String?
+  updatedAt                          DateTime @updatedAt
+
+  @@map("settings")
+}

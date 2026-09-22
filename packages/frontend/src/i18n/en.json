@@ -1,0 +1,24 @@
+{
+  "app": {
+    "name": "FilaPilot"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "spools": "Spools",
+    "printers": "Printers",
+    "stats": "Statistics",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "totalSpools": "Total spools",
+    "totalWeight": "Total weight",
+    "activePrints": "Active prints",
+    "materialTypes": "Material types"
+  },
+  "auth": {
+    "login": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "forgotPassword": "Forgot password?"
+  }
+}

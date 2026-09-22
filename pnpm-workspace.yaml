@@ -1,0 +1,10 @@
+packages:
+  - "packages/*"
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+minimumReleaseAgeExclude:
+  - '@typescript-eslint/parser@8.70.1'
+  - '@typescript-eslint/visitor-keys@8.70.1'
