@@ -30,9 +30,17 @@ Voraussetzung: Docker + Docker Compose auf dem Zielsystem, `git` verfügbar (z.B
 git clone https://github.com/Michael7779/filapilot.git
 cd filapilot
 cp .env.example .env
-# .env ausfüllen: POSTGRES_PASSWORD, SESSION_SECRET, FRONTEND_ORIGIN, FRONTEND_PORT
-# WICHTIG: FRONTEND_ORIGIN muss die tatsächlich erreichbare Adresse sein
-# (nicht "localhost"), z.B. http://<synology-ip>:8090
+openssl rand -hex 32   # -> POSTGRES_PASSWORD
+openssl rand -hex 32   # -> SESSION_SECRET
+```
+
+Beide Werte in `.env` eintragen, außerdem `FRONTEND_ORIGIN` und `FRONTEND_PORT`.
+**Wichtig:** `openssl rand -hex ...` verwenden, nicht `-base64` — Base64 kann `/` oder `+`
+erzeugen, was die Postgres-Verbindungs-URL kaputt macht (die Passwörter landen direkt darin).
+`FRONTEND_ORIGIN` muss die tatsächlich erreichbare Adresse sein, nicht `localhost`, z.B.
+`http://<synology-ip>:8090`.
+
+```bash
 docker compose up -d --build
 ```
 
