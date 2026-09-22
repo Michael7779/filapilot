@@ -15,6 +15,16 @@
     "activePrints": "Active prints",
     "materialTypes": "Material types"
   },
+  "stats": {
+    "totalSpools": "Total spools",
+    "totalConsumed": "Total consumed",
+    "totalRemaining": "Total remaining",
+    "lowStock": "Low stock",
+    "byMaterial": "Consumption by material",
+    "byManufacturer": "Consumption by manufacturer",
+    "noConsumption": "No consumption recorded yet.",
+    "loadFailed": "Couldn't load statistics."
+  },
   "auth": {
     "login": "Sign in",
     "username": "Username",

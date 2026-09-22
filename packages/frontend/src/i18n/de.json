@@ -15,6 +15,16 @@
     "activePrints": "Aktive Drucke",
     "materialTypes": "Material-Arten"
   },
+  "stats": {
+    "totalSpools": "Spulen gesamt",
+    "totalConsumed": "Verbraucht gesamt",
+    "totalRemaining": "Restbestand gesamt",
+    "lowStock": "Niedriger Bestand",
+    "byMaterial": "Verbrauch nach Material",
+    "byManufacturer": "Verbrauch nach Hersteller",
+    "noConsumption": "Noch kein Verbrauch erfasst.",
+    "loadFailed": "Statistik konnte nicht geladen werden."
+  },
   "auth": {
     "login": "Anmelden",
     "username": "Benutzername",

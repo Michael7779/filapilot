@@ -18,6 +18,7 @@ import { ResetPasswordPage } from "./pages/ResetPasswordPage.js";
 import { SpoolsPage } from "./pages/SpoolsPage.js";
 import { SettingsPage } from "./pages/SettingsPage.js";
 import { PrintersPage } from "./pages/PrintersPage.js";
+import { StatsPage } from "./pages/StatsPage.js";
 import { apiRequest } from "./lib/api.js";
 import { useAuthStore } from "./stores/useAuthStore.js";
 import { useThemeStore } from "./stores/useThemeStore.js";
@@ -26,6 +27,7 @@ const TITLE_BY_PATH: Record<string, string> = {
   "/": "nav.dashboard",
   "/spools": "nav.spools",
   "/printers": "nav.printers",
+  "/stats": "nav.stats",
   "/settings": "nav.settings"
 };
 
@@ -52,6 +54,7 @@ function AppShell(): React.JSX.Element {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/spools" element={<SpoolsPage />} />
             <Route path="/printers" element={<PrintersPage />} />
+            <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>

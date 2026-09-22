@@ -9,7 +9,7 @@ Status-Legende: ⬜ nicht begonnen · 🔶 in Arbeit · ✅ fertig + getestet
 | Material-Stammdaten | `materials.md` | 🔶 |
 | Hersteller-Stammdaten | `manufacturers.md` | 🔶 |
 | Drucker / Bambu-Sync | `printers.md` | 🔶 |
-| Statistik / Druckauftraege | `stats.md` | ⬜ |
+| Statistik / Druckauftraege | `stats.md` | 🔶 |
 | Einstellungen / Backup | `settings.md` | ✅ |
 | Theming pro Konto | `theming.md` | ✅ |
 

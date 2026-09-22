@@ -3,11 +3,15 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
-## [Unreleased]
+## [0.2.0] - 2026-09-22
 
 ### Hinzugefuegt
 - QR-Label-Druck pro Spule: druckbares Label mit QR-Code (Spulen-ID) + Material/Farbe/Hersteller,
   ueber die "QR-Label"-Aktion auf der Spulen-Seite.
+- Statistik-Seite: Spulen gesamt, verbrauchtes Filament, Restbestand, Anzahl Spulen mit
+  niedrigem Bestand sowie Verbrauch aufgeschluesselt nach Material und Hersteller - berechnet
+  clientseitig aus den vorhandenen Spulen-Daten (siehe `docs/requirements/stats.md` fuer die
+  bewusste Abgrenzung zum noch nicht gebauten `PrintJob`-Tracking).
 
 ## [0.1.0] - 2026-09-22
 

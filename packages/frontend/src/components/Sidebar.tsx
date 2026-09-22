@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { key: "dashboard", href: "/", enabled: true },
   { key: "spools", href: "/spools", enabled: true },
   { key: "printers", href: "/printers", enabled: true },
-  { key: "stats", href: "/stats", enabled: false },
+  { key: "stats", href: "/stats", enabled: true },
   { key: "settings", href: "/settings", enabled: true }
 ] as const;
 
