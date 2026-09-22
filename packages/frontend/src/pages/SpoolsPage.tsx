@@ -10,6 +10,7 @@ import type {
 } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
+import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
 
 export function SpoolsPage(): React.JSX.Element {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ export function SpoolsPage(): React.JSX.Element {
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
   const [editingSpool, setEditingSpool] = useState<SpoolWithRelations | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [labelSpool, setLabelSpool] = useState<SpoolWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -164,6 +166,9 @@ export function SpoolsPage(): React.JSX.Element {
                   <button type="button" onClick={() => openEdit(spool)} style={{ color: "var(--accent)" }}>
                     {t("common.edit")}
                   </button>
+                  <button type="button" onClick={() => setLabelSpool(spool)} style={{ color: "var(--accent)" }}>
+                    {t("spools.qrLabel")}
+                  </button>
                   <button
                     type="button"
                     onClick={() => void handleDelete(spool)}
@@ -189,6 +194,8 @@ export function SpoolsPage(): React.JSX.Element {
           onSubmit={handleSubmitSpool}
         />
       )}
+
+      {labelSpool && <SpoolLabelModal spool={labelSpool} onClose={() => setLabelSpool(null)} />}
     </div>
   );
 }

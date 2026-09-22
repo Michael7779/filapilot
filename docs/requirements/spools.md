@@ -15,6 +15,14 @@
 - Foto-Upload (Datei, nicht nur `photoUrl`-Text) ist NICHT Teil dieser Runde - `photoUrl` existiert
   im Schema, aber es gibt noch keinen Upload-Endpunkt und keine Pruefung des
   `Settings.photoUploadEnabled`-Schalters. Siehe OP-SP2.
+- QR-Label-Druck: rein client-seitig, kein Backend-Endpunkt noetig. Pro Spule ein Button
+  ("QR-Label"), oeffnet `packages/frontend/src/components/SpoolLabelModal.tsx` mit einem
+  clientseitig via `qrcode`-Paket erzeugten QR-Code (kodiert `filapilot:spool:<id>`), Material,
+  Farbe und Hersteller als Text. "Drucken" ruft `window.print()`; eine globale
+  `.print-only`/`visibility`-Regel in `index.css` sorgt dafuer, dass nur das Label gedruckt wird,
+  unabhaengig davon, wo das Modal im DOM haengt. Dependency-Begruendung: QR-Kodierung (inkl.
+  Reed-Solomon-Fehlerkorrektur) ist kein Bordmittel und nicht sinnvoll in 50 Zeilen selbst
+  machbar; `qrcode` ist aktiv gepflegt und hat >5 Mio. Downloads/Woche.
 
 ## 1.1 Offene Punkte
 - OP-SP1: Kein Low-Stock-Hinweis/Badge im Frontend, obwohl `LOW_STOCK_THRESHOLD_RATIO` in
@@ -37,3 +45,7 @@
   Passwort geaendert wurde. Test: `tests/security/spools.test.ts`
 - **R5**: Aendern und Loeschen einer Spule ist fuer jeden eingeloggten Nutzer moeglich (kein
   Owner-Konzept, siehe Ist-Stand). Test: `tests/security/spools.test.ts`
+- **R6**: Jede Spule kann als druckbares QR-Label dargestellt werden (Material, Farbe, Hersteller
+  + QR-Code der Spulen-ID). Rein clientseitig, keine sicherheitsrelevante Route - manuell per
+  Browser-Klickpfad verifiziert (QR-Code-Canvas nicht leer, Druck-Button loest `window.print()`
+  aus, ESC schliesst das Modal).

@@ -26,3 +26,19 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-sans);
 }
+
+/* Druckt nur den Inhalt mit dieser Klasse (z.B. QR-Spulenlabel), egal wo er im Baum sitzt -
+   robuster als display:none auf Geschwister-Elemente, weil Modals als Overlay gerendert werden. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-only,
+  .print-only * {
+    visibility: visible;
+  }
+  .print-only {
+    position: fixed;
+    inset: 0;
+  }
+}

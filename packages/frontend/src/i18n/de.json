@@ -46,7 +46,8 @@
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "edit": "Bearbeiten",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "close": "Schließen"
   },
   "spools": {
     "title": "Filament-Bestand",
@@ -70,7 +71,10 @@
     "selectManufacturer": "Bitte auswählen",
     "newManufacturerToggle": "+ Neuer Hersteller",
     "newManufacturerName": "Name des Herstellers",
-    "loadFailed": "Der Filament-Bestand konnte nicht geladen werden."
+    "loadFailed": "Der Filament-Bestand konnte nicht geladen werden.",
+    "qrLabel": "QR-Label",
+    "printLabel": "Drucken",
+    "qrLabelFailed": "QR-Code konnte nicht erzeugt werden."
   },
   "settings": {
     "myAccount": "Mein Konto",

@@ -3,6 +3,12 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [Unreleased]
+
+### Hinzugefuegt
+- QR-Label-Druck pro Spule: druckbares Label mit QR-Code (Spulen-ID) + Material/Farbe/Hersteller,
+  ueber die "QR-Label"-Aktion auf der Spulen-Seite.
+
 ## [0.1.0] - 2026-09-22
 
 ### Hinzugefuegt

@@ -46,7 +46,8 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
-    "retry": "Try again"
+    "retry": "Try again",
+    "close": "Close"
   },
   "spools": {
     "title": "Filament inventory",
@@ -70,7 +71,10 @@
     "selectManufacturer": "Please select",
     "newManufacturerToggle": "+ Add new manufacturer",
     "newManufacturerName": "Manufacturer name",
-    "loadFailed": "Couldn't load the filament inventory."
+    "loadFailed": "Couldn't load the filament inventory.",
+    "qrLabel": "QR label",
+    "printLabel": "Print",
+    "qrLabelFailed": "Couldn't generate the QR code."
   },
   "settings": {
     "myAccount": "My account",
