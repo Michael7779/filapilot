@@ -14,7 +14,12 @@
 
 ## 1.1 Offene Punkte
 - OP-A2: Sitzungs-Ablauf (30 Tage) ist hart codiert - soll das konfigurierbar sein?
-- OP-A3: Automatisierter Test fuer `requirePasswordAlreadyChanged` fehlt noch (R4b unten).
+- OP-A4: Kein Test fuer R4 (eigene Akzentfarbe aendern) vorhanden.
+
+Ausserdem: Login-Seite (`packages/frontend/src/pages/LoginPage.tsx`), Passwort-Aendern-Seite
+(`ChangePasswordPage.tsx`) und Bootstrap-Skript fuer den allerersten Admin-Account
+(`packages/backend/src/scripts/seedAdmin.ts`, `pnpm run seed:admin`) sind fertig und end-to-end
+verifiziert (Login -> 403 vor Passwortwechsel -> Passwortwechsel -> Zugriff frei -> Logout -> 401).
 
 ## 1.2 Anforderungen
 - **R1**: Ein Login mit korrekten Zugangsdaten setzt ein Sitzungs-Cookie und liefert die
@@ -28,4 +33,7 @@
   Kontos. Test: noch zu schreiben.
 - **R4b**: Ein Nutzer mit `mustChangePassword=true` erreicht ausschliesslich `POST /api/auth/change-password`
   und `POST /api/auth/logout` - jede andere geschuetzte Route liefert 403
-  (`requirePasswordAlreadyChanged`). Test: noch zu schreiben (OP-A3).
+  (`requirePasswordAlreadyChanged`). Test: `packages/backend/tests/security/auth.test.ts`
+- **R5**: `pnpm run seed:admin` legt genau dann einen ersten Admin-Account mit zufaelligem
+  Start-Passwort an, wenn die Nutzer-Tabelle leer ist; bei bereits vorhandenen Nutzern passiert
+  nichts. Test: noch zu schreiben.

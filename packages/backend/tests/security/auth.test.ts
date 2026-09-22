@@ -65,4 +65,33 @@ describe("Auth - Negativ-Tests", () => {
 
     assert.equal(res.status, 403);
   });
+
+  it("lehnt jede Route ausser change-password/logout ab, solange mustChangePassword=true ist (403)", async () => {
+    await prisma.user.create({
+      data: {
+        username: "frischerAdmin",
+        email: "frisch@example.test",
+        passwordHash: await hashPassword("start-passwort-123456"),
+        role: "ADMIN",
+        mustChangePassword: true
+      }
+    });
+
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "frischerAdmin", password: "start-passwort-123456" });
+    const cookie = login.headers["set-cookie"];
+
+    const blocked = await request(app).get("/api/users").set("Cookie", cookie);
+    assert.equal(blocked.status, 403);
+
+    const changed = await request(app)
+      .post("/api/auth/change-password")
+      .set("Cookie", cookie)
+      .send({ currentPassword: "start-passwort-123456", newPassword: "ein-neues-sicheres-passwort" });
+    assert.equal(changed.status, 200);
+
+    const allowedNow = await request(app).get("/api/users").set("Cookie", cookie);
+    assert.equal(allowedNow.status, 200);
+  });
 });

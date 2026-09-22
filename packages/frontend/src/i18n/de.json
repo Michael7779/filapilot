@@ -19,6 +19,21 @@
     "login": "Anmelden",
     "username": "Benutzername",
     "password": "Passwort",
-    "forgotPassword": "Passwort vergessen?"
+    "forgotPassword": "Passwort vergessen?",
+    "enterCredentials": "Bitte Benutzername und Passwort eingeben.",
+    "loginFailed": "Anmeldung fehlgeschlagen.",
+    "changePasswordTitle": "Passwort ändern",
+    "changePasswordHint": "Bei der ersten Anmeldung muss ein neues Passwort gesetzt werden.",
+    "currentPassword": "Aktuelles (Start-)Passwort",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "save": "Passwort speichern",
+    "passwordTooShort": "Das neue Passwort muss mindestens 10 Zeichen lang sein.",
+    "passwordsMismatch": "Die Passwörter stimmen nicht überein.",
+    "changePasswordFailed": "Passwort-Änderung fehlgeschlagen."
+  },
+  "common": {
+    "loading": "Lädt…",
+    "logout": "Abmelden"
   }
 }

@@ -11,7 +11,9 @@
     "test": "node --env-file=.env.test --import tsx --test --test-concurrency=1 tests/**/*.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:migrate": "prisma migrate deploy"
+    "prisma:migrate": "prisma migrate deploy",
+    "seed:admin": "node dist/scripts/seedAdmin.js",
+    "seed:admin:dev": "tsx src/scripts/seedAdmin.ts"
   },
   "dependencies": {
     "@filapilot/shared": "workspace:*",

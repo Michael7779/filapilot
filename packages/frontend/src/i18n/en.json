@@ -19,6 +19,21 @@
     "login": "Sign in",
     "username": "Username",
     "password": "Password",
-    "forgotPassword": "Forgot password?"
+    "forgotPassword": "Forgot password?",
+    "enterCredentials": "Please enter a username and password.",
+    "loginFailed": "Sign-in failed.",
+    "changePasswordTitle": "Change password",
+    "changePasswordHint": "You need to set a new password on first sign-in.",
+    "currentPassword": "Current (starter) password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "save": "Save password",
+    "passwordTooShort": "The new password must be at least 10 characters long.",
+    "passwordsMismatch": "The passwords don't match.",
+    "changePasswordFailed": "Could not change the password."
+  },
+  "common": {
+    "loading": "Loading…",
+    "logout": "Sign out"
   }
 }
