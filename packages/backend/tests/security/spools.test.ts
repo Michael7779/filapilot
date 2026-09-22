@@ -8,17 +8,22 @@ import { hashPassword } from "../../src/services/authService.js";
 describe("Spools - Negativ-Tests", () => {
   const app = createApp();
   let materialId = "";
+  let manufacturerId = "";
   let activeUserCookie: string[] = [];
 
   before(async () => {
     await prisma.spool.deleteMany();
     await prisma.material.deleteMany();
+    await prisma.manufacturer.deleteMany();
     await prisma.user.deleteMany();
 
     const material = await prisma.material.create({
       data: { name: "PLA Basic Test", printTempMinC: 190, printTempMaxC: 220, bedTempC: 60 }
     });
     materialId = material.id;
+
+    const manufacturer = await prisma.manufacturer.create({ data: { name: "Bambu Lab Test" } });
+    manufacturerId = manufacturer.id;
 
     await prisma.user.create({
       data: {
@@ -38,6 +43,7 @@ describe("Spools - Negativ-Tests", () => {
   after(async () => {
     await prisma.spool.deleteMany();
     await prisma.material.deleteMany();
+    await prisma.manufacturer.deleteMany();
     await prisma.user.deleteMany();
     await prisma.$disconnect();
   });
@@ -77,7 +83,7 @@ describe("Spools - Negativ-Tests", () => {
       .set("Cookie", activeUserCookie)
       .send({
         materialId,
-        manufacturer: "Bambu Lab",
+        manufacturerId,
         colorName: "Schwarz",
         colorHex: "#1A1A1A",
         initialWeightG: 1000,
@@ -97,7 +103,26 @@ describe("Spools - Negativ-Tests", () => {
       .set("Cookie", activeUserCookie)
       .send({
         materialId: "00000000-0000-0000-0000-000000000000",
-        manufacturer: "Bambu Lab",
+        manufacturerId,
+        colorName: "Schwarz",
+        colorHex: "#1A1A1A",
+        initialWeightG: 1000,
+        remainingWeightG: 1000,
+        photoUrl: null,
+        purchasePriceCents: null,
+        purchasedAt: null,
+        location: null
+      });
+    assert.equal(res.status, 400);
+  });
+
+  it("lehnt Anlegen mit unbekannter manufacturerId ab (400 VALIDATION_ERROR)", async () => {
+    const res = await request(app)
+      .post("/api/spools")
+      .set("Cookie", activeUserCookie)
+      .send({
+        materialId,
+        manufacturerId: "00000000-0000-0000-0000-000000000000",
         colorName: "Schwarz",
         colorHex: "#1A1A1A",
         initialWeightG: 1000,
@@ -116,7 +141,7 @@ describe("Spools - Negativ-Tests", () => {
       .set("Cookie", activeUserCookie)
       .send({
         materialId,
-        manufacturer: "Bambu Lab",
+        manufacturerId,
         colorName: "Schwarz",
         colorHex: "#1A1A1A",
         initialWeightG: 1000,
@@ -132,10 +157,9 @@ describe("Spools - Negativ-Tests", () => {
     const listRes = await request(app).get("/api/spools").set("Cookie", activeUserCookie);
     assert.equal(listRes.status, 200);
     assert.ok(listRes.body.data.some((s: { id: string }) => s.id === spoolId));
-    assert.equal(
-      listRes.body.data.find((s: { id: string }) => s.id === spoolId).materialName,
-      "PLA Basic Test"
-    );
+    const listed = listRes.body.data.find((s: { id: string }) => s.id === spoolId);
+    assert.equal(listed.materialName, "PLA Basic Test");
+    assert.equal(listed.manufacturerName, "Bambu Lab Test");
 
     const patchRes = await request(app)
       .patch(`/api/spools/${spoolId}`)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Material, SpoolWithMaterial } from "@filapilot/shared";
+import type { Material, SpoolWithRelations } from "@filapilot/shared";
 import { apiRequest } from "../lib/api.js";
 
 interface StatCardProps {
@@ -19,11 +19,11 @@ function StatCard({ label, value }: StatCardProps): React.JSX.Element {
 
 export function DashboardPage(): React.JSX.Element {
   const { t } = useTranslation();
-  const [spools, setSpools] = useState<SpoolWithMaterial[] | null>(null);
+  const [spools, setSpools] = useState<SpoolWithRelations[] | null>(null);
   const [materials, setMaterials] = useState<Material[] | null>(null);
 
   useEffect(() => {
-    apiRequest<SpoolWithMaterial[]>("/spools").then(setSpools).catch(() => setSpools([]));
+    apiRequest<SpoolWithRelations[]>("/spools").then(setSpools).catch(() => setSpools([]));
     apiRequest<Material[]>("/materials").then(setMaterials).catch(() => setMaterials([]));
   }, []);
 

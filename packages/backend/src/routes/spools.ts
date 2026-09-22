@@ -4,13 +4,28 @@ import { createSpoolInputSchema, updateSpoolInputSchema } from "@filapilot/share
 import { prisma } from "../prisma.js";
 import { sendData, AppError } from "../lib/apiResult.js";
 import { requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
-import { toPublicSpool, toPublicSpoolWithMaterial } from "../lib/mappers.js";
+import { toPublicSpool, toPublicSpoolWithRelations } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
 
 export const spoolsRouter = Router();
 
 const requireActiveUser = [requireAuth, requirePasswordAlreadyChanged] as const;
 const idParamSchema = z.string().uuid();
+const SPOOL_INCLUDE = { material: true, manufacturer: true } as const;
+
+async function assertMaterialExists(materialId: string): Promise<void> {
+  const material = await prisma.material.findUnique({ where: { id: materialId } });
+  if (!material) {
+    throw new AppError("VALIDATION_ERROR", "Unbekanntes Material.");
+  }
+}
+
+async function assertManufacturerExists(manufacturerId: string): Promise<void> {
+  const manufacturer = await prisma.manufacturer.findUnique({ where: { id: manufacturerId } });
+  if (!manufacturer) {
+    throw new AppError("VALIDATION_ERROR", "Unbekannter Hersteller.");
+  }
+}
 
 // Threat-Model: Ein anonymer Request koennte versuchen, den Filament-Bestand einzusehen oder zu
 // aendern. Serverseitig erzwungen: requireAuth + requirePasswordAlreadyChanged auf jeder Route.
@@ -20,12 +35,12 @@ const idParamSchema = z.string().uuid();
 // SCOPE: user
 spoolsRouter.get("/", ...requireActiveUser, async (_req, res) => {
   const spools = await prisma.spool.findMany({
-    include: { material: true },
+    include: SPOOL_INCLUDE,
     orderBy: { createdAt: "desc" }
   });
   sendData(
     res,
-    spools.map((spool) => toPublicSpoolWithMaterial(spool))
+    spools.map((spool) => toPublicSpoolWithRelations(spool))
   );
 });
 
@@ -33,11 +48,11 @@ spoolsRouter.get("/", ...requireActiveUser, async (_req, res) => {
 spoolsRouter.get("/:id", ...requireActiveUser, async (req, res, next) => {
   try {
     const id = idParamSchema.parse(req.params.id);
-    const spool = await prisma.spool.findUnique({ where: { id }, include: { material: true } });
+    const spool = await prisma.spool.findUnique({ where: { id }, include: SPOOL_INCLUDE });
     if (!spool) {
       throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
     }
-    sendData(res, toPublicSpoolWithMaterial(spool));
+    sendData(res, toPublicSpoolWithRelations(spool));
   } catch (err) {
     next(err);
   }
@@ -47,10 +62,8 @@ spoolsRouter.get("/:id", ...requireActiveUser, async (req, res, next) => {
 spoolsRouter.post("/", ...requireActiveUser, async (req, res, next) => {
   try {
     const input = createSpoolInputSchema.parse(req.body);
-    const material = await prisma.material.findUnique({ where: { id: input.materialId } });
-    if (!material) {
-      throw new AppError("VALIDATION_ERROR", "Unbekanntes Material.");
-    }
+    await assertMaterialExists(input.materialId);
+    await assertManufacturerExists(input.manufacturerId);
     const created = await prisma.spool.create({ data: input });
     sendData(res, toPublicSpool(created), 201);
   } catch (err) {
@@ -65,10 +78,10 @@ spoolsRouter.patch("/:id", ...requireActiveUser, async (req, res, next) => {
     const input = updateSpoolInputSchema.parse(req.body);
 
     if (input.materialId) {
-      const material = await prisma.material.findUnique({ where: { id: input.materialId } });
-      if (!material) {
-        throw new AppError("VALIDATION_ERROR", "Unbekanntes Material.");
-      }
+      await assertMaterialExists(input.materialId);
+    }
+    if (input.manufacturerId) {
+      await assertManufacturerExists(input.manufacturerId);
     }
 
     const updated = await prisma.spool

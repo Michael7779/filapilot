@@ -3,7 +3,7 @@ import { z } from "zod";
 export const spoolSchema = z.object({
   id: z.string().uuid(),
   materialId: z.string().uuid(),
-  manufacturer: z.string().min(1).max(60),
+  manufacturerId: z.string().uuid(),
   colorName: z.string().min(1).max(60),
   colorHex: z
     .string()
@@ -25,9 +25,10 @@ export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;
 export const updateSpoolInputSchema = createSpoolInputSchema.partial();
 export type UpdateSpoolInput = z.infer<typeof updateSpoolInputSchema>;
 
-export const spoolWithMaterialSchema = spoolSchema.extend({
-  materialName: z.string()
+export const spoolWithRelationsSchema = spoolSchema.extend({
+  materialName: z.string(),
+  manufacturerName: z.string()
 });
-export type SpoolWithMaterial = z.infer<typeof spoolWithMaterialSchema>;
+export type SpoolWithRelations = z.infer<typeof spoolWithRelationsSchema>;
 
 export const LOW_STOCK_THRESHOLD_RATIO = 0.15;

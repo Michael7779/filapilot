@@ -1,5 +1,10 @@
-import type { User, Spool as PrismaSpool, Material as PrismaMaterial } from "@prisma/client";
-import type { UserPublic, Material, Spool, SpoolWithMaterial } from "@filapilot/shared";
+import type {
+  User,
+  Spool as PrismaSpool,
+  Material as PrismaMaterial,
+  Manufacturer as PrismaManufacturer
+} from "@prisma/client";
+import type { UserPublic, Material, Manufacturer, Spool, SpoolWithRelations } from "@filapilot/shared";
 
 // Mappt explizit Feld fuer Feld - nie ein rohes Prisma-Objekt an den Client (kein passwordHash,
 // kein resetToken).
@@ -25,11 +30,18 @@ export function toPublicMaterial(material: PrismaMaterial): Material {
   };
 }
 
+export function toPublicManufacturer(manufacturer: PrismaManufacturer): Manufacturer {
+  return {
+    id: manufacturer.id,
+    name: manufacturer.name
+  };
+}
+
 export function toPublicSpool(spool: PrismaSpool): Spool {
   return {
     id: spool.id,
     materialId: spool.materialId,
-    manufacturer: spool.manufacturer,
+    manufacturerId: spool.manufacturerId,
     colorName: spool.colorName,
     colorHex: spool.colorHex,
     initialWeightG: spool.initialWeightG,
@@ -42,11 +54,12 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
   };
 }
 
-export function toPublicSpoolWithMaterial(
-  spool: PrismaSpool & { material: PrismaMaterial }
-): SpoolWithMaterial {
+export function toPublicSpoolWithRelations(
+  spool: PrismaSpool & { material: PrismaMaterial; manufacturer: PrismaManufacturer }
+): SpoolWithRelations {
   return {
     ...toPublicSpool(spool),
-    materialName: spool.material.name
+    materialName: spool.material.name,
+    manufacturerName: spool.manufacturer.name
   };
 }

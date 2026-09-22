@@ -1,8 +1,9 @@
 # Spulen-Verwaltung
 
 ## 1.0 Ist-Stand
-- `Spool` (Material-Referenz, Hersteller, Farbe, Ursprungs-/Restgewicht, Foto-URL, Kaufpreis/-datum,
-  Lagerort) - CRUD ueber `packages/backend/src/routes/spools.ts`.
+- `Spool` (Material-Referenz, Hersteller-Referenz, Farbe, Ursprungs-/Restgewicht, Foto-URL,
+  Kaufpreis/-datum, Lagerort) - CRUD ueber `packages/backend/src/routes/spools.ts`.
+  `manufacturerId` verweist auf `Manufacturer` (siehe `manufacturers.md`), kein freier Text mehr.
   Quelle: `packages/backend/prisma/schema.prisma`
 - **SCOPE-Modell bewusst `user`, nicht `self`**: Spulen gehoeren nicht einem einzelnen Nutzer,
   sondern dem geteilten Filament-Bestand der Instanz (2-5 Nutzer, siehe CLAUDE.md). Jeder

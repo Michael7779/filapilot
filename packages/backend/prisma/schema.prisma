@@ -59,11 +59,21 @@ model Material {
   @@map("materials")
 }
 
+model Manufacturer {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  spools    Spool[]
+  createdAt DateTime @default(now())
+
+  @@map("manufacturers")
+}
+
 model Spool {
   id                  String     @id @default(uuid())
   materialId          String
   material            Material   @relation(fields: [materialId], references: [id])
-  manufacturer        String
+  manufacturerId      String
+  manufacturer        Manufacturer @relation(fields: [manufacturerId], references: [id])
   colorName           String
   colorHex            String?
   initialWeightG      Int
@@ -78,6 +88,7 @@ model Spool {
   amsSlotAssignments  AmsSlotAssignment[]
 
   @@index([materialId])
+  @@index([manufacturerId])
   @@map("spools")
 }
 

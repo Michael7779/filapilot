@@ -58,6 +58,9 @@
     "location": "Location (optional)",
     "purchasePrice": "Purchase price in euros (optional)",
     "confirmDelete": "Really delete this spool?",
-    "selectMaterial": "Please select"
+    "selectMaterial": "Please select",
+    "selectManufacturer": "Please select",
+    "newManufacturerToggle": "+ Add new manufacturer",
+    "newManufacturerName": "Manufacturer name"
   }
 }

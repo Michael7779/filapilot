@@ -28,8 +28,9 @@ function TopBar(): React.JSX.Element {
   const location: Location = useLocation();
   const titleKey = TITLE_BY_PATH[location.pathname] ?? "nav.dashboard";
   return (
-    <header className="flex h-[68px] shrink-0 items-center border-b border-[var(--color-border)] px-7">
+    <header className="flex h-[68px] shrink-0 items-center justify-between border-b border-[var(--color-border)] px-7">
       <h1 className="text-[19px] font-bold">{t(titleKey)}</h1>
+      <span className="text-xs text-[var(--color-text-muted)]">v{__APP_VERSION__}</span>
     </header>
   );
 }

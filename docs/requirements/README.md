@@ -7,6 +7,7 @@ Status-Legende: ⬜ nicht begonnen · 🔶 in Arbeit · ✅ fertig + getestet
 | Auth / User-Verwaltung | `auth.md` | 🔶 |
 | Spulen-Verwaltung | `spools.md` | 🔶 |
 | Material-Stammdaten | `materials.md` | 🔶 |
+| Hersteller-Stammdaten | `manufacturers.md` | 🔶 |
 | Drucker / Bambu-Sync | `printers.md` | ⬜ |
 | Statistik / Druckauftraege | `stats.md` | ⬜ |
 | Einstellungen / Backup | `settings.md` | 🔶 |

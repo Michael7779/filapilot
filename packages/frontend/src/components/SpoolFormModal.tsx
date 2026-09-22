@@ -1,19 +1,40 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import type { CreateMaterialInput, CreateSpoolInput, Material, SpoolWithMaterial } from "@filapilot/shared";
+import type {
+  CreateManufacturerInput,
+  CreateMaterialInput,
+  CreateSpoolInput,
+  Manufacturer,
+  Material,
+  SpoolWithRelations
+} from "@filapilot/shared";
+
+const COLOR_PRESETS: { name: string; hex: string }[] = [
+  { name: "Schwarz", hex: "#1A1A1A" },
+  { name: "Weiß", hex: "#F5F5F0" },
+  { name: "Grau", hex: "#8C8C88" },
+  { name: "Rot", hex: "#D14343" },
+  { name: "Orange", hex: "#E8622C" },
+  { name: "Gelb", hex: "#F2C94C" },
+  { name: "Grün", hex: "#4C8C3C" },
+  { name: "Blau", hex: "#2F6FED" },
+  { name: "Violett", hex: "#7F56D9" }
+];
 
 interface SpoolFormModalProps {
   materials: Material[];
-  initialSpool: SpoolWithMaterial | null;
+  manufacturers: Manufacturer[];
+  initialSpool: SpoolWithRelations | null;
   onClose: () => void;
   onCreateMaterial: (input: CreateMaterialInput) => Promise<Material>;
+  onCreateManufacturer: (input: CreateManufacturerInput) => Promise<Manufacturer>;
   onSubmit: (input: CreateSpoolInput) => Promise<void>;
 }
 
-function toFormState(spool: SpoolWithMaterial | null) {
+function toFormState(spool: SpoolWithRelations | null) {
   return {
     materialId: spool?.materialId ?? "",
-    manufacturer: spool?.manufacturer ?? "",
+    manufacturerId: spool?.manufacturerId ?? "",
     colorName: spool?.colorName ?? "",
     colorHex: spool?.colorHex ?? "",
     initialWeightG: spool ? String(spool.initialWeightG) : "1000",
@@ -25,15 +46,19 @@ function toFormState(spool: SpoolWithMaterial | null) {
 
 export function SpoolFormModal({
   materials,
+  manufacturers,
   initialSpool,
   onClose,
   onCreateMaterial,
+  onCreateManufacturer,
   onSubmit
 }: SpoolFormModalProps): React.JSX.Element {
   const { t } = useTranslation();
   const [form, setForm] = useState(toFormState(initialSpool));
   const [showNewMaterial, setShowNewMaterial] = useState(false);
   const [newMaterial, setNewMaterial] = useState({ name: "", printTempMinC: "", printTempMaxC: "" });
+  const [showNewManufacturer, setShowNewManufacturer] = useState(false);
+  const [newManufacturerName, setNewManufacturerName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -52,6 +77,7 @@ export function SpoolFormModal({
     setError(null);
 
     let materialId = form.materialId;
+    let manufacturerId = form.manufacturerId;
     setSubmitting(true);
     try {
       if (showNewMaterial) {
@@ -69,7 +95,17 @@ export function SpoolFormModal({
         materialId = created.id;
       }
 
-      if (!materialId || !form.manufacturer.trim() || !form.colorName.trim()) {
+      if (showNewManufacturer) {
+        if (!newManufacturerName.trim()) {
+          setError(t("spools.newManufacturerName"));
+          setSubmitting(false);
+          return;
+        }
+        const created = await onCreateManufacturer({ name: newManufacturerName.trim() });
+        manufacturerId = created.id;
+      }
+
+      if (!materialId || !manufacturerId || !form.colorName.trim()) {
         setError("Bitte alle Pflichtfelder ausfüllen.");
         setSubmitting(false);
         return;
@@ -77,7 +113,7 @@ export function SpoolFormModal({
 
       await onSubmit({
         materialId,
-        manufacturer: form.manufacturer.trim(),
+        manufacturerId,
         colorName: form.colorName.trim(),
         colorHex: form.colorHex.trim() ? form.colorHex.trim() : null,
         initialWeightG: Number(form.initialWeightG),
@@ -165,34 +201,89 @@ export function SpoolFormModal({
 
         <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
           {t("spools.manufacturer")}
-          <input
-            type="text"
-            value={form.manufacturer}
-            onChange={(event) => setForm({ ...form, manufacturer: event.target.value })}
+          <select
+            value={form.manufacturerId}
+            onChange={(event) => setForm({ ...form, manufacturerId: event.target.value })}
+            disabled={showNewManufacturer}
             className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
-          />
+          >
+            <option value="">{t("spools.selectManufacturer")}</option>
+            {manufacturers.map((manufacturer) => (
+              <option key={manufacturer.id} value={manufacturer.id}>
+                {manufacturer.name}
+              </option>
+            ))}
+          </select>
         </label>
 
-        <div className="flex min-w-0 gap-2">
-          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+        <button
+          type="button"
+          onClick={() => setShowNewManufacturer((value) => !value)}
+          className="self-start text-xs font-medium text-[var(--accent)]"
+        >
+          {t("spools.newManufacturerToggle")}
+        </button>
+
+        {showNewManufacturer && (
+          <input
+            type="text"
+            placeholder={t("spools.newManufacturerName")}
+            value={newManufacturerName}
+            onChange={(event) => setNewManufacturerName(event.target.value)}
+            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+          />
+        )}
+
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-[var(--color-text-secondary)]">
             {t("spools.colorName")}
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {COLOR_PRESETS.map((preset) => {
+              const isActive = form.colorHex.toLowerCase() === preset.hex.toLowerCase();
+              return (
+                <button
+                  key={preset.hex}
+                  type="button"
+                  title={preset.name}
+                  aria-label={preset.name}
+                  onClick={() => setForm({ ...form, colorName: preset.name, colorHex: preset.hex })}
+                  className="h-7 w-7 shrink-0 rounded-full border"
+                  style={{
+                    backgroundColor: preset.hex,
+                    borderColor: isActive ? "var(--accent)" : "var(--color-border)",
+                    borderWidth: isActive ? 2 : 1,
+                    boxShadow: isActive ? "0 0 0 2px var(--color-accent-bg)" : "none"
+                  }}
+                />
+              );
+            })}
+          </div>
+          <div className="flex min-w-0 gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--color-border)] px-2 py-1">
+              <input
+                type="color"
+                aria-label={t("spools.colorHex")}
+                value={/^#[0-9a-fA-F]{6}$/.test(form.colorHex) ? form.colorHex : "#cccccc"}
+                onChange={(event) => setForm({ ...form, colorHex: event.target.value })}
+                className="h-7 w-7 shrink-0 cursor-pointer rounded-full border-0 bg-transparent p-0"
+              />
+              <input
+                type="text"
+                value={form.colorName}
+                onChange={(event) => setForm({ ...form, colorName: event.target.value })}
+                className="w-full min-w-0 text-[var(--color-text-primary)] focus:outline-none"
+              />
+            </div>
             <input
               type="text"
-              value={form.colorName}
-              onChange={(event) => setForm({ ...form, colorName: event.target.value })}
-              className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
-            />
-          </label>
-          <label className="flex w-28 shrink-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
-            {t("spools.colorHex")}
-            <input
-              type="text"
+              aria-label={t("spools.colorHex")}
               placeholder="#000000"
               value={form.colorHex}
               onChange={(event) => setForm({ ...form, colorHex: event.target.value })}
-              className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
+              className="w-28 shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
             />
-          </label>
+          </div>
         </div>
 
         <div className="flex min-w-0 gap-2">

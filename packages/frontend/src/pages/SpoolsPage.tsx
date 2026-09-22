@@ -1,29 +1,34 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
+  CreateManufacturerInput,
   CreateMaterialInput,
   CreateSpoolInput,
+  Manufacturer,
   Material,
-  SpoolWithMaterial
+  SpoolWithRelations
 } from "@filapilot/shared";
 import { apiRequest } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 
 export function SpoolsPage(): React.JSX.Element {
   const { t } = useTranslation();
-  const [spools, setSpools] = useState<SpoolWithMaterial[]>([]);
+  const [spools, setSpools] = useState<SpoolWithRelations[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [editingSpool, setEditingSpool] = useState<SpoolWithMaterial | null>(null);
+  const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
+  const [editingSpool, setEditingSpool] = useState<SpoolWithRelations | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [spoolsData, materialsData] = await Promise.all([
-      apiRequest<SpoolWithMaterial[]>("/spools"),
-      apiRequest<Material[]>("/materials")
+    const [spoolsData, materialsData, manufacturersData] = await Promise.all([
+      apiRequest<SpoolWithRelations[]>("/spools"),
+      apiRequest<Material[]>("/materials"),
+      apiRequest<Manufacturer[]>("/manufacturers")
     ]);
     setSpools(spoolsData);
     setMaterials(materialsData);
+    setManufacturers(manufacturersData);
     setLoading(false);
   }, []);
 
@@ -36,7 +41,7 @@ export function SpoolsPage(): React.JSX.Element {
     setModalOpen(true);
   }
 
-  function openEdit(spool: SpoolWithMaterial): void {
+  function openEdit(spool: SpoolWithRelations): void {
     setEditingSpool(spool);
     setModalOpen(true);
   }
@@ -47,6 +52,15 @@ export function SpoolsPage(): React.JSX.Element {
       body: JSON.stringify(input)
     });
     setMaterials((current) => [...current, created]);
+    return created;
+  }
+
+  async function handleCreateManufacturer(input: CreateManufacturerInput): Promise<Manufacturer> {
+    const created = await apiRequest<Manufacturer>("/manufacturers", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+    setManufacturers((current) => [...current, created]);
     return created;
   }
 
@@ -63,7 +77,7 @@ export function SpoolsPage(): React.JSX.Element {
     await load();
   }
 
-  async function handleDelete(spool: SpoolWithMaterial): Promise<void> {
+  async function handleDelete(spool: SpoolWithRelations): Promise<void> {
     if (!window.confirm(t("spools.confirmDelete"))) {
       return;
     }
@@ -111,7 +125,7 @@ export function SpoolsPage(): React.JSX.Element {
                   </div>
                 </div>
                 <div className="mb-2 text-xs text-[var(--color-text-muted)]">
-                  {spool.manufacturer}
+                  {spool.manufacturerName}
                   {spool.location ? ` · ${spool.location}` : ""}
                 </div>
                 <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-[var(--color-bg)]">
@@ -144,9 +158,11 @@ export function SpoolsPage(): React.JSX.Element {
       {modalOpen && (
         <SpoolFormModal
           materials={materials}
+          manufacturers={manufacturers}
           initialSpool={editingSpool}
           onClose={() => setModalOpen(false)}
           onCreateMaterial={handleCreateMaterial}
+          onCreateManufacturer={handleCreateManufacturer}
           onSubmit={handleSubmitSpool}
         />
       )}

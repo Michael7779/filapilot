@@ -58,6 +58,9 @@
     "location": "Lagerort (optional)",
     "purchasePrice": "Kaufpreis in Euro (optional)",
     "confirmDelete": "Diese Spule wirklich löschen?",
-    "selectMaterial": "Bitte auswählen"
+    "selectMaterial": "Bitte auswählen",
+    "selectManufacturer": "Bitte auswählen",
+    "newManufacturerToggle": "+ Neuer Hersteller",
+    "newManufacturerName": "Name des Herstellers"
   }
 }
