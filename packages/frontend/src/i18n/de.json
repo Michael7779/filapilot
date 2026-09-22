@@ -38,7 +38,8 @@
     "save": "Speichern",
     "cancel": "Abbrechen",
     "delete": "Löschen",
-    "edit": "Bearbeiten"
+    "edit": "Bearbeiten",
+    "retry": "Erneut versuchen"
   },
   "spools": {
     "title": "Filament-Bestand",
@@ -61,6 +62,7 @@
     "selectMaterial": "Bitte auswählen",
     "selectManufacturer": "Bitte auswählen",
     "newManufacturerToggle": "+ Neuer Hersteller",
-    "newManufacturerName": "Name des Herstellers"
+    "newManufacturerName": "Name des Herstellers",
+    "loadFailed": "Der Filament-Bestand konnte nicht geladen werden."
   }
 }

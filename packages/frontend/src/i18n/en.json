@@ -38,7 +38,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
-    "edit": "Edit"
+    "edit": "Edit",
+    "retry": "Try again"
   },
   "spools": {
     "title": "Filament inventory",
@@ -61,6 +62,7 @@
     "selectMaterial": "Please select",
     "selectManufacturer": "Please select",
     "newManufacturerToggle": "+ Add new manufacturer",
-    "newManufacturerName": "Manufacturer name"
+    "newManufacturerName": "Manufacturer name",
+    "loadFailed": "Couldn't load the filament inventory."
   }
 }

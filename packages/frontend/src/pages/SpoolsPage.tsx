@@ -8,7 +8,7 @@ import type {
   Material,
   SpoolWithRelations
 } from "@filapilot/shared";
-import { apiRequest } from "../lib/api.js";
+import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 
 export function SpoolsPage(): React.JSX.Element {
@@ -19,18 +19,26 @@ export function SpoolsPage(): React.JSX.Element {
   const [editingSpool, setEditingSpool] = useState<SpoolWithRelations | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [spoolsData, materialsData, manufacturersData] = await Promise.all([
-      apiRequest<SpoolWithRelations[]>("/spools"),
-      apiRequest<Material[]>("/materials"),
-      apiRequest<Manufacturer[]>("/manufacturers")
-    ]);
-    setSpools(spoolsData);
-    setMaterials(materialsData);
-    setManufacturers(manufacturersData);
-    setLoading(false);
-  }, []);
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [spoolsData, materialsData, manufacturersData] = await Promise.all([
+        apiRequest<SpoolWithRelations[]>("/spools"),
+        apiRequest<Material[]>("/materials"),
+        apiRequest<Manufacturer[]>("/manufacturers")
+      ]);
+      setSpools(spoolsData);
+      setMaterials(materialsData);
+      setManufacturers(manufacturersData);
+    } catch (err) {
+      setLoadError(err instanceof ApiRequestError ? err.message : t("spools.loadFailed"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -87,6 +95,21 @@ export function SpoolsPage(): React.JSX.Element {
 
   if (loading) {
     return <div>{t("common.loading")}</div>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm text-[var(--color-danger)]">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
+        >
+          {t("common.retry")}
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
-import { useThemeStore, DEFAULT_ACCENT } from "../stores/useThemeStore.js";
+import { useThemeStore } from "../stores/useThemeStore.js";
 
 const NAV_ITEMS = [
   { key: "dashboard", href: "/", enabled: true },
@@ -39,11 +39,7 @@ export function Sidebar(): React.JSX.Element {
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar)] p-4">
       <div className="mb-6 flex items-center gap-2 px-2">
-        <div
-          className="h-7 w-7 rounded-lg"
-          style={{ backgroundColor: "var(--accent, " + DEFAULT_ACCENT + ")" }}
-          aria-hidden="true"
-        />
+        <img src="/icons/icon.svg" alt="" className="h-7 w-7" aria-hidden="true" />
         <span className="text-base font-semibold tracking-tight">{t("app.name")}</span>
       </div>
       <nav className="flex flex-col gap-1">
