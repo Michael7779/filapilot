@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { CatalogSection } from "../components/CatalogSettings.js";
 import type {
@@ -561,14 +562,25 @@ function UserManagementSection(): React.JSX.Element {
   );
 }
 
+type SettingsTab = "konto" | "benutzer" | "filamente" | "system";
+
+const TABS: { key: SettingsTab; labelKey: string; adminOnly: boolean }[] = [
+  { key: "konto", labelKey: "settings.tabAccount", adminOnly: false },
+  { key: "benutzer", labelKey: "settings.tabUsers", adminOnly: true },
+  { key: "filamente", labelKey: "settings.tabFilaments", adminOnly: true },
+  { key: "system", labelKey: "settings.tabSystem", adminOnly: true }
+];
+
 export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
+  const { tab } = useParams();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
-    if (user?.role !== "ADMIN") {
+    if (!isAdmin) {
       return;
     }
     apiRequest<Settings>("/settings")
@@ -576,16 +588,44 @@ export function SettingsPage(): React.JSX.Element {
       .catch((err: unknown) => {
         setLoadError(err instanceof ApiRequestError ? err.message : t("settings.saveFailed"));
       });
-  }, [user, t]);
+  }, [isAdmin, t]);
+
+  const visibleTabs = TABS.filter((entry) => isAdmin || !entry.adminOnly);
+  const active = visibleTabs.find((entry) => entry.key === tab);
+  if (!active) {
+    return <Navigate to="/settings/konto" replace />;
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-lg font-bold">{t("nav.settings")}</h2>
-      <OwnAccountSection />
-      {user?.role === "ADMIN" && (
+      {visibleTabs.length > 1 && (
+        <nav className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)]">
+          {visibleTabs.map((entry) => {
+            const isActive = entry.key === active.key;
+            return (
+              <Link
+                key={entry.key}
+                to={`/settings/${entry.key}`}
+                aria-current={isActive ? "page" : undefined}
+                className="-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium"
+                style={
+                  isActive
+                    ? { color: "var(--accent)", borderColor: "var(--accent)" }
+                    : { color: "var(--color-text-secondary)", borderColor: "transparent" }
+                }
+              >
+                {t(entry.labelKey)}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
+      {active.key === "konto" && <OwnAccountSection />}
+      {active.key === "benutzer" && <UserManagementSection />}
+      {active.key === "filamente" && <CatalogSection />}
+      {active.key === "system" && (
         <>
-          <UserManagementSection />
-          <CatalogSection />
           {loadError && <p className="text-sm text-[var(--color-danger)]">{loadError}</p>}
           {settings && <GeneralSettingsSection settings={settings} onSaved={setSettings} />}
           {settings && <SmtpSettingsSection settings={settings} />}

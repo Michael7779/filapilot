@@ -35,7 +35,8 @@ const TITLE_BY_PATH: Record<string, string> = {
 function TopBar(): React.JSX.Element {
   const { t } = useTranslation();
   const location: Location = useLocation();
-  const titleKey = TITLE_BY_PATH[location.pathname] ?? "nav.dashboard";
+  const path = location.pathname.startsWith("/settings") ? "/settings" : location.pathname;
+  const titleKey = TITLE_BY_PATH[path] ?? "nav.dashboard";
   return (
     <header className="flex h-[68px] shrink-0 items-center justify-between border-b border-[var(--color-border)] px-7">
       <h1 className="text-[19px] font-bold">{t(titleKey)}</h1>
@@ -56,7 +57,7 @@ function AppShell(): React.JSX.Element {
             <Route path="/spools" element={<SpoolsPage />} />
             <Route path="/printers" element={<PrintersPage />} />
             <Route path="/stats" element={<StatsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/:tab?" element={<SettingsPage />} />
           </Routes>
         </main>
       </div>

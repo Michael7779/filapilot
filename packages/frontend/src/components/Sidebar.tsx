@@ -44,7 +44,8 @@ export function Sidebar(): React.JSX.Element {
       </div>
       <nav className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.href;
+          const isActive =
+            location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
           if (!item.enabled) {
             return (
               <span

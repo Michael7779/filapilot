@@ -3,6 +3,18 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.3.2] - 2026-09-23
+
+### Geändert
+- Einstellungen sind in Reiter aufgeteilt: Mein Konto, Benutzer, Filamente, System (jeweils mit
+  eigener Adresse, z. B. `/settings/filamente`). Normale Benutzer sehen nur "Mein Konto".
+- Begriff "Nutzer" heißt überall "Benutzer".
+
+### Behoben
+- Update-Hinweis: Der Button "Aktualisieren" lädt jetzt zuverlässig die neue Version (verwirft
+  Service-Worker und Cache und lädt neu). Der Hinweis erscheint als Karte unten rechts und
+  verdeckt die Kopfzeile nicht mehr.
+
 ## [0.3.1] - 2026-09-23
 
 ### Behoben

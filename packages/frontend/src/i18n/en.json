@@ -96,6 +96,10 @@
   },
   "settings": {
     "myAccount": "My account",
+    "tabAccount": "My account",
+    "tabUsers": "Users",
+    "tabFilaments": "Filaments",
+    "tabSystem": "System",
     "accentColor": "Accent color",
     "resetColor": "Reset",
     "changePassword": "Change password",
