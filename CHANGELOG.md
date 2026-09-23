@@ -3,6 +3,15 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.3.1] - 2026-09-23
+
+### Behoben
+- Ein fehlgeschlagener Datenbankzugriff in der Spulen-, Drucker-, Nutzer- und Einstellungs-Liste
+  beendete das ganze Backend (Absturzschleife). Fehler werden jetzt abgefangen und als Fehlermeldung
+  zurückgegeben.
+- Hinter dem Reverse-Proxy wird die echte Client-Adresse für die Login-Begrenzung genutzt
+  (Warnung "X-Forwarded-For" im Log behoben, `TRUST_PROXY_HOPS`, Standard 2).
+
 ## [0.3.0] - 2026-09-23
 
 ### Hinzugefuegt

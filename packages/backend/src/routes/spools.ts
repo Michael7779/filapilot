@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { createSpoolInputSchema, updateSpoolInputSchema } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendData, AppError } from "../lib/apiResult.js";
 import { requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
 import { toPublicSpool, toPublicSpoolWithRelations } from "../lib/mappers.js";
@@ -45,16 +46,20 @@ async function assertManufacturerExists(manufacturerId: string): Promise<void> {
 // Ownership-Check noetig - jeder eingeloggte Nutzer darf lesen/anlegen/aendern/loeschen.
 // Negativ-Tests: kein Cookie -> 401, mustChangePassword=true -> 403.
 // SCOPE: user
-spoolsRouter.get("/", ...requireActiveUser, async (_req, res) => {
-  const spools = await prisma.spool.findMany({
-    include: SPOOL_INCLUDE,
-    orderBy: { createdAt: "desc" }
-  });
-  sendData(
-    res,
-    spools.map((spool) => toPublicSpoolWithRelations(spool))
-  );
-});
+spoolsRouter.get(
+  "/",
+  ...requireActiveUser,
+  asyncHandler(async (_req, res) => {
+    const spools = await prisma.spool.findMany({
+      include: SPOOL_INCLUDE,
+      orderBy: { createdAt: "desc" }
+    });
+    sendData(
+      res,
+      spools.map((spool) => toPublicSpoolWithRelations(spool))
+    );
+  })
+);
 
 // SCOPE: user
 spoolsRouter.get("/:id", ...requireActiveUser, async (req, res, next) => {

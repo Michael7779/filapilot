@@ -17,6 +17,8 @@ import { sendData } from "./lib/apiResult.js";
 export function createApp() {
   const app = express();
 
+  app.set("trust proxy", env.TRUST_PROXY_HOPS);
+
   // Sicherheits-Middleware zuerst, dann Routen (siehe CLAUDE.md).
   app.use(helmet());
   app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));

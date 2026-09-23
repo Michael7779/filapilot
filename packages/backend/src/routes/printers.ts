@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { createPrinterInputSchema, updatePrinterInputSchema } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendData, AppError } from "../lib/apiResult.js";
 import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../middleware/auth.js";
 import { toPublicPrinter } from "../lib/mappers.js";
@@ -21,13 +22,17 @@ const idParamSchema = z.string().uuid();
 // der Live-Status der ganze Sinn des Features ist. Negativ-Tests: kein Cookie -> 401,
 // nicht-Admin bei POST/PATCH/DELETE -> 403, accessCode nie in einer Antwort.
 // SCOPE: user
-printersRouter.get("/", ...requireActiveUser, async (_req, res) => {
-  const printers = await prisma.printer.findMany({ orderBy: { name: "asc" } });
-  sendData(
-    res,
-    printers.map((printer) => toPublicPrinter(printer))
-  );
-});
+printersRouter.get(
+  "/",
+  ...requireActiveUser,
+  asyncHandler(async (_req, res) => {
+    const printers = await prisma.printer.findMany({ orderBy: { name: "asc" } });
+    sendData(
+      res,
+      printers.map((printer) => toPublicPrinter(printer))
+    );
+  })
+);
 
 // SCOPE: user
 printersRouter.get("/:id/status", ...requireActiveUser, async (req, res, next) => {

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createUserInputSchema, updateOwnThemeInputSchema } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendData, AppError } from "../lib/apiResult.js";
 import {
   requireAuth,
@@ -96,11 +97,11 @@ usersRouter.get(
   requireAuth,
   requirePasswordAlreadyChanged,
   requireRole("ADMIN"),
-  async (_req, res) => {
+  asyncHandler(async (_req, res) => {
     const users = await prisma.user.findMany({ orderBy: { createdAt: "asc" } });
     sendData(
       res,
       users.map((user) => toPublicUser(user))
     );
-  }
+  })
 );
