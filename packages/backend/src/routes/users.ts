@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createUserInputSchema, updateOwnThemeInputSchema } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
-import { sendData } from "../lib/apiResult.js";
+import { sendData, AppError } from "../lib/apiResult.js";
 import {
   requireAuth,
   requirePasswordAlreadyChanged,
@@ -49,6 +49,21 @@ usersRouter.post(
   async (req, res, next) => {
     try {
       const input = createUserInputSchema.parse(req.body);
+      const duplicate = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { username: { equals: input.username, mode: "insensitive" } },
+            { email: { equals: input.email, mode: "insensitive" } }
+          ]
+        },
+        select: { id: true }
+      });
+      if (duplicate) {
+        throw new AppError(
+          "CONFLICT",
+          "Benutzername oder E-Mail-Adresse ist bereits vergeben."
+        );
+      }
       const temporaryPassword = generateRandomPassword();
       const passwordHash = await hashPassword(temporaryPassword);
       const created = await prisma.user.create({

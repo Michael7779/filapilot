@@ -29,7 +29,9 @@ const SESSION_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 authRouter.post("/login", async (req, res, next) => {
   try {
     const input = loginInputSchema.parse(req.body);
-    const user = await prisma.user.findUnique({ where: { username: input.username } });
+    const user = await prisma.user.findFirst({
+      where: { username: { equals: input.username, mode: "insensitive" } }
+    });
     const passwordOk = user ? await verifyPassword(input.password, user.passwordHash) : false;
 
     if (!user || !passwordOk) {
@@ -95,7 +97,9 @@ authRouter.post("/change-password", requireAuth, async (req, res, next) => {
 authRouter.post("/request-password-reset", async (req, res, next) => {
   try {
     const input = requestPasswordResetInputSchema.parse(req.body);
-    const user = await prisma.user.findUnique({ where: { email: input.email } });
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: input.email, mode: "insensitive" } }
+    });
     if (user) {
       const rawToken = await createPasswordResetToken(user.id);
       await sendPasswordResetEmail(user.email, rawToken);

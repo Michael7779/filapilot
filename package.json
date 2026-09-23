@@ -1,6 +1,6 @@
 {
   "name": "filapilot",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "description": "Selbst-gehostete Filament-Verwaltung fuer 3D-Drucker mit Bambu Lab AMS-Integration",

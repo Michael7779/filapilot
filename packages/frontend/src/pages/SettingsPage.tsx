@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import type {
   CreateUserInput,
   CreateUserResult,
@@ -353,7 +354,7 @@ function NewUserModal({
   onClose: () => void;
   onCreated: (user: CreateUserResult) => void;
 }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"USER" | "ADMIN">("USER");
@@ -422,8 +423,18 @@ function NewUserModal({
             onChange={(e) => setRole(e.target.value as "USER" | "ADMIN")}
             className={inputClass}
           >
-            <option value="USER">{t("settings.roleUser")}</option>
-            <option value="ADMIN">{t("settings.roleAdmin")}</option>
+            {sortAlphabetically(
+              [
+                { value: "USER", label: t("settings.roleUser") },
+                { value: "ADMIN", label: t("settings.roleAdmin") }
+              ],
+              (option) => option.label,
+              i18n.language
+            ).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </Field>
         <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">

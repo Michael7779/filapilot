@@ -35,6 +35,13 @@ describe("Auth - Negativ-Tests", () => {
     assert.equal(res.status, 401);
   });
 
+  it("ignoriert Gross-/Kleinschreibung beim Benutzernamen im Login", async () => {
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "NormalUser", password: "correct-horse-battery-staple" });
+    assert.equal(res.status, 200);
+  });
+
   it("lehnt Login fuer unbekannten Benutzernamen mit gleicher Meldung ab (kein User-Enumeration-Leak)", async () => {
     const resUnknown = await request(app)
       .post("/api/auth/login")
@@ -119,5 +126,11 @@ describe("Auth - Negativ-Tests", () => {
     assert.equal(res.status, 201);
     assert.equal(typeof res.body.data.temporaryPassword, "string");
     assert.ok(res.body.data.temporaryPassword.length > 0);
+
+    const duplicate = await request(app)
+      .post("/api/users")
+      .set("Cookie", cookie)
+      .send({ username: "BrandNeuerNutzer", email: "andere@example.test", role: "USER" });
+    assert.equal(duplicate.status, 409);
   });
 });

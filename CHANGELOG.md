@@ -3,6 +3,13 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.2.2] - 2026-09-23
+
+### Geändert
+- Alle Auswahllisten sind jetzt alphabetisch sortiert.
+- Login und Passwort-Reset ignorieren Groß-/Kleinschreibung bei Benutzername und E-Mail; doppelte
+  Nutzer in anderer Schreibweise werden beim Anlegen abgelehnt.
+
 ## [0.2.1] - 2026-09-23
 
 ### Behoben

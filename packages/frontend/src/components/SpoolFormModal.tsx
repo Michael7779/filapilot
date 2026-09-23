@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import type {
   CreateManufacturerInput,
   CreateMaterialInput,
@@ -53,7 +54,7 @@ export function SpoolFormModal({
   onCreateManufacturer,
   onSubmit
 }: SpoolFormModalProps): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [form, setForm] = useState(toFormState(initialSpool));
   const [showNewMaterial, setShowNewMaterial] = useState(false);
   const [newMaterial, setNewMaterial] = useState({ name: "", printTempMinC: "", printTempMaxC: "" });
@@ -151,7 +152,7 @@ export function SpoolFormModal({
             className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
           >
             <option value="">{t("spools.selectMaterial")}</option>
-            {materials.map((material) => (
+            {sortAlphabetically(materials, (m) => m.name, i18n.language).map((material) => (
               <option key={material.id} value={material.id}>
                 {material.name}
               </option>
@@ -208,7 +209,7 @@ export function SpoolFormModal({
             className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
           >
             <option value="">{t("spools.selectManufacturer")}</option>
-            {manufacturers.map((manufacturer) => (
+            {sortAlphabetically(manufacturers, (m) => m.name, i18n.language).map((manufacturer) => (
               <option key={manufacturer.id} value={manufacturer.id}>
                 {manufacturer.name}
               </option>

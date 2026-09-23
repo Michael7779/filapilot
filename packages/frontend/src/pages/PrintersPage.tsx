@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import type { CreatePrinterInput, PrinterLiveStatus, PrinterPublic } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { getSocket } from "../lib/socket.js";
@@ -38,7 +39,7 @@ function NewPrinterModal({
   onClose: () => void;
   onCreated: (printer: PrinterPublic) => void;
 }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [name, setName] = useState("");
   const [ipAddress, setIpAddress] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
@@ -137,8 +138,18 @@ function NewPrinterModal({
             onChange={(e) => setSyncMode(e.target.value as "LIVE" | "PERIODIC")}
             className={inputClass}
           >
-            <option value="LIVE">{t("printers.syncModeLive")}</option>
-            <option value="PERIODIC">{t("printers.syncModePeriodic")}</option>
+            {sortAlphabetically(
+              [
+                { value: "LIVE", label: t("printers.syncModeLive") },
+                { value: "PERIODIC", label: t("printers.syncModePeriodic") }
+              ],
+              (option) => option.label,
+              i18n.language
+            ).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
         {syncMode === "PERIODIC" && (
