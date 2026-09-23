@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { createUserInputSchema, updateOwnThemeInputSchema } from "@filapilot/shared";
+import { z } from "zod";
+import {
+  createUserInputSchema,
+  updateOwnThemeInputSchema,
+  updateUserInputSchema
+} from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendData, AppError } from "../lib/apiResult.js";
@@ -10,7 +15,8 @@ import {
   getAuthenticatedUser
 } from "../middleware/auth.js";
 import { generateRandomPassword, hashPassword } from "../services/authService.js";
-import { sendNewAccountEmail } from "../services/mailService.js";
+import { sendNewAccountEmail, sendPasswordResetByAdminEmail } from "../services/mailService.js";
+import { omitUndefined } from "../lib/omitUndefined.js";
 import { toPublicUser } from "../lib/mappers.js";
 
 export const usersRouter = Router();
@@ -105,3 +111,99 @@ usersRouter.get(
     );
   })
 );
+
+const idParamSchema = z.string().uuid();
+const requireAdmin = [requireAuth, requirePasswordAlreadyChanged, requireRole("ADMIN")] as const;
+
+async function findUserOrThrow(id: string) {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) {
+    throw new AppError("NOT_FOUND", "Benutzer wurde nicht gefunden.");
+  }
+  return user;
+}
+
+// Ein Admin darf nur entfernt/herabgestuft werden, wenn danach noch ein anderer Admin existiert -
+// sonst koennte sich die Instanz selbst aussperren.
+async function assertAnotherAdminExists(userId: string): Promise<void> {
+  const others = await prisma.user.count({ where: { role: "ADMIN", NOT: { id: userId } } });
+  if (others === 0) {
+    throw new AppError("CONFLICT", "Es muss mindestens ein Admin bestehen bleiben.");
+  }
+}
+
+// Threat-Model: Ein normaler Benutzer koennte versuchen, fremde Konten zu aendern, zu loeschen oder deren
+// Passwort zu setzen (Kontouebernahme); ein Admin koennte sich versehentlich aussperren. Serverseitig
+// erzwungen: requireRole("ADMIN"); Benutzername/E-Mail bleiben ohne Gross-/Kleinschreibung eindeutig;
+// der letzte Admin kann weder geloescht noch herabgestuft werden; das eigene Konto kann nicht geloescht
+// werden und das Passwort nicht ueber "zuruecksetzen" (dafuer gibt es "Passwort aendern").
+// Negativ-Tests: kein Cookie -> 401, USER -> 403, letzter Admin -> 409, Duplikat -> 409.
+// SCOPE: global
+usersRouter.patch("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
+  const id = idParamSchema.parse(req.params.id);
+  const input = updateUserInputSchema.parse(req.body);
+  const target = await findUserOrThrow(id);
+
+  if (input.role === "USER" && target.role === "ADMIN") {
+    await assertAnotherAdminExists(id);
+  }
+  if (input.username !== undefined || input.email !== undefined) {
+    const duplicate = await prisma.user.findFirst({
+      where: {
+        NOT: { id },
+        OR: [
+          ...(input.username !== undefined
+            ? [{ username: { equals: input.username, mode: "insensitive" as const } }]
+            : []),
+          ...(input.email !== undefined
+            ? [{ email: { equals: input.email, mode: "insensitive" as const } }]
+            : [])
+        ]
+      },
+      select: { id: true }
+    });
+    if (duplicate) {
+      throw new AppError("CONFLICT", "Benutzername oder E-Mail-Adresse ist bereits vergeben.");
+    }
+  }
+  const updated = await prisma.user.update({ where: { id }, data: omitUndefined(input) });
+  sendData(res, toPublicUser(updated));
+}));
+
+// SCOPE: global
+usersRouter.delete("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
+  const id = idParamSchema.parse(req.params.id);
+  if (id === getAuthenticatedUser(req).id) {
+    throw new AppError("CONFLICT", "Das eigene Konto kann nicht geloescht werden.");
+  }
+  const target = await findUserOrThrow(id);
+  if (target.role === "ADMIN") {
+    await assertAnotherAdminExists(id);
+  }
+  await prisma.user.delete({ where: { id } });
+  sendData(res, { deleted: true });
+}));
+
+// SCOPE: global
+usersRouter.post("/:id/reset-password", ...requireAdmin, asyncHandler(async (req, res) => {
+  const id = idParamSchema.parse(req.params.id);
+  if (id === getAuthenticatedUser(req).id) {
+    throw new AppError("CONFLICT", "Das eigene Passwort bitte ueber \"Passwort aendern\" setzen.");
+  }
+  const target = await findUserOrThrow(id);
+  const temporaryPassword = generateRandomPassword();
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id },
+      data: {
+        passwordHash: await hashPassword(temporaryPassword),
+        mustChangePassword: true,
+        resetToken: null,
+        resetTokenExpiresAt: null
+      }
+    }),
+    prisma.session.deleteMany({ where: { userId: id } })
+  ]);
+  const emailSent = await sendPasswordResetByAdminEmail(target.email, target.username, temporaryPassword);
+  sendData(res, { username: target.username, ...(emailSent ? {} : { temporaryPassword }) });
+}));

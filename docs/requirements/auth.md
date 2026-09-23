@@ -49,3 +49,14 @@ wirklich verschickt wurde).
   nichts. Test: noch zu schreiben.
 - **R6**: `POST /api/users` gibt `temporaryPassword` nur zurueck, wenn kein SMTP konfiguriert ist.
   Test: `packages/backend/tests/security/auth.test.ts`
+- **R7**: Benutzer bearbeiten (Name, E-Mail, Rolle), loeschen und Passwort zuruecksetzen darf nur
+  ein Admin (401 ohne Login, 403 als Benutzer); Benutzername/E-Mail bleiben ohne Gross-/Kleinschreibung
+  eindeutig (409). Test: `packages/backend/tests/security/auth.test.ts` (Block "Benutzerverwaltung")
+- **R8**: Der letzte Admin kann weder geloescht noch herabgestuft werden, das eigene Konto kann nicht
+  geloescht werden und das eigene Passwort nicht ueber "zuruecksetzen" (409).
+  Test: `packages/backend/tests/security/auth.test.ts`
+- **R9**: "Passwort zuruecksetzen" setzt ein Start-Passwort mit Zwangswechsel und beendet alle Sitzungen
+  des Benutzers; das Passwort steht nur dann in der Antwort, wenn die Mail nicht versendet wurde.
+  Test: `packages/backend/tests/security/auth.test.ts`
+- **R10**: `POST /api/settings/smtp-test` (nur Admin, nur an die eigene Adresse) liefert den Fehlertext des
+  Mailservers zurueck. Test: `packages/backend/tests/security/settings.test.ts`

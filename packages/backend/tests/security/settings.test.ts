@@ -87,6 +87,22 @@ describe("Settings - Negativ-Tests", () => {
     assert.equal(JSON.stringify(res.body).includes("super-geheimes-smtp-passwort"), false);
   });
 
+  it("lehnt den SMTP-Test ohne Login (401) und durch nicht-Admin (403) ab", async () => {
+    assert.equal((await request(app).post("/api/settings/smtp-test")).status, 401);
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "normaluser", password: "correct-horse-battery-staple" });
+    const res = await request(app).post("/api/settings/smtp-test").set("Cookie", login.headers["set-cookie"]);
+    assert.equal(res.status, 403);
+  });
+
+  it("meldet beim SMTP-Test den Fehler des Mailservers zurueck (unerreichbarer Server)", async () => {
+    const res = await request(app).post("/api/settings/smtp-test").set("Cookie", adminCookie);
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.ok, false);
+    assert.equal(typeof res.body.data.message, "string");
+  });
+
   it("legt Nutzer trotzdem an und zeigt das Start-Passwort, wenn der SMTP-Versand fehlschlaegt", async () => {
     // smtp.example.test aus dem Test davor ist nicht erreichbar -> sendMail wirft.
     const res = await request(app)

@@ -133,4 +133,64 @@ describe("Auth - Negativ-Tests", () => {
       .send({ username: "BrandNeuerNutzer", email: "andere@example.test", role: "USER" });
     assert.equal(duplicate.status, 409);
   });
+
+  describe("Benutzerverwaltung (Bearbeiten, Loeschen, Passwort zuruecksetzen)", () => {
+    const pw = "correct-horse-battery-staple";
+    let adminCookie: string[] = [];
+    let userCookie: string[] = [];
+    let adminId = "";
+    let userId = "";
+
+    before(async () => {
+      await prisma.user.deleteMany({ where: { username: { in: ["verwadmin", "verwuser", "verwziel"] } } });
+      const admin = await prisma.user.create({
+        data: { username: "verwadmin", email: "verwadmin@example.test", passwordHash: await hashPassword(pw), role: "ADMIN", mustChangePassword: false }
+      });
+      adminId = admin.id;
+      const user = await prisma.user.create({
+        data: { username: "verwuser", email: "verwuser@example.test", passwordHash: await hashPassword(pw), role: "USER", mustChangePassword: false }
+      });
+      userId = user.id;
+      adminCookie = (await request(app).post("/api/auth/login").send({ username: "verwadmin", password: pw })).headers["set-cookie"];
+      userCookie = (await request(app).post("/api/auth/login").send({ username: "verwuser", password: pw })).headers["set-cookie"];
+    });
+
+    it("lehnt Aendern, Loeschen und Passwort-Reset ohne Login (401) und als Nutzer (403) ab", async () => {
+      for (const [method, path] of [["patch", "/api/users/" + adminId], ["delete", "/api/users/" + adminId], ["post", "/api/users/" + adminId + "/reset-password"]] as const) {
+        assert.equal((await request(app)[method](path).send({ role: "USER" })).status, 401);
+        assert.equal((await request(app)[method](path).set("Cookie", userCookie).send({ role: "USER" })).status, 403);
+      }
+    });
+
+    it("Admin kann einen Benutzer bearbeiten; doppelte Namen (auch anders geschrieben) werden abgelehnt", async () => {
+      const ok = await request(app).patch("/api/users/" + userId).set("Cookie", adminCookie).send({ username: "verwziel", email: "verwziel@example.test" });
+      assert.equal(ok.status, 200);
+      assert.equal(ok.body.data.username, "verwziel");
+      const dup = await request(app).patch("/api/users/" + userId).set("Cookie", adminCookie).send({ username: "VERWADMIN" });
+      assert.equal(dup.status, 409);
+    });
+
+    it("schuetzt den letzten Admin und das eigene Konto (409)", async () => {
+      await prisma.user.updateMany({ where: { role: "ADMIN", NOT: { id: adminId } }, data: { role: "USER" } });
+      const demote = await request(app).patch("/api/users/" + adminId).set("Cookie", adminCookie).send({ role: "USER" });
+      assert.equal(demote.status, 409);
+      const self = await request(app).delete("/api/users/" + adminId).set("Cookie", adminCookie);
+      assert.equal(self.status, 409);
+      const selfReset = await request(app).post("/api/users/" + adminId + "/reset-password").set("Cookie", adminCookie);
+      assert.equal(selfReset.status, 409);
+    });
+
+    it("setzt ein Passwort zurueck (Start-Passwort, Zwangswechsel, Sitzungen weg) und loescht einen Benutzer", async () => {
+      const reset = await request(app).post("/api/users/" + userId + "/reset-password").set("Cookie", adminCookie);
+      assert.equal(reset.status, 200);
+      assert.equal(typeof reset.body.data.temporaryPassword, "string");
+      const after = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+      assert.equal(after.mustChangePassword, true);
+      assert.equal(await prisma.session.count({ where: { userId } }), 0);
+
+      const del = await request(app).delete("/api/users/" + userId).set("Cookie", adminCookie);
+      assert.equal(del.status, 200);
+      assert.equal(await prisma.user.count({ where: { id: userId } }), 0);
+    });
+  });
 });

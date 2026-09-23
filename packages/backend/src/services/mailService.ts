@@ -13,8 +13,40 @@ async function getTransport() {
     host: settings.smtp.host,
     port: settings.smtp.port,
     secure: settings.smtp.secure,
-    auth: { user: settings.smtp.username, pass: password ?? undefined }
+    auth: { user: settings.smtp.username, pass: password ?? undefined },
+    // Ohne Zeitlimits wuerde ein falscher Server/Port die Anfrage minutenlang haengen lassen.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000
   });
+}
+
+export interface MailTestResult {
+  ok: boolean;
+  message: string | null;
+}
+
+// Schickt eine Test-Mail und gibt den Fehlertext des Mailservers zurueck, statt ihn zu verschlucken -
+// der Admin soll sehen, woran es liegt (falsches Passwort, falscher Port, ...). Die Fehlermeldungen
+// von nodemailer enthalten keine Zugangsdaten.
+export async function sendTestEmail(toEmail: string): Promise<MailTestResult> {
+  const transport = await getTransport();
+  const settings = await getSettings();
+  if (!transport || !settings.smtp) {
+    return { ok: false, message: "Es ist noch kein SMTP-Server gespeichert." };
+  }
+  try {
+    await transport.sendMail({
+      from: settings.smtp.fromAddress,
+      to: toEmail,
+      subject: "FilaPilot - Test-E-Mail",
+      text: "Der E-Mail-Versand von FilaPilot funktioniert."
+    });
+    return { ok: true, message: null };
+  } catch (err) {
+    logger.warn("SMTP-Test fehlgeschlagen", { err });
+    return { ok: false, message: err instanceof Error ? err.message : "Unbekannter Fehler." };
+  }
 }
 
 export async function sendPasswordResetEmail(toEmail: string, rawToken: string): Promise<void> {
@@ -45,11 +77,13 @@ export async function sendPasswordResetEmail(toEmail: string, rawToken: string):
 
 // Gibt zurueck, ob die Mail wirklich verschickt wurde - der Aufrufer nutzt das, um das
 // Start-Passwort ausnahmsweise in der API-Antwort mitzugeben, wenn es sonst niemand erreicht
-// (kein SMTP konfiguriert).
-export async function sendNewAccountEmail(
+// (kein SMTP konfiguriert oder Versand fehlgeschlagen).
+async function sendCredentialsEmail(
   toEmail: string,
   username: string,
-  temporaryPassword: string
+  temporaryPassword: string,
+  subject: string,
+  intro: string
 ): Promise<boolean> {
   const transport = await getTransport();
   const settings = await getSettings();
@@ -64,8 +98,13 @@ export async function sendNewAccountEmail(
     await transport.sendMail({
       from: settings.smtp.fromAddress,
       to: toEmail,
-      subject: "Dein FilaPilot-Zugang",
-      text: `Dein Zugang wurde erstellt.\n\nBenutzername: ${username}\nStart-Passwort: ${temporaryPassword}\n\nAnmelden: ${loginLink}`
+      subject,
+      text: `${intro}
+
+Benutzername: ${username}
+Start-Passwort: ${temporaryPassword}
+
+Anmelden: ${loginLink}`
     });
     return true;
   } catch (err) {
@@ -73,4 +112,32 @@ export async function sendNewAccountEmail(
     logger.error("Zugangs-Mail konnte nicht gesendet werden", { toEmail, username, err });
     return false;
   }
+}
+
+export function sendNewAccountEmail(
+  toEmail: string,
+  username: string,
+  temporaryPassword: string
+): Promise<boolean> {
+  return sendCredentialsEmail(
+    toEmail,
+    username,
+    temporaryPassword,
+    "Dein FilaPilot-Zugang",
+    "Dein Zugang wurde erstellt."
+  );
+}
+
+export function sendPasswordResetByAdminEmail(
+  toEmail: string,
+  username: string,
+  temporaryPassword: string
+): Promise<boolean> {
+  return sendCredentialsEmail(
+    toEmail,
+    username,
+    temporaryPassword,
+    "FilaPilot - Dein Passwort wurde zurueckgesetzt",
+    "Ein Administrator hat dein Passwort zurueckgesetzt. Du musst beim naechsten Anmelden ein neues vergeben."
+  );
 }

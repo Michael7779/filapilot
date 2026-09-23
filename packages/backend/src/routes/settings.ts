@@ -5,6 +5,8 @@ import { asyncHandler } from "../lib/asyncHandler.js";
 import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../middleware/auth.js";
 import { getSettings, updateSettings } from "../services/settingsService.js";
 import { createBackup } from "../services/backupService.js";
+import { sendTestEmail } from "../services/mailService.js";
+import { getAuthenticatedUser } from "../middleware/auth.js";
 
 export const settingsRouter = Router();
 
@@ -41,3 +43,15 @@ settingsRouter.post("/backup", ...requireAdmin, async (_req, res, next) => {
     next(err);
   }
 });
+
+// Threat-Model: Ein Nutzer ohne Admin-Rolle koennte den Server als Mail-Relay missbrauchen. Serverseitig
+// erzwungen: requireRole("ADMIN"); die Test-Mail geht nur an die eigene Adresse des angemeldeten Admins,
+// nie an einen frei waehlbaren Empfaenger. Negativ-Tests: kein Cookie -> 401, USER -> 403.
+// SCOPE: global
+settingsRouter.post(
+  "/smtp-test",
+  ...requireAdmin,
+  asyncHandler(async (req, res) => {
+    sendData(res, await sendTestEmail(getAuthenticatedUser(req).email));
+  })
+);

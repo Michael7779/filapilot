@@ -3,6 +3,14 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.4.0] - 2026-09-23
+
+### Hinzugefuegt
+- Benutzer bearbeiten (Name, E-Mail, Rolle), löschen und Passwort zurücksetzen (Einstellungen →
+  Benutzer). Der letzte Admin und das eigene Konto sind geschützt.
+- SMTP: Button "Test-E-Mail an mich senden" zeigt bei Problemen die genaue Fehlermeldung des
+  Mailservers.
+
 ## [0.3.2] - 2026-09-23
 
 ### Geändert

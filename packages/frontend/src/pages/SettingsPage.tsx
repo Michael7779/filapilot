@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { CatalogSection } from "../components/CatalogSettings.js";
+import { EditUserModal } from "../components/EditUserModal.js";
 import type {
   CreateUserInput,
   CreateUserResult,
@@ -220,8 +221,30 @@ function SmtpSettingsSection({ settings }: { settings: Settings }): React.JSX.El
   const [username, setUsername] = useState(settings.smtp?.username ?? "");
   const [fromAddress, setFromAddress] = useState(settings.smtp?.fromAddress ?? "");
   const [password, setPassword] = useState("");
+  const [smtpSaved, setSmtpSaved] = useState(settings.smtp !== null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  async function handleTest(): Promise<void> {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      setTestResult(
+        await apiRequest<{ ok: boolean; message: string | null }>("/settings/smtp-test", {
+          method: "POST"
+        })
+      );
+    } catch (err) {
+      setTestResult({
+        ok: false,
+        message: err instanceof ApiRequestError ? err.message : t("settings.saveFailed")
+      });
+    } finally {
+      setTesting(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -247,6 +270,8 @@ function SmtpSettingsSection({ settings }: { settings: Settings }): React.JSX.El
         })
       });
       setPassword("");
+      setTestResult(null);
+      setSmtpSaved(true);
       setMessage(t("common.saved"));
     } catch (err) {
       setMessage(err instanceof ApiRequestError ? err.message : t("settings.saveFailed"));
@@ -322,14 +347,35 @@ function SmtpSettingsSection({ settings }: { settings: Settings }): React.JSX.El
           />
         </Field>
         {message && <p className="text-sm text-[var(--color-text-secondary)]">{message}</p>}
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-fit rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-          style={{ backgroundColor: "var(--accent)" }}
-        >
-          {t("common.save")}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-fit rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            style={{ backgroundColor: "var(--accent)" }}
+          >
+            {t("common.save")}
+          </button>
+          <button
+            type="button"
+            disabled={testing || !smtpSaved}
+            onClick={() => void handleTest()}
+            className="w-fit rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium disabled:opacity-60"
+          >
+            {t("settings.smtpTest")}
+          </button>
+        </div>
+        {!smtpSaved && (
+          <p className="text-xs text-[var(--color-text-muted)]">{t("settings.smtpTestSaveFirst")}</p>
+        )}
+        {testResult && (
+          <p
+            className="text-sm"
+            style={{ color: testResult.ok ? "var(--color-success)" : "var(--color-danger)" }}
+          >
+            {testResult.ok ? t("settings.smtpTestOk") : t("settings.smtpTestFailed", { reason: testResult.message })}
+          </p>
+        )}
       </form>
     </SectionCard>
   );
@@ -495,11 +541,56 @@ function UserManagementSection(): React.JSX.Element {
   const [users, setUsers] = useState<UserPublic[] | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [newUserNotice, setNewUserNotice] = useState<CreateUserResult | null>(null);
+  const [editing, setEditing] = useState<UserPublic | null>(null);
+  const [info, setInfo] = useState<{ text: string; isError: boolean } | null>(null);
+  const currentUser = useAuthStore((state) => state.user);
 
   const load = useCallback(async () => {
     const data = await apiRequest<UserPublic[]>("/users");
     setUsers(data);
   }, []);
+
+  async function handleDelete(u: UserPublic): Promise<void> {
+    if (!window.confirm(t("settings.confirmDeleteUser", { username: u.username }))) {
+      return;
+    }
+    setInfo(null);
+    try {
+      await apiRequest(`/users/${u.id}`, { method: "DELETE" });
+      setInfo({ text: t("settings.userDeleted", { username: u.username }), isError: false });
+      await load();
+    } catch (err) {
+      setInfo({
+        text: err instanceof ApiRequestError ? err.message : t("settings.saveFailed"),
+        isError: true
+      });
+    }
+  }
+
+  async function handleResetPassword(u: UserPublic): Promise<void> {
+    if (!window.confirm(t("settings.confirmResetPassword", { username: u.username }))) {
+      return;
+    }
+    setInfo(null);
+    setNewUserNotice(null);
+    try {
+      const result = await apiRequest<{ username: string; temporaryPassword?: string }>(
+        `/users/${u.id}/reset-password`,
+        { method: "POST" }
+      );
+      if (result.temporaryPassword) {
+        setNewUserNotice({ ...u, temporaryPassword: result.temporaryPassword });
+      } else {
+        setInfo({ text: t("settings.passwordResetMailed", { username: u.username }), isError: false });
+      }
+      await load();
+    } catch (err) {
+      setInfo({
+        text: err instanceof ApiRequestError ? err.message : t("settings.saveFailed"),
+        isError: true
+      });
+    }
+  }
 
   useEffect(() => {
     void load();
@@ -521,6 +612,14 @@ function UserManagementSection(): React.JSX.Element {
           })}
         </div>
       )}
+      {info && (
+        <p
+          className="text-sm"
+          style={{ color: info.isError ? "var(--color-danger)" : "var(--color-success)" }}
+        >
+          {info.text}
+        </p>
+      )}
       {users === null ? (
         <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>
       ) : (
@@ -530,6 +629,7 @@ function UserManagementSection(): React.JSX.Element {
               <th className="pb-2 font-medium">{t("auth.username")}</th>
               <th className="pb-2 font-medium">{t("settings.email")}</th>
               <th className="pb-2 font-medium">{t("settings.role")}</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -545,6 +645,31 @@ function UserManagementSection(): React.JSX.Element {
                     </span>
                   )}
                 </td>
+                <td className="py-2">
+                  <div className="flex justify-end gap-3 text-xs font-medium">
+                    <button type="button" onClick={() => setEditing(u)} style={{ color: "var(--accent)" }}>
+                      {t("common.edit")}
+                    </button>
+                    {u.id !== currentUser?.id && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => void handleResetPassword(u)}
+                          style={{ color: "var(--accent)" }}
+                        >
+                          {t("settings.resetPassword")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(u)}
+                          className="text-[var(--color-danger)]"
+                        >
+                          {t("common.delete")}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -558,6 +683,16 @@ function UserManagementSection(): React.JSX.Element {
         {t("settings.newUser")}
       </button>
       {modalOpen && <NewUserModal onClose={() => setModalOpen(false)} onCreated={handleCreated} />}
+      {editing && (
+        <EditUserModal
+          user={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            void load();
+          }}
+        />
+      )}
     </SectionCard>
   );
 }

@@ -30,6 +30,15 @@ export const createUserInputSchema = z.object({
 });
 export type CreateUserInput = z.infer<typeof createUserInputSchema>;
 
+export const updateUserInputSchema = z
+  .object({
+    username: z.string().min(3).max(32),
+    email: z.string().email(),
+    role: userRoleSchema
+  })
+  .partial();
+export type UpdateUserInput = z.infer<typeof updateUserInputSchema>;
+
 export const loginInputSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1)
