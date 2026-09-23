@@ -27,6 +27,23 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Tailwind v4 setzt Buttons auf den Standard-Pfeil - klickbare Elemente sollen die Hand zeigen. */
+button:not(:disabled),
+[role="button"],
+select,
+summary,
+input[type="checkbox"],
+input[type="radio"],
+input[type="color"],
+label:has(input[type="checkbox"]),
+label:has(input[type="radio"]) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* Druckt nur den Inhalt mit dieser Klasse (z.B. QR-Spulenlabel), egal wo er im Baum sitzt -
    robuster als display:none auf Geschwister-Elemente, weil Modals als Overlay gerendert werden. */
 @media print {
