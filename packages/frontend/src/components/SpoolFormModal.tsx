@@ -22,6 +22,11 @@ const COLOR_PRESETS: { name: string; hex: string }[] = [
   { name: "Violett", hex: "#7F56D9" }
 ];
 
+const LABEL_CLASS = "flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]";
+const SELECT_CLASS =
+  "rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]";
+const SMALL_INPUT_CLASS = "rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm";
+
 interface SpoolFormModalProps {
   materials: Material[];
   manufacturers: Manufacturer[];
@@ -57,7 +62,12 @@ export function SpoolFormModal({
   const { t, i18n } = useTranslation();
   const [form, setForm] = useState(toFormState(initialSpool));
   const [showNewMaterial, setShowNewMaterial] = useState(false);
-  const [newMaterial, setNewMaterial] = useState({ name: "", printTempMinC: "", printTempMaxC: "" });
+  const [newMaterial, setNewMaterial] = useState({
+    name: "",
+    printTempMinC: "",
+    printTempMaxC: "",
+    bedTempC: ""
+  });
   const [showNewManufacturer, setShowNewManufacturer] = useState(false);
   const [newManufacturerName, setNewManufacturerName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +83,30 @@ export function SpoolFormModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  // Materialien gelten fuer einen Hersteller oder allgemein (manufacturerId === null).
+  const chosenManufacturerId = showNewManufacturer ? "" : form.manufacturerId;
+  const ownMaterials = materials.filter(
+    (material) => chosenManufacturerId !== "" && material.manufacturerId === chosenManufacturerId
+  );
+  const ownNames = new Set(ownMaterials.map((material) => material.name.toLowerCase()));
+  // Ein allgemeines Material entfaellt, wenn der Hersteller ein gleichnamiges eigenes Produkt hat.
+  const availableMaterials = [
+    ...ownMaterials,
+    ...materials.filter(
+      (material) => material.manufacturerId === null && !ownNames.has(material.name.toLowerCase())
+    )
+  ];
+  const selectedMaterial = materials.find((material) => material.id === form.materialId);
+
+  function handleManufacturerChange(manufacturerId: string): void {
+    const stillFits = materials.some(
+      (material) =>
+        material.id === form.materialId &&
+        (material.manufacturerId === null || material.manufacturerId === manufacturerId)
+    );
+    setForm({ ...form, manufacturerId, materialId: stillFits ? form.materialId : "" });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError(null);
@@ -81,21 +115,6 @@ export function SpoolFormModal({
     let manufacturerId = form.manufacturerId;
     setSubmitting(true);
     try {
-      if (showNewMaterial) {
-        if (!newMaterial.name.trim()) {
-          setError(t("spools.newMaterialName"));
-          setSubmitting(false);
-          return;
-        }
-        const created = await onCreateMaterial({
-          name: newMaterial.name.trim(),
-          printTempMinC: Number(newMaterial.printTempMinC) || 0,
-          printTempMaxC: Number(newMaterial.printTempMaxC) || 0,
-          bedTempC: null
-        });
-        materialId = created.id;
-      }
-
       if (showNewManufacturer) {
         if (!newManufacturerName.trim()) {
           setError(t("spools.newManufacturerName"));
@@ -104,6 +123,22 @@ export function SpoolFormModal({
         }
         const created = await onCreateManufacturer({ name: newManufacturerName.trim() });
         manufacturerId = created.id;
+      }
+
+      if (showNewMaterial) {
+        if (!newMaterial.name.trim() || !manufacturerId) {
+          setError(t("spools.newMaterialName"));
+          setSubmitting(false);
+          return;
+        }
+        const created = await onCreateMaterial({
+          name: newMaterial.name.trim(),
+          manufacturerId,
+          printTempMinC: Number(newMaterial.printTempMinC) || 0,
+          printTempMaxC: Number(newMaterial.printTempMaxC) || 0,
+          bedTempC: newMaterial.bedTempC.trim() ? Number(newMaterial.bedTempC) : null
+        });
+        materialId = created.id;
       }
 
       if (!materialId || !manufacturerId || !form.colorName.trim()) {
@@ -143,70 +178,13 @@ export function SpoolFormModal({
           {initialSpool ? t("spools.editSpool") : t("spools.addSpool")}
         </h2>
 
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
-          {t("spools.material")}
-          <select
-            value={form.materialId}
-            onChange={(event) => setForm({ ...form, materialId: event.target.value })}
-            disabled={showNewMaterial}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
-          >
-            <option value="">{t("spools.selectMaterial")}</option>
-            {sortAlphabetically(materials, (m) => m.name, i18n.language).map((material) => (
-              <option key={material.id} value={material.id}>
-                {material.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <button
-          type="button"
-          onClick={() => setShowNewMaterial((value) => !value)}
-          className="self-start text-xs font-medium text-[var(--accent)]"
-        >
-          {t("spools.newMaterialToggle")}
-        </button>
-
-        {showNewMaterial && (
-          <div className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] p-3">
-            <input
-              type="text"
-              placeholder={t("spools.newMaterialName")}
-              value={newMaterial.name}
-              onChange={(event) => setNewMaterial({ ...newMaterial, name: event.target.value })}
-              className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
-            />
-            <div className="flex gap-2">
-              <input
-                type="number"
-                placeholder={t("spools.newMaterialMinTemp")}
-                value={newMaterial.printTempMinC}
-                onChange={(event) =>
-                  setNewMaterial({ ...newMaterial, printTempMinC: event.target.value })
-                }
-                className="w-1/2 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
-              />
-              <input
-                type="number"
-                placeholder={t("spools.newMaterialMaxTemp")}
-                value={newMaterial.printTempMaxC}
-                onChange={(event) =>
-                  setNewMaterial({ ...newMaterial, printTempMaxC: event.target.value })
-                }
-                className="w-1/2 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-        )}
-
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+        <label className={LABEL_CLASS}>
           {t("spools.manufacturer")}
           <select
             value={form.manufacturerId}
-            onChange={(event) => setForm({ ...form, manufacturerId: event.target.value })}
+            onChange={(event) => handleManufacturerChange(event.target.value)}
             disabled={showNewManufacturer}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
+            className={SELECT_CLASS}
           >
             <option value="">{t("spools.selectManufacturer")}</option>
             {sortAlphabetically(manufacturers, (m) => m.name, i18n.language).map((manufacturer) => (
@@ -231,8 +209,87 @@ export function SpoolFormModal({
             placeholder={t("spools.newManufacturerName")}
             value={newManufacturerName}
             onChange={(event) => setNewManufacturerName(event.target.value)}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+            className={SMALL_INPUT_CLASS}
           />
+        )}
+
+        <label className={LABEL_CLASS}>
+          {t("spools.material")}
+          <select
+            value={form.materialId}
+            onChange={(event) => setForm({ ...form, materialId: event.target.value })}
+            disabled={showNewMaterial || (!chosenManufacturerId && !showNewManufacturer)}
+            className={SELECT_CLASS}
+          >
+            <option value="">
+              {chosenManufacturerId || showNewManufacturer
+                ? t("spools.selectMaterial")
+                : t("spools.selectManufacturerFirst")}
+            </option>
+            {sortAlphabetically(availableMaterials, (m) => m.name, i18n.language).map((material) => (
+              <option key={material.id} value={material.id}>
+                {material.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {selectedMaterial && !showNewMaterial && (
+          <p className="-mt-1 text-xs text-[var(--color-text-muted)]">
+            {t("spools.tempHint", {
+              min: selectedMaterial.printTempMinC,
+              max: selectedMaterial.printTempMaxC
+            })}
+            {selectedMaterial.bedTempC !== null &&
+              ` · ${t("spools.bedTempHint", { bed: selectedMaterial.bedTempC })}`}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setShowNewMaterial((value) => !value)}
+          className="self-start text-xs font-medium text-[var(--accent)]"
+        >
+          {t("spools.newMaterialToggle")}
+        </button>
+
+        {showNewMaterial && (
+          <div className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] p-3">
+            <input
+              type="text"
+              placeholder={t("spools.newMaterialName")}
+              value={newMaterial.name}
+              onChange={(event) => setNewMaterial({ ...newMaterial, name: event.target.value })}
+              className={SMALL_INPUT_CLASS}
+            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                placeholder={t("spools.newMaterialMinTemp")}
+                value={newMaterial.printTempMinC}
+                onChange={(event) =>
+                  setNewMaterial({ ...newMaterial, printTempMinC: event.target.value })
+                }
+                className={`w-1/3 ${SMALL_INPUT_CLASS}`}
+              />
+              <input
+                type="number"
+                placeholder={t("spools.newMaterialMaxTemp")}
+                value={newMaterial.printTempMaxC}
+                onChange={(event) =>
+                  setNewMaterial({ ...newMaterial, printTempMaxC: event.target.value })
+                }
+                className={`w-1/3 ${SMALL_INPUT_CLASS}`}
+              />
+              <input
+                type="number"
+                placeholder={t("spools.newMaterialBedTemp")}
+                value={newMaterial.bedTempC}
+                onChange={(event) => setNewMaterial({ ...newMaterial, bedTempC: event.target.value })}
+                className={`w-1/3 ${SMALL_INPUT_CLASS}`}
+              />
+            </div>
+          </div>
         )}
 
         <div className="flex flex-col gap-2">
@@ -288,39 +345,39 @@ export function SpoolFormModal({
         </div>
 
         <div className="flex min-w-0 gap-2">
-          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+          <label className={`min-w-0 flex-1 ${LABEL_CLASS}`}>
             {t("spools.initialWeight")}
             <input
               type="number"
               min={1}
               value={form.initialWeightG}
               onChange={(event) => setForm({ ...form, initialWeightG: event.target.value })}
-              className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
+              className={`w-full ${SELECT_CLASS}`}
             />
           </label>
-          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+          <label className={`min-w-0 flex-1 ${LABEL_CLASS}`}>
             {t("spools.remainingWeight")}
             <input
               type="number"
               min={0}
               value={form.remainingWeightG}
               onChange={(event) => setForm({ ...form, remainingWeightG: event.target.value })}
-              className="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
+              className={`w-full ${SELECT_CLASS}`}
             />
           </label>
         </div>
 
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+        <label className={LABEL_CLASS}>
           {t("spools.location")}
           <input
             type="text"
             value={form.location}
             onChange={(event) => setForm({ ...form, location: event.target.value })}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
+            className={SELECT_CLASS}
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+        <label className={LABEL_CLASS}>
           {t("spools.purchasePrice")}
           <input
             type="number"
@@ -328,7 +385,7 @@ export function SpoolFormModal({
             min={0}
             value={form.purchasePriceEuro}
             onChange={(event) => setForm({ ...form, purchasePriceEuro: event.target.value })}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
+            className={SELECT_CLASS}
           />
         </label>
 

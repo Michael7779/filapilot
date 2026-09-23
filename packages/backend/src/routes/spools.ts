@@ -20,6 +20,18 @@ async function assertMaterialExists(materialId: string): Promise<void> {
   }
 }
 
+// Ein herstellerspezifisches Material darf nur mit seinem eigenen Hersteller kombiniert werden;
+// allgemeine Materialien (ohne Hersteller) passen zu jedem.
+async function assertMaterialMatchesManufacturer(
+  materialId: string,
+  manufacturerId: string
+): Promise<void> {
+  const material = await prisma.material.findUnique({ where: { id: materialId } });
+  if (material?.manufacturerId && material.manufacturerId !== manufacturerId) {
+    throw new AppError("VALIDATION_ERROR", "Das Material gehoert zu einem anderen Hersteller.");
+  }
+}
+
 async function assertManufacturerExists(manufacturerId: string): Promise<void> {
   const manufacturer = await prisma.manufacturer.findUnique({ where: { id: manufacturerId } });
   if (!manufacturer) {
@@ -64,6 +76,7 @@ spoolsRouter.post("/", ...requireActiveUser, async (req, res, next) => {
     const input = createSpoolInputSchema.parse(req.body);
     await assertMaterialExists(input.materialId);
     await assertManufacturerExists(input.manufacturerId);
+    await assertMaterialMatchesManufacturer(input.materialId, input.manufacturerId);
     const created = await prisma.spool.create({ data: input });
     sendData(res, toPublicSpool(created), 201);
   } catch (err) {
@@ -82,6 +95,16 @@ spoolsRouter.patch("/:id", ...requireActiveUser, async (req, res, next) => {
     }
     if (input.manufacturerId) {
       await assertManufacturerExists(input.manufacturerId);
+    }
+    if (input.materialId || input.manufacturerId) {
+      const existing = await prisma.spool.findUnique({ where: { id } });
+      if (!existing) {
+        throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
+      }
+      await assertMaterialMatchesManufacturer(
+        input.materialId ?? existing.materialId,
+        input.manufacturerId ?? existing.manufacturerId
+      );
     }
 
     const updated = await prisma.spool

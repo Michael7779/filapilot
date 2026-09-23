@@ -47,23 +47,29 @@ model Session {
   @@map("sessions")
 }
 
+// manufacturerId = null: allgemeines Material, gilt fuer jeden Hersteller. Sonst ist es ein Produkt
+// dieses Herstellers (z.B. "PLA Basic" von Bambu Lab) mit dessen Richttemperaturen.
 model Material {
-  id            String   @id @default(uuid())
-  name          String   @unique
-  printTempMinC Int
-  printTempMaxC Int
-  bedTempC      Int?
-  spools        Spool[]
-  createdAt     DateTime @default(now())
+  id             String        @id @default(uuid())
+  name           String
+  manufacturerId String?
+  manufacturer   Manufacturer? @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+  printTempMinC  Int
+  printTempMaxC  Int
+  bedTempC       Int?
+  spools         Spool[]
+  createdAt      DateTime      @default(now())
 
+  @@unique([manufacturerId, name])
   @@map("materials")
 }
 
 model Manufacturer {
-  id        String   @id @default(uuid())
-  name      String   @unique
+  id        String     @id @default(uuid())
+  name      String     @unique
   spools    Spool[]
-  createdAt DateTime @default(now())
+  materials Material[]
+  createdAt DateTime   @default(now())
 
   @@map("manufacturers")
 }
@@ -147,6 +153,8 @@ model Settings {
   smtpFromAddress                    String?
   backupFolderPath                   String   @default("/data/backups")
   backupEnabled                      Boolean  @default(true)
+  // Stand der mitgelieferten Hersteller-/Material-Vorlagen, die zuletzt eingespielt wurden.
+  catalogVersion                     Int      @default(0)
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt.
   licenseKey                         String?
   updatedAt                          DateTime @updatedAt

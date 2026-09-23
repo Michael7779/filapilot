@@ -97,6 +97,30 @@ describe("Spools - Negativ-Tests", () => {
     assert.equal(res.body.error.code, "VALIDATION_ERROR");
   });
 
+  it("lehnt ein Material eines anderen Herstellers ab (400 VALIDATION_ERROR)", async () => {
+    const other = await prisma.manufacturer.create({ data: { name: "Anderer Hersteller Test" } });
+    const foreign = await prisma.material.create({
+      data: { name: "Fremdes Produkt", manufacturerId: other.id, printTempMinC: 1, printTempMaxC: 2 }
+    });
+    const res = await request(app)
+      .post("/api/spools")
+      .set("Cookie", activeUserCookie)
+      .send({
+        materialId: foreign.id,
+        manufacturerId,
+        colorName: "Schwarz",
+        colorHex: null,
+        initialWeightG: 1000,
+        remainingWeightG: 1000,
+        photoUrl: null,
+        purchasePriceCents: null,
+        purchasedAt: null,
+        location: null
+      });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.error.code, "VALIDATION_ERROR");
+  });
+
   it("lehnt Anlegen mit unbekannter materialId ab (400 VALIDATION_ERROR)", async () => {
     const res = await request(app)
       .post("/api/spools")

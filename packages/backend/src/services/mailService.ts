@@ -30,12 +30,17 @@ export async function sendPasswordResetEmail(toEmail: string, rawToken: string):
     return;
   }
 
-  await transport.sendMail({
-    from: settings.smtp.fromAddress,
-    to: toEmail,
-    subject: "FilaPilot - Passwort zuruecksetzen",
-    text: `Klicke auf diesen Link, um dein Passwort zurueckzusetzen: ${resetLink}\n\nDer Link ist 1 Stunde gueltig.`
-  });
+  try {
+    await transport.sendMail({
+      from: settings.smtp.fromAddress,
+      to: toEmail,
+      subject: "FilaPilot - Passwort zuruecksetzen",
+      text: `Klicke auf diesen Link, um dein Passwort zurueckzusetzen: ${resetLink}\n\nDer Link ist 1 Stunde gueltig.`
+    });
+  } catch (err) {
+    // Kein 500: sonst wuerde die Antwort verraten, ob die E-Mail-Adresse existiert.
+    logger.error("Passwort-Reset-Mail konnte nicht gesendet werden", { toEmail, resetLink, err });
+  }
 }
 
 // Gibt zurueck, ob die Mail wirklich verschickt wurde - der Aufrufer nutzt das, um das
@@ -55,11 +60,17 @@ export async function sendNewAccountEmail(
     return false;
   }
 
-  await transport.sendMail({
-    from: settings.smtp.fromAddress,
-    to: toEmail,
-    subject: "Dein FilaPilot-Zugang",
-    text: `Dein Zugang wurde erstellt.\n\nBenutzername: ${username}\nStart-Passwort: ${temporaryPassword}\n\nAnmelden: ${loginLink}`
-  });
-  return true;
+  try {
+    await transport.sendMail({
+      from: settings.smtp.fromAddress,
+      to: toEmail,
+      subject: "Dein FilaPilot-Zugang",
+      text: `Dein Zugang wurde erstellt.\n\nBenutzername: ${username}\nStart-Passwort: ${temporaryPassword}\n\nAnmelden: ${loginLink}`
+    });
+    return true;
+  } catch (err) {
+    // false => der Aufrufer zeigt das Start-Passwort dem Admin direkt an, statt es zu verlieren.
+    logger.error("Zugangs-Mail konnte nicht gesendet werden", { toEmail, username, err });
+    return false;
+  }
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
+import { CatalogSection } from "../components/CatalogSettings.js";
 import type {
   CreateUserInput,
   CreateUserResult,
@@ -211,10 +212,10 @@ function GeneralSettingsSection({
 }
 
 function SmtpSettingsSection({ settings }: { settings: Settings }): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [host, setHost] = useState(settings.smtp?.host ?? "");
   const [port, setPort] = useState(settings.smtp ? String(settings.smtp.port) : "587");
-  const [secure, setSecure] = useState(settings.smtp?.secure ?? true);
+  const [secure, setSecure] = useState(settings.smtp?.secure ?? false);
   const [username, setUsername] = useState(settings.smtp?.username ?? "");
   const [fromAddress, setFromAddress] = useState(settings.smtp?.fromAddress ?? "");
   const [password, setPassword] = useState("");
@@ -269,10 +270,30 @@ function SmtpSettingsSection({ settings }: { settings: Settings }): React.JSX.El
               className={inputClass}
             />
           </Field>
-          <label className="flex items-end gap-2 pb-2.5 text-sm font-medium text-[var(--color-text-secondary)]">
-            <input type="checkbox" checked={secure} onChange={(e) => setSecure(e.target.checked)} />
-            {t("settings.smtpSecure")}
-          </label>
+          <Field label={t("settings.smtpEncryption")}>
+            <select
+              value={secure ? "SSL" : "STARTTLS"}
+              onChange={(e) => {
+                const useSsl = e.target.value === "SSL";
+                setSecure(useSsl);
+                setPort(useSsl ? "465" : "587");
+              }}
+              className={inputClass}
+            >
+              {sortAlphabetically(
+                [
+                  { value: "STARTTLS", label: t("settings.smtpEncryptionStarttls") },
+                  { value: "SSL", label: t("settings.smtpEncryptionSsl") }
+                ],
+                (option) => option.label,
+                i18n.language
+              ).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
         </div>
         <Field label={t("settings.smtpUsername")}>
           <input
@@ -564,6 +585,7 @@ export function SettingsPage(): React.JSX.Element {
       {user?.role === "ADMIN" && (
         <>
           <UserManagementSection />
+          <CatalogSection />
           {loadError && <p className="text-sm text-[var(--color-danger)]">{loadError}</p>}
           {settings && <GeneralSettingsSection settings={settings} onSaved={setSettings} />}
           {settings && <SmtpSettingsSection settings={settings} />}

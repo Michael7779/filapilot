@@ -23,3 +23,7 @@
   Test: `tests/security/manufacturers.test.ts`
 - **R3**: Nur eingeloggte Nutzer koennen Hersteller anlegen; Name ist eindeutig.
   Test: `tests/security/manufacturers.test.ts`
+- **R4**: Aendern/Loeschen nur durch Admin (401 ohne Login, 403 als Nutzer); Umbenennen auf einen
+  vorhandenen Namen (ohne Gross-/Kleinschreibung) ergibt 409. Test: `tests/security/manufacturers.test.ts`
+- **R5**: Ein Hersteller, den noch Spulen nutzen, kann nicht geloescht werden (409); sonst werden
+  seine Materialien mitgeloescht. Test: `tests/security/manufacturers.test.ts`

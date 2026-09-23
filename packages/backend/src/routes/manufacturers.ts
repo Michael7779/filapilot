@@ -1,66 +1,107 @@
 import { Router } from "express";
+import { z } from "zod";
 import { createManufacturerInputSchema } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { sendData, AppError } from "../lib/apiResult.js";
-import { requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
+import {
+  requireAuth,
+  requirePasswordAlreadyChanged,
+  requireRole
+} from "../middleware/auth.js";
 import { toPublicManufacturer } from "../lib/mappers.js";
+import { ensureCatalog } from "../services/catalogService.js";
 
 export const manufacturersRouter = Router();
 
 const requireActiveUser = [requireAuth, requirePasswordAlreadyChanged] as const;
+const requireAdmin = [...requireActiveUser, requireRole("ADMIN")] as const;
+const idParamSchema = z.string().uuid();
 
-// Bekannteste FDM-Filament-Hersteller, damit die Liste nicht leer startet (siehe
-// docs/requirements/manufacturers.md). Wird einmalig angelegt, wenn die Tabelle leer ist.
-const DEFAULT_MANUFACTURERS = [
-  "Bambu Lab",
-  "Polymaker",
-  "eSun",
-  "Prusament",
-  "Sunlu",
-  "Overture",
-  "Devil Design",
-  "Fillamentum",
-  "ColorFabb",
-  "Extrudr",
-  "Hatchbox",
-  "3DJake"
-];
-
-async function ensureDefaultManufacturers(): Promise<void> {
-  const count = await prisma.manufacturer.count();
-  if (count > 0) {
-    return;
-  }
-  await prisma.manufacturer.createMany({
-    data: DEFAULT_MANUFACTURERS.map((name) => ({ name })),
-    skipDuplicates: true
+async function assertNameFree(name: string, ignoreId?: string): Promise<void> {
+  const duplicate = await prisma.manufacturer.findFirst({
+    where: {
+      name: { equals: name, mode: "insensitive" },
+      ...(ignoreId ? { NOT: { id: ignoreId } } : {})
+    },
+    select: { id: true }
   });
+  if (duplicate) {
+    throw new AppError("CONFLICT", "Ein Hersteller mit diesem Namen existiert bereits.");
+  }
 }
 
-// Threat-Model: Ein anonymer Request koennte versuchen, Hersteller-Stammdaten zu lesen/anzulegen.
-// Serverseitig erzwungen: requireAuth (jeder eingeloggte Nutzer darf, geteilter Bestand ohne
-// Owner-Konzept, analog zu materials.ts). Negativ-Test: kein Session-Cookie -> 401.
+// Threat-Model: Ein anonymer Request koennte versuchen, Hersteller-Stammdaten zu lesen/anzulegen; ein
+// normaler Nutzer koennte versuchen, geteilte Stammdaten zu aendern oder zu loeschen.
+// Serverseitig erzwungen: requireAuth (Lesen/Anlegen fuer jeden eingeloggten Nutzer, geteilter
+// Bestand ohne Owner-Konzept, analog zu materials.ts), requireRole("ADMIN") fuer Aendern/Loeschen;
+// Loeschen wird abgelehnt, solange Spulen den Hersteller nutzen.
+// Negativ-Tests: kein Cookie -> 401, USER -> 403, benutzt -> 409.
 // SCOPE: user
-manufacturersRouter.get("/", ...requireActiveUser, async (_req, res) => {
-  await ensureDefaultManufacturers();
-  const manufacturers = await prisma.manufacturer.findMany({ orderBy: { name: "asc" } });
-  sendData(
-    res,
-    manufacturers.map((manufacturer) => toPublicManufacturer(manufacturer))
-  );
+manufacturersRouter.get("/", ...requireActiveUser, async (_req, res, next) => {
+  try {
+    await ensureCatalog();
+    const manufacturers = await prisma.manufacturer.findMany({ orderBy: { name: "asc" } });
+    sendData(
+      res,
+      manufacturers.map((manufacturer) => toPublicManufacturer(manufacturer))
+    );
+  } catch (err) {
+    next(err);
+  }
 });
 
 // SCOPE: user
 manufacturersRouter.post("/", ...requireActiveUser, async (req, res, next) => {
   try {
     const input = createManufacturerInputSchema.parse(req.body);
-    const created = await prisma.manufacturer.create({ data: input }).catch((err: unknown) => {
-      if (err instanceof Error && err.message.includes("Unique constraint")) {
-        throw new AppError("CONFLICT", "Ein Hersteller mit diesem Namen existiert bereits.");
+    await assertNameFree(input.name);
+    const created = await prisma.manufacturer.create({ data: input });
+    sendData(res, toPublicManufacturer(created), 201);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// SCOPE: global
+manufacturersRouter.patch("/:id", ...requireAdmin, async (req, res, next) => {
+  try {
+    const id = idParamSchema.parse(req.params.id);
+    const input = createManufacturerInputSchema.parse(req.body);
+    await assertNameFree(input.name, id);
+    const updated = await prisma.manufacturer
+      .update({ where: { id }, data: { name: input.name } })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.message.includes("Record to update not found")) {
+          throw new AppError("NOT_FOUND", "Hersteller wurde nicht gefunden.");
+        }
+        throw err;
+      });
+    sendData(res, toPublicManufacturer(updated));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Loescht auch die zum Hersteller gehoerenden Materialien (FK-Cascade) - erlaubt nur, wenn keine
+// Spule den Hersteller nutzt.
+// SCOPE: global
+manufacturersRouter.delete("/:id", ...requireAdmin, async (req, res, next) => {
+  try {
+    const id = idParamSchema.parse(req.params.id);
+    const inUse = await prisma.spool.count({ where: { manufacturerId: id } });
+    if (inUse > 0) {
+      throw new AppError(
+        "CONFLICT",
+        `Der Hersteller wird noch von ${inUse} Spule(n) verwendet und kann nicht geloescht werden.`
+      );
+    }
+    await prisma.manufacturer.delete({ where: { id } }).catch((err: unknown) => {
+      if (err instanceof Error && err.message.includes("Record to delete does not exist")) {
+        throw new AppError("NOT_FOUND", "Hersteller wurde nicht gefunden.");
       }
       throw err;
     });
-    sendData(res, toPublicManufacturer(created), 201);
+    sendData(res, { deleted: true });
   } catch (err) {
     next(err);
   }

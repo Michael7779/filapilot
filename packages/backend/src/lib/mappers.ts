@@ -34,7 +34,8 @@ export function toPublicMaterial(material: PrismaMaterial): Material {
     name: material.name,
     printTempMinC: material.printTempMinC,
     printTempMaxC: material.printTempMaxC,
-    bedTempC: material.bedTempC
+    bedTempC: material.bedTempC,
+    manufacturerId: material.manufacturerId
   };
 }
 

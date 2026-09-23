@@ -134,6 +134,7 @@ export function SpoolsPage(): React.JSX.Element {
         <div className="grid grid-cols-3 gap-3">
           {spools.map((spool) => {
             const percent = Math.round((spool.remainingWeightG / spool.initialWeightG) * 100);
+            const temps = materials.find((material) => material.id === spool.materialId);
             return (
               <div
                 key={spool.id}
@@ -153,6 +154,13 @@ export function SpoolsPage(): React.JSX.Element {
                   {spool.manufacturerName}
                   {spool.location ? ` · ${spool.location}` : ""}
                 </div>
+                {temps && (
+                  <div className="mb-2 text-xs text-[var(--color-text-muted)]">
+                    {t("spools.tempHint", { min: temps.printTempMinC, max: temps.printTempMaxC })}
+                    {temps.bedTempC !== null &&
+                      ` · ${t("spools.bedTempHint", { bed: temps.bedTempC })}`}
+                  </div>
+                )}
                 <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-[var(--color-bg)]">
                   <div
                     className="h-full rounded-full"

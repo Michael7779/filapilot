@@ -1,17 +1,37 @@
 # Material-Stammdaten
 
 ## 1.0 Ist-Stand
-- `Material` (Name, Druck-Temperaturbereich, Betttemperatur) als eigene Tabelle, damit Spulen
-  darauf verweisen statt Material-Angaben pro Spule zu duplizieren.
+- `Material` (Name, Hersteller optional, Duesen-Temperaturbereich, Betttemperatur) als eigene
+  Tabelle, damit Spulen darauf verweisen statt Material-Angaben pro Spule zu duplizieren.
+  `manufacturerId = null` heisst "allgemein" (gilt fuer jeden Hersteller), sonst ist es ein Produkt
+  dieses Herstellers (z.B. "PLA Basic" von Bambu Lab) mit dessen Richttemperaturen.
   Quelle: `packages/backend/prisma/schema.prisma`, `packages/backend/src/routes/materials.ts`
-- Jeder eingeloggte Nutzer darf Materialien lesen und anlegen (geteilter Bestand, keine
-  Owner-Trennung) - siehe `spools.md` fuer die Begruendung des `SCOPE: user`-Modells.
+- Name ist je Hersteller eindeutig (ohne Gross-/Kleinschreibung), geprueft im Code, weil ein
+  DB-Unique mit `NULL` mehrere allgemeine Duplikate zulassen wuerde.
+- Mitgelieferte Vorlagen (ca. 70 Materialien fuer 12 Hersteller + allgemeine) in
+  `packages/backend/src/services/catalogData.ts`, eingespielt von `catalogService.ts` beim ersten
+  Abruf der Listen. `Settings.catalogVersion` merkt sich den Stand; bei Version-Erhoehung werden nur
+  *fehlende* Eintraege nachgetragen, geaenderte/geloeschte bleiben unberuehrt. Die Temperaturen sind
+  Richtwerte aus allgemeinem Wissen, nicht einzeln am Datenblatt geprueft.
+- Lesen + Anlegen: `SCOPE: user`. Aendern + Loeschen: `SCOPE: global` (nur Admin), Pflege im
+  Frontend unter Einstellungen -> Hersteller/Materialien (`CatalogSettings.tsx`).
+- Spulen-Formular: erst Hersteller waehlen, dann Material (Produkte des Herstellers + allgemeine,
+  gleichnamige allgemeine werden ausgeblendet); Temperaturen werden unter der Auswahl und auf der
+  Spulenkarte angezeigt. Der Server lehnt ein herstellerfremdes Material an einer Spule ab.
 
 ## 1.1 Offene Punkte
-- OP-M1: Kein Update/Delete fuer Materialien - bisher nur Lesen + Anlegen. Loeschen waere riskant,
-  solange Spulen darauf verweisen (FK); erst mit Bedarf nachziehen.
+- OP-M1: Statistik gruppiert nach Materialname - "PLA Basic" und "PolyLite PLA" erscheinen getrennt.
+  Ein gemeinsamer Material-Typ (z.B. "PLA") waere eine Erweiterung.
+- OP-M2: Betttemperatur ist ein Einzelwert, kein Bereich.
 
 ## 1.2 Anforderungen
 - **R1**: Nur eingeloggte Nutzer koennen Materialien lesen. Test: `tests/security/materials.test.ts`
-- **R2**: Nur eingeloggte Nutzer koennen Materialien anlegen; Name ist eindeutig (Unique-Constraint).
+- **R2**: Nur eingeloggte Nutzer koennen Materialien anlegen; Name je Hersteller eindeutig
+  (409). Test: `tests/security/materials.test.ts`
+- **R3**: Aendern/Loeschen nur durch Admin (401 ohne Login, 403 als Nutzer).
   Test: `tests/security/materials.test.ts`
+- **R4**: Ein Material, das noch von Spulen genutzt wird, kann nicht geloescht werden (409).
+  Test: `tests/security/materials.test.ts`
+- **R5**: Mitgelieferte Materialien werden eingespielt. Test: `tests/security/materials.test.ts`
+- **R6**: Eine Spule darf kein Material eines anderen Herstellers haben (400).
+  Test: `tests/security/spools.test.ts`

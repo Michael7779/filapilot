@@ -86,4 +86,14 @@ describe("Settings - Negativ-Tests", () => {
     assert.equal("password" in res.body.data.smtp, false);
     assert.equal(JSON.stringify(res.body).includes("super-geheimes-smtp-passwort"), false);
   });
+
+  it("legt Nutzer trotzdem an und zeigt das Start-Passwort, wenn der SMTP-Versand fehlschlaegt", async () => {
+    // smtp.example.test aus dem Test davor ist nicht erreichbar -> sendMail wirft.
+    const res = await request(app)
+      .post("/api/users")
+      .set("Cookie", adminCookie)
+      .send({ username: "mailfehler", email: "mailfehler@example.test", role: "USER" });
+    assert.equal(res.status, 201);
+    assert.equal(typeof res.body.data.temporaryPassword, "string");
+  });
 });

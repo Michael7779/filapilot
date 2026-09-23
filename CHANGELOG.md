@@ -3,6 +3,23 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.3.0] - 2026-09-23
+
+### Hinzugefuegt
+- Hersteller zuerst, dann Material: Das Material-Feld zeigt nur Produkte des gewählten Herstellers
+  plus allgemeine Materialien. Rund 70 Materialien mit Richttemperaturen sind vorbefüllt.
+- Temperaturen (Düse, Bett) werden im Spulen-Formular und auf den Spulenkarten angezeigt.
+- Einstellungen: Hersteller und Materialien anlegen, ändern und löschen (nur Admin). Löschen ist
+  gesperrt, solange Spulen den Eintrag nutzen.
+- SMTP: Verschlüsselung als Auswahl (STARTTLS Port 587 / SSL Port 465) statt missverständlichem Haken.
+
+### Behoben
+- Schlägt der Mailversand fehl, wird der Nutzer trotzdem angelegt und das Startpasswort angezeigt.
+
+### Hinweis zum Update
+- Das Datenbank-Schema ändert sich (Material bekommt einen optionalen Hersteller); das Update-Skript
+  gleicht es automatisch ab.
+
 ## [0.2.3] - 2026-09-23
 
 ### Hinzugefuegt

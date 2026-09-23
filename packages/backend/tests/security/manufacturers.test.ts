@@ -8,6 +8,7 @@ import { hashPassword } from "../../src/services/authService.js";
 describe("Manufacturers - Negativ-Tests", () => {
   const app = createApp();
   let activeUserCookie: string[] = [];
+  let adminCookie: string[] = [];
 
   before(async () => {
     await prisma.spool.deleteMany();
@@ -27,6 +28,20 @@ describe("Manufacturers - Negativ-Tests", () => {
       .post("/api/auth/login")
       .send({ username: "manufactureruser", password: "correct-horse-battery-staple" });
     activeUserCookie = login.headers["set-cookie"];
+
+    await prisma.user.create({
+      data: {
+        username: "manufactureradmin",
+        email: "manufactureradmin@example.test",
+        passwordHash: await hashPassword("correct-horse-battery-staple"),
+        role: "ADMIN",
+        mustChangePassword: false
+      }
+    });
+    const adminLogin = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "manufactureradmin", password: "correct-horse-battery-staple" });
+    adminCookie = adminLogin.headers["set-cookie"];
   });
 
   after(async () => {
@@ -70,5 +85,39 @@ describe("Manufacturers - Negativ-Tests", () => {
       .send({ name: "Doppel Test" });
 
     assert.equal(res.status, 409);
+  });
+
+  it("lehnt Aendern und Loeschen ohne Login ab (401) und durch nicht-Admin (403)", async () => {
+    const m = await prisma.manufacturer.create({ data: { name: "Nur Test 403" } });
+    assert.equal((await request(app).patch(`/api/manufacturers/${m.id}`).send({ name: "x" })).status, 401);
+    assert.equal((await request(app).delete(`/api/manufacturers/${m.id}`)).status, 401);
+    const patch = await request(app).patch(`/api/manufacturers/${m.id}`).set("Cookie", activeUserCookie).send({ name: "x" });
+    assert.equal(patch.status, 403);
+    const del = await request(app).delete(`/api/manufacturers/${m.id}`).set("Cookie", activeUserCookie);
+    assert.equal(del.status, 403);
+  });
+
+  it("Admin kann Hersteller umbenennen und loeschen (samt seiner Materialien)", async () => {
+    const m = await prisma.manufacturer.create({ data: { name: "Umbenennen Test" } });
+    await prisma.material.create({ data: { name: "Eigenes Produkt", manufacturerId: m.id, printTempMinC: 1, printTempMaxC: 2 } });
+    const patched = await request(app).patch(`/api/manufacturers/${m.id}`).set("Cookie", adminCookie).send({ name: "Umbenannt" });
+    assert.equal(patched.status, 200);
+    const dup = await request(app).patch(`/api/manufacturers/${m.id}`).set("Cookie", adminCookie).send({ name: "bambu lab" });
+    assert.equal(dup.status, 409);
+    const del = await request(app).delete(`/api/manufacturers/${m.id}`).set("Cookie", adminCookie);
+    assert.equal(del.status, 200);
+    assert.equal(await prisma.material.count({ where: { manufacturerId: m.id } }), 0);
+  });
+
+  it("lehnt Loeschen eines Herstellers ab, den noch Spulen nutzen (409)", async () => {
+    const m = await prisma.manufacturer.create({ data: { name: "Benutzt Test" } });
+    const material = await prisma.material.create({ data: { name: "Allg Test", printTempMinC: 1, printTempMaxC: 2 } });
+    await prisma.spool.create({
+      data: { materialId: material.id, manufacturerId: m.id, colorName: "Rot", initialWeightG: 1000, remainingWeightG: 1000 }
+    });
+    const res = await request(app).delete(`/api/manufacturers/${m.id}`).set("Cookie", adminCookie);
+    assert.equal(res.status, 409);
+    await prisma.spool.deleteMany();
+    await prisma.material.delete({ where: { id: material.id } });
   });
 });
