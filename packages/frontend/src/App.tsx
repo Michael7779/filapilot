@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import type { UserPublic } from "@filapilot/shared";
 import { Sidebar } from "./components/Sidebar.js";
+import { UpdateBanner } from "./components/UpdateBanner.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage.js";
@@ -104,6 +105,7 @@ function AuthBootstrap({ children }: { children: React.JSX.Element }): React.JSX
 export default function App(): React.JSX.Element {
   return (
     <BrowserRouter>
+      <UpdateBanner />
       <AuthBootstrap>
         <Routes>
           <Route path="/login" element={<LoginPage />} />

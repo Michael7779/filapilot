@@ -3,6 +3,13 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.2.3] - 2026-09-23
+
+### Hinzugefuegt
+- Update-Hinweis: Liegt eine neue Version auf dem Server, erscheint oben ein Banner mit Button
+  "Aktualisieren" (Strg+F5 ist nicht mehr nötig). Es wird beim Öffnen, beim Zurückkehren zum Tab
+  und alle 15 Minuten geprüft.
+
 ## [0.2.2] - 2026-09-23
 
 ### Geändert

@@ -48,6 +48,10 @@
     "resetLinkInvalid": "Der Link ist ungültig oder abgelaufen.",
     "resetDoneHint": "Passwort erfolgreich geändert. Du kannst dich jetzt anmelden."
   },
+  "update": {
+    "available": "Eine neue Version ist bereit. Bitte aktualisieren, damit die aktuelle Version genutzt wird.",
+    "refresh": "Aktualisieren"
+  },
   "common": {
     "loading": "Lädt…",
     "logout": "Abmelden",

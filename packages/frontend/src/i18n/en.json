@@ -48,6 +48,10 @@
     "resetLinkInvalid": "This link is invalid or has expired.",
     "resetDoneHint": "Password changed successfully. You can sign in now."
   },
+  "update": {
+    "available": "A new version is ready. Please update to use the latest version.",
+    "refresh": "Update"
+  },
   "common": {
     "loading": "Loading…",
     "logout": "Sign out",

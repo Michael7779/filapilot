@@ -19,7 +19,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       manifest: {
         name: "FilaPilot",
         short_name: "FilaPilot",
