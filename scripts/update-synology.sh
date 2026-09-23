@@ -24,4 +24,13 @@ echo "Update gefunden: $LOCAL -> $REMOTE. Baue und starte neu..."
 git pull origin main
 docker compose build
 docker compose up -d
+
+# Gleicht das Schema automatisch ab, falls sich prisma/schema.prisma geaendert hat. Rein additive
+# Aenderungen (neue Tabelle/Spalte) laufen ohne Rueckfrage durch. Eine potenziell
+# datenverlust-traechtige Aenderung (z.B. eine neue Pflichtspalte auf einer Tabelle mit
+# bestehenden Zeilen) lehnt "prisma db push" ohne "--accept-data-loss" bewusst ab und bricht den
+# Lauf mit einem klaren Fehler im Log ab, statt sie automatisch/unbeaufsichtigt durchzufuehren -
+# das braucht dann einen manuellen Blick (siehe README, Abschnitt Schema-Aenderungen).
+docker compose exec -T backend node_modules/.bin/prisma db push --schema=prisma/schema.prisma
+
 echo "Update abgeschlossen."
