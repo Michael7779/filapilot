@@ -13,6 +13,7 @@ import { Sidebar } from "./components/Sidebar.js";
 import { UpdateBanner } from "./components/UpdateBanner.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { LoginPage } from "./pages/LoginPage.js";
+import { SetupPage } from "./pages/SetupPage.js";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage.js";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage.js";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage.js";
@@ -110,6 +111,7 @@ export default function App(): React.JSX.Element {
       <AuthBootstrap>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/einrichtung" element={<SetupPage />} />
           <Route path="/passwort-vergessen" element={<ForgotPasswordPage />} />
           <Route path="/passwort-zuruecksetzen" element={<ResetPasswordPage />} />
           <Route

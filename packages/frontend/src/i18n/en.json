@@ -48,6 +48,13 @@
     "resetLinkInvalid": "This link is invalid or has expired.",
     "resetDoneHint": "Password changed successfully. You can sign in now."
   },
+  "setup": {
+    "title": "Welcome! Create the first administrator",
+    "intro": "This account manages FilaPilot: users, filaments, printers and settings. You add more users afterwards in the settings.",
+    "fieldsRequired": "Please enter a username (at least 3 characters) and an email address.",
+    "create": "Create administrator",
+    "failed": "Setup failed."
+  },
   "update": {
     "available": "A new version is ready. Please update to use the latest version.",
     "refresh": "Update"

@@ -3,6 +3,12 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.5.0] - 2026-09-23
+
+### Hinzugefuegt
+- Einrichtungsbildschirm: Auf einer frischen Installation legst du den ersten Administrator direkt im
+  Browser an (eigenes Passwort, danach dauerhaft gesperrt). Das Skript `seedAdmin` bleibt als Alternative.
+
 ## [0.4.0] - 2026-09-23
 
 ### Hinzugefuegt

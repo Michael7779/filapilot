@@ -48,6 +48,13 @@
     "resetLinkInvalid": "Der Link ist ungültig oder abgelaufen.",
     "resetDoneHint": "Passwort erfolgreich geändert. Du kannst dich jetzt anmelden."
   },
+  "setup": {
+    "title": "Willkommen! Lege den ersten Administrator an",
+    "intro": "Dieser Zugang verwaltet FilaPilot: Benutzer, Filamente, Drucker und Einstellungen. Weitere Benutzer legst du danach in den Einstellungen an.",
+    "fieldsRequired": "Bitte Benutzername (mindestens 3 Zeichen) und E-Mail-Adresse ausfüllen.",
+    "create": "Administrator anlegen",
+    "failed": "Die Einrichtung ist fehlgeschlagen."
+  },
   "update": {
     "available": "Eine neue Version ist bereit. Bitte aktualisieren, damit die aktuelle Version genutzt wird.",
     "refresh": "Aktualisieren"

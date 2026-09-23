@@ -9,18 +9,16 @@ import { prisma } from "../prisma.js";
 import { AppError } from "../lib/apiResult.js";
 import { sendData } from "../lib/apiResult.js";
 import {
-  createSession,
   hashPassword,
   revokeSession,
   verifyPassword
 } from "../services/authService.js";
 import { requireAuth, getAuthenticatedUser, SESSION_COOKIE_NAME } from "../middleware/auth.js";
+import { startSession } from "../lib/sessionCookie.js";
 import { createPasswordResetToken, consumePasswordResetToken } from "../services/passwordResetService.js";
 import { sendPasswordResetEmail } from "../services/mailService.js";
 
 export const authRouter = Router();
-
-const SESSION_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Threat-Model: Anonyme Requests versuchen sich mit erratenen/gestohlenen Zugangsdaten anzumelden.
 // Serverseitig erzwungen: Passwort-Hash-Vergleich (bcrypt), generische Fehlermeldung (kein
@@ -38,13 +36,7 @@ authRouter.post("/login", async (req, res, next) => {
       throw new AppError("UNAUTHORIZED", "Benutzername oder Passwort ist falsch.");
     }
 
-    const rawToken = await createSession(user.id);
-    res.cookie(SESSION_COOKIE_NAME, rawToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: SESSION_COOKIE_MAX_AGE_MS
-    });
+    await startSession(res, user.id);
     sendData(res, {
       id: user.id,
       username: user.username,

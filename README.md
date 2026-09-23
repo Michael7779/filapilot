@@ -44,16 +44,23 @@ erzeugen, was die Postgres-Verbindungs-URL kaputt macht (die Passwörter landen 
 docker compose up -d --build
 ```
 
-Einmalig Datenbank-Schema anlegen und ersten Admin-Account erstellen:
+Einmalig das Datenbank-Schema anlegen:
 
 ```bash
 docker compose exec backend node_modules/.bin/prisma db push --schema=prisma/schema.prisma
-docker compose exec backend node dist/scripts/seedAdmin.js
 ```
 
-Die zweite Zeile gibt einmalig Benutzername + Start-Passwort aus — notieren, wird nirgends
-gespeichert. Die App ist danach unter `http://<synology-ip>:<FRONTEND_PORT>` erreichbar; beim
-ersten Login wird ein neues Passwort erzwungen.
+Danach die App im Browser öffnen (`http://<synology-ip>:<FRONTEND_PORT>`): Beim ersten Aufruf erscheint
+der **Einrichtungsbildschirm**, dort legst du den ersten Administrator mit eigenem Passwort an. Der
+Bildschirm ist danach dauerhaft gesperrt. Auf einer frisch installierten Instanz gewinnt, wer zuerst
+einrichtet — öffne die Seite also direkt nach dem Start selbst.
+
+Alternativ ohne Browser (gibt einmalig Benutzername + Start-Passwort in der Konsole aus, das beim ersten
+Login geändert werden muss):
+
+```bash
+docker compose exec backend node dist/scripts/seedAdmin.js
+```
 
 ## Updates
 

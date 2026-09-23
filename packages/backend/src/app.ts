@@ -6,6 +6,7 @@ import { env } from "./env.js";
 import { authRateLimiter, apiRateLimiter } from "./middleware/rateLimit.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { authRouter } from "./routes/auth.js";
+import { setupRouter } from "./routes/setup.js";
 import { usersRouter } from "./routes/users.js";
 import { settingsRouter } from "./routes/settings.js";
 import { materialsRouter } from "./routes/materials.js";
@@ -31,6 +32,7 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRateLimiter, authRouter);
+  app.use("/api/setup", authRateLimiter, setupRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/settings", settingsRouter);
   app.use("/api/materials", materialsRouter);

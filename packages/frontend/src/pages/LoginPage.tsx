@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { UserPublic } from "@filapilot/shared";
@@ -17,6 +17,19 @@ export function LoginPage(): React.JSX.Element {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Frische Instanz ohne Benutzer: statt eines Logins, das nicht funktionieren kann, die Einrichtung zeigen.
+  useEffect(() => {
+    apiRequest<{ needsSetup: boolean }>("/setup/status")
+      .then((result) => {
+        if (result.needsSetup) {
+          navigate("/einrichtung", { replace: true });
+        }
+      })
+      .catch(() => {
+        // Status unbekannt - der normale Login bleibt nutzbar.
+      });
+  }, [navigate]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();

@@ -60,3 +60,8 @@ wirklich verschickt wurde).
   Test: `packages/backend/tests/security/auth.test.ts`
 - **R10**: `POST /api/settings/smtp-test` (nur Admin, nur an die eigene Adresse) liefert den Fehlertext des
   Mailservers zurueck. Test: `packages/backend/tests/security/settings.test.ts`
+- **R11**: Einrichtungsbildschirm (`/einrichtung`, `GET /api/setup/status`, `POST /api/setup`): legt den
+  ersten Admin an, solange keine Benutzer existieren, und meldet ihn an. Sobald ein Benutzer existiert,
+  lehnt der Server jede weitere Einrichtung ab (403); gleichzeitige Aufrufe erzeugen genau einen Admin
+  (Serializable-Transaktion). Bewusst akzeptiert: Auf einer frischen, offen erreichbaren Instanz gewinnt,
+  wer zuerst einrichtet. Test: `packages/backend/tests/security/setup.test.ts`
