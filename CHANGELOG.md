@@ -3,6 +3,13 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.2.1] - 2026-09-23
+
+### Behoben
+- Klickbare Elemente (Buttons, Auswahlfelder, Checkboxen) zeigen jetzt den Hand-Mauszeiger.
+- Update-Skript: `git safe.directory` wird automatisch gesetzt, das Datenbank-Schema wird bei
+  Updates automatisch abgeglichen (`prisma db push`).
+
 ## [0.2.0] - 2026-09-22
 
 ### Hinzugefuegt
