@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
+import type { PhotoChange } from "../lib/spoolPhoto.js";
+import { SpoolPhotoField } from "./SpoolPhotoField.js";
 import type {
   CreateManufacturerInput,
   CreateMaterialInput,
@@ -34,7 +36,8 @@ interface SpoolFormModalProps {
   onClose: () => void;
   onCreateMaterial: (input: CreateMaterialInput) => Promise<Material>;
   onCreateManufacturer: (input: CreateManufacturerInput) => Promise<Manufacturer>;
-  onSubmit: (input: CreateSpoolInput) => Promise<void>;
+  photoUploadEnabled: boolean;
+  onSubmit: (input: CreateSpoolInput, photo: PhotoChange) => Promise<void>;
 }
 
 function toFormState(spool: SpoolWithRelations | null) {
@@ -57,6 +60,7 @@ export function SpoolFormModal({
   onClose,
   onCreateMaterial,
   onCreateManufacturer,
+  photoUploadEnabled,
   onSubmit
 }: SpoolFormModalProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
@@ -72,6 +76,7 @@ export function SpoolFormModal({
   const [newManufacturerName, setNewManufacturerName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [photo, setPhoto] = useState<PhotoChange>({ kind: "none" });
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -147,20 +152,22 @@ export function SpoolFormModal({
         return;
       }
 
-      await onSubmit({
+      await onSubmit(
+        {
         materialId,
         manufacturerId,
         colorName: form.colorName.trim(),
         colorHex: form.colorHex.trim() ? form.colorHex.trim() : null,
         initialWeightG: Number(form.initialWeightG),
         remainingWeightG: Number(form.remainingWeightG),
-        photoUrl: null,
         purchasePriceCents: form.purchasePriceEuro.trim()
           ? Math.round(Number(form.purchasePriceEuro) * 100)
           : null,
         purchasedAt: null,
         location: form.location.trim() ? form.location.trim() : null
-      });
+        },
+        photo
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Speichern fehlgeschlagen.");
     } finally {
@@ -388,6 +395,10 @@ export function SpoolFormModal({
             className={SELECT_CLASS}
           />
         </label>
+
+        {photoUploadEnabled && (
+          <SpoolPhotoField currentUrl={initialSpool?.photoUrl ?? null} value={photo} onChange={setPhoto} />
+        )}
 
         {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
 

@@ -17,7 +17,7 @@ import { requireAuth, getAuthenticatedUser, SESSION_COOKIE_NAME } from "../middl
 import { startSession } from "../lib/sessionCookie.js";
 import { createPasswordResetToken, consumePasswordResetToken } from "../services/passwordResetService.js";
 import { sendPasswordResetEmail } from "../services/mailService.js";
-import { recordAudit } from "../services/auditService.js";
+import { actorFromRequest, recordAudit } from "../services/auditService.js";
 
 export const authRouter = Router();
 
@@ -38,6 +38,13 @@ authRouter.post("/login", async (req, res, next) => {
     }
 
     await startSession(res, user.id);
+    await recordAudit({
+      actor: { id: user.id, username: user.username },
+      action: "EVENT",
+      area: "USER",
+      entityId: user.id,
+      description: `Angemeldet: ${user.username}`
+    });
     sendData(res, {
       id: user.id,
       username: user.username,
@@ -54,6 +61,13 @@ authRouter.post("/logout", requireAuth, async (req, res, next) => {
   try {
     const rawToken = req.cookies?.[SESSION_COOKIE_NAME] as string;
     await revokeSession(rawToken);
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "EVENT",
+      area: "USER",
+      entityId: req.user?.id ?? null,
+      description: `Abgemeldet: ${req.user?.username ?? ""}`
+    });
     res.clearCookie(SESSION_COOKIE_NAME);
     sendData(res, { loggedOut: true });
   } catch (err) {

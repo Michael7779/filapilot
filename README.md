@@ -10,7 +10,7 @@ nutzen will, installiert es auf seiner eigenen Hardware.
 
 ## Funktionsumfang
 
-- Filament-Spulen verwalten: Hersteller, Material, Farbe, Restgewicht, Lagerort, Foto (optional)
+- Filament-Spulen verwalten: Hersteller, Material, Farbe, Restgewicht, Lagerort, Foto (optional, Kennzeichen "Fast leer")
 - Automatischer Abgleich mit Bambu-Lab-AMS (live oder periodisch, einstellbar)
 - Mehrbenutzer mit Rollen (Admin/User), Passwort-Reset per E-Mail, erzwungener Passwortwechsel
   bei Erstanmeldung
@@ -82,13 +82,13 @@ Die Anzahl aufbewahrter Sicherungen (Standard: 14) stellst du unter Einstellunge
 Sicherung als `.tar`-Datei auf deinem Rechner (enthält die komplette Datenbank inkl. Passwort-Hashes — sicher
 aufbewahren).
 
-**Umzug auf eine neue Synology:**
+**Umzug auf eine neue Synology** (Sicherung vorher auf der alten Installation mit **Herunterladen** speichern):
 
 1. FilaPilot dort normal installieren und im Browser den Einrichtungsbildschirm durchlaufen (der Zugang ist nur
    vorläufig, er wird durch die Sicherung ersetzt).
-2. Die Sicherungsdateien (`filapilot-db-<Zeitstempel>.sql`, optional `-uploads-` und `-settings-`) in den
-   Backup-Ordner der neuen Installation kopieren:
-   `docker cp <datei> <projekt>-backend-1:/data/backups/`
+2. Unter Einstellungen → System die heruntergeladene `.tar`-Datei mit **Sicherung hochladen** ablegen (sie wird
+   geprüft und nur abgelegt, nicht eingespielt). Alternativ die Dateien (`filapilot-db-<Zeitstempel>.sql`, optional
+   `-uploads-` und `-settings-`) per `docker cp <datei> <projekt>-backend-1:/data/backups/` in den Backup-Ordner kopieren.
 3. Unter Einstellungen → System die Sicherung wiederherstellen und mit den Zugangsdaten aus der Sicherung anmelden.
 4. Das SMTP-Passwort ist mit einem Schlüssel aus `SESSION_SECRET` verschlüsselt: Hast du in der neuen `.env` ein
    anderes Secret, gibst du das SMTP-Passwort einmal neu ein.

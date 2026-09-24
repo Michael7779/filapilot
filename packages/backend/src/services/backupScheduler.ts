@@ -1,6 +1,7 @@
 import { createBackup } from "./backupService.js";
 import { getSettings } from "./settingsService.js";
 import { pruneAuditLog } from "./auditRetentionService.js";
+import { SYSTEM_ACTOR, recordAudit } from "./auditService.js";
 import { logger } from "../logger.js";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -21,7 +22,14 @@ async function runIfEnabled(): Promise<void> {
   try {
     const settings = await getSettings();
     if (settings.backupEnabled) {
-      await createBackup();
+      const timestamp = await createBackup();
+      await recordAudit({
+        actor: SYSTEM_ACTOR,
+        action: "EVENT",
+        area: "BACKUP",
+        entityId: timestamp,
+        description: `Automatische Sicherung erstellt (${timestamp})`
+      });
     }
   } catch (err) {
     logger.error("Taeglicher Backup-Job fehlgeschlagen", { err });

@@ -44,9 +44,12 @@
     den Zugangsdaten aus der Sicherung anmelden. Das SMTP-Passwort ist mit einem Schluessel aus
     `SESSION_SECRET` verschluesselt: bei anderem Secret einmal neu eingeben (kein Absturz, siehe R8).
 
+- **Sicherung hochladen** (`POST /api/settings/backups/upload`, `services/backupImportService.ts`): nimmt eine per
+  "Herunterladen" gespeicherte `.tar` entgegen (Streaming, max. 2 GB, nginx-Limit nur fuer diese Adresse), prueft
+  sie vor dem Entpacken (nur die erwarteten Dateinamen eines Satzes, nur normale Dateien, Datenbank-Dump Pflicht),
+  ueberschreibt nie eine vorhandene Sicherung (409) und spielt nichts ein - Wiederherstellen bleibt ein eigener Schritt.
+
 ## 1.1 Offene Punkte
-- OP-S1: Kein Hochladen von Sicherungen ueber die Oberflaeche (Dateien muessen per `docker cp` in den
-  Backup-Ordner kopiert werden, siehe README).
 - OP-S4: Wiederherstellung wurde nur mit einer Sicherung aus derselben Version praktisch geprueft;
   Sicherungen aus einer *neueren* Version in eine aeltere Installation einzuspielen ist nicht unterstuetzt.
 
@@ -76,3 +79,6 @@
 - **R10**: Nach einer regulaeren Sicherung bleiben nur die neuesten `backupRetentionCount` Saetze uebrig, fremde
   Dateien bleiben unangetastet; der Wert ist mit 1-365 validiert.
   Test: `tests/unit/backupCatalog.test.ts`, `tests/security/settings.test.ts`
+- **R9**: Der Sicherungs-Upload ist nur fuer Admins (401/403), lehnt Nicht-tar-Dateien, fremde Dateien, Pfade
+  (`../`), Verknuepfungen und Archive ohne Datenbank-Dump ab (400, es wird nichts entpackt), nimmt eine gueltige
+  Sicherung an (201) und lehnt dieselbe ein zweites Mal ab (409). Test: `tests/security/backupUpload.test.ts`

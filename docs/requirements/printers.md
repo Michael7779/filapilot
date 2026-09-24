@@ -22,6 +22,10 @@
   (`packages/frontend/src/lib/socket.ts`), Admin-Formular zum Anlegen, ausklappbare
   MQTT-Einrichtungsanleitung (LAN-Modus aktivieren, Access-Code + Seriennummer finden).
 
+- **Socket.IO-Absicherung** (`socket.ts`): Beim Verbindungsaufbau wird das Session-Cookie geprueft (gueltig, nicht
+  abgelaufen, kein offener Pflicht-Passwortwechsel), sonst wird die Verbindung abgelehnt (`UNAUTHORIZED`). Jede
+  Minute werden bestehende Verbindungen erneut geprueft, damit Abmelden/Widerruf sie beendet.
+
 ## 1.1 Offene Punkte
 - OP-P1: **AMS-Fach-Parsing ist noch nicht implementiert** (`amsSlots` liefert immer `[]`) - das
   exakte Feld-Layout der Bambu-MQTT-`report`-Nachricht fuer AMS-Daten (Fach-Index, Material,
@@ -32,9 +36,6 @@
   verifiziert und dann in `bambuConnector.ts::parseBambuReport` ergaenzt werden.
 - OP-P2: Kein automatisches Verknuepfen von AMS-Faechern zu Spulen (`AmsSlotAssignment`-Tabelle
   existiert im Schema, wird aber noch nirgends befuellt) - haengt an OP-P1.
-- OP-P3: Der Socket.IO-Server prueft aktuell keine Session/Auth beim Verbindungsaufbau - jeder,
-  der den Socket.IO-Endpunkt erreicht, bekommt Status-Broadcasts. Bei Selbsthosting im eigenen
-  Netzwerk ein kleineres Risiko, sollte aber nachgezogen werden (Cookie beim Handshake pruefen).
 - OP-P4: Keine Loesch-Sperre, wenn ein Drucker noch in `PrintJob` referenziert wird (kein
   `onDelete`-Verhalten definiert) - relevant erst, sobald PrintJob-Erfassung existiert (siehe
   `stats.md`).
@@ -46,3 +47,5 @@
   Test: `packages/backend/tests/security/printers.test.ts`
 - **R3**: Anonyme Requests werden auf allen Drucker-Routen mit 401 abgelehnt.
   Test: `packages/backend/tests/security/printers.test.ts`
+- **R4**: Der Socket.IO-Endpunkt nimmt nur Verbindungen mit gueltiger Sitzung an (kein Cookie, unbekanntes Token,
+  offener Passwortwechsel -> abgelehnt). Test: `tests/realtime/socketAuth.test.ts`

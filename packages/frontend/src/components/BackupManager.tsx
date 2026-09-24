@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { BackupUploadButton } from "./BackupUploadButton.js";
 import { useTranslation } from "react-i18next";
 import { RESTORE_CONFIRMATION_WORD, type BackupInfo, type RestoreStatus } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
@@ -279,6 +280,8 @@ export function BackupManager(): React.JSX.Element {
         </div>
         <p className="text-xs text-[var(--color-text-muted)]">{t("backup.existingHint")}</p>
         <BackupTable backups={backups} onRestore={setRestoring} />
+        <BackupUploadButton onUploaded={() => void load()} />
+        <p className="text-xs text-[var(--color-text-muted)]">{t("backup.uploadHint")}</p>
       </div>
 
       {restoring && <RestoreDialog backup={restoring} onClose={() => setRestoring(null)} />}

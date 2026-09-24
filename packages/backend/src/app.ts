@@ -14,6 +14,7 @@ import { auditRouter } from "./routes/audit.js";
 import { materialsRouter } from "./routes/materials.js";
 import { manufacturersRouter } from "./routes/manufacturers.js";
 import { spoolsRouter } from "./routes/spools.js";
+import { spoolPhotosRouter } from "./routes/spoolPhotos.js";
 import { printersRouter } from "./routes/printers.js";
 import { sendData } from "./lib/apiResult.js";
 
@@ -41,6 +42,7 @@ export function createApp() {
   app.use("/api/settings", settingsRouter);
   app.use("/api/materials", materialsRouter);
   app.use("/api/manufacturers", manufacturersRouter);
+  app.use("/api/spools", spoolPhotosRouter);
   app.use("/api/spools", spoolsRouter);
   app.use("/api/printers", printersRouter);
 

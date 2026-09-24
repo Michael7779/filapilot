@@ -1,3 +1,4 @@
+import { env } from "../env.js";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import fs from "node:fs/promises";
@@ -60,7 +61,7 @@ async function defaultDependencies(): Promise<RestoreDependencies> {
   return {
     folder: settings.backupFolderPath,
     databaseUrl,
-    uploadsFolder: "/data/uploads",
+    uploadsFolder: env.UPLOADS_FOLDER_PATH,
     run: defaultRunner,
     createSafetyBackup: () => createBackupUnlocked(),
     afterDatabaseRestore: () => prisma.$disconnect(),

@@ -11,7 +11,8 @@ export const spoolSchema = z.object({
     .nullable(),
   initialWeightG: z.number().int().positive(),
   remainingWeightG: z.number().int().min(0),
-  photoUrl: z.string().url().nullable(),
+  // Vom Server verwaltet (Upload ueber PUT /api/spools/:id/photo), nie vom Client frei setzbar.
+  photoUrl: z.string().nullable(),
   purchasePriceCents: z.number().int().min(0).nullable(),
   purchasedAt: z.coerce.date().nullable(),
   location: z.string().max(60).nullable(),
@@ -19,7 +20,7 @@ export const spoolSchema = z.object({
 });
 export type Spool = z.infer<typeof spoolSchema>;
 
-export const createSpoolInputSchema = spoolSchema.omit({ id: true, createdAt: true });
+export const createSpoolInputSchema = spoolSchema.omit({ id: true, createdAt: true, photoUrl: true });
 export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;
 
 export const updateSpoolInputSchema = createSpoolInputSchema.partial();

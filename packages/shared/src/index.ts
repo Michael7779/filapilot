@@ -8,3 +8,4 @@ export * from "./schemas/spool.js";
 export * from "./schemas/printer.js";
 export * from "./schemas/printJob.js";
 export * from "./schemas/settings.js";
+export * from "./materialType.js";

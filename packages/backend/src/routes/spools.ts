@@ -9,6 +9,7 @@ import { toPublicSpool, toPublicSpoolWithRelations } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
 import { describeSpool, spoolSnapshot } from "../lib/auditSnapshots.js";
 import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
+import { deletePhoto } from "../services/spoolPhotoService.js";
 
 export const spoolsRouter = Router();
 
@@ -158,6 +159,7 @@ spoolsRouter.delete("/:id", ...requireActiveUser, async (req, res, next) => {
       }
       throw err;
     });
+    await deletePhoto(id);
     await recordAudit({
       actor: actorFromRequest(req),
       action: "DELETE",

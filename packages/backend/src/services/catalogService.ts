@@ -1,5 +1,6 @@
 import { prisma } from "../prisma.js";
 import { env } from "../env.js";
+import { SYSTEM_ACTOR, recordAudit } from "./auditService.js";
 import { CATALOG_MANUFACTURERS, CATALOG_MATERIALS, CATALOG_VERSION } from "./catalogData.js";
 
 let running: Promise<void> | null = null;
@@ -43,6 +44,12 @@ async function seedCatalog(): Promise<void> {
   });
   if (missing.length > 0) {
     await prisma.material.createMany({ data: missing, skipDuplicates: true });
+    await recordAudit({
+      actor: SYSTEM_ACTOR,
+      action: "EVENT",
+      area: "MATERIAL",
+      description: `Mitgelieferte Vorlagen eingespielt: ${missing.length} Materialien ergaenzt`
+    });
   }
   await prisma.settings.update({ where: { id: 1 }, data: { catalogVersion: CATALOG_VERSION } });
 }

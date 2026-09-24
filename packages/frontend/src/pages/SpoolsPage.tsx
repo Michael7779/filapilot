@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LOW_STOCK_THRESHOLD_RATIO } from "@filapilot/shared";
 import type {
   CreateManufacturerInput,
   CreateMaterialInput,
@@ -11,6 +12,12 @@ import type {
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
+import {
+  fetchPhotoUploadEnabled,
+  removeSpoolPhoto,
+  uploadSpoolPhoto,
+  type PhotoChange
+} from "../lib/spoolPhoto.js";
 
 export function SpoolsPage(): React.JSX.Element {
   const { t } = useTranslation();
@@ -22,16 +29,20 @@ export function SpoolsPage(): React.JSX.Element {
   const [labelSpool, setLabelSpool] = useState<SpoolWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [spoolsData, materialsData, manufacturersData] = await Promise.all([
+      const [spoolsData, materialsData, manufacturersData, photosEnabled] = await Promise.all([
         apiRequest<SpoolWithRelations[]>("/spools"),
         apiRequest<Material[]>("/materials"),
-        apiRequest<Manufacturer[]>("/manufacturers")
+        apiRequest<Manufacturer[]>("/manufacturers"),
+        fetchPhotoUploadEnabled()
       ]);
+      setPhotoUploadEnabled(photosEnabled);
       setSpools(spoolsData);
       setMaterials(materialsData);
       setManufacturers(manufacturersData);
@@ -74,15 +85,33 @@ export function SpoolsPage(): React.JSX.Element {
     return created;
   }
 
-  async function handleSubmitSpool(input: CreateSpoolInput): Promise<void> {
+  async function applyPhotoChange(spoolId: string, photo: PhotoChange): Promise<void> {
+    try {
+      if (photo.kind === "set") {
+        await uploadSpoolPhoto(spoolId, photo.blob);
+      } else if (photo.kind === "remove") {
+        await removeSpoolPhoto(spoolId);
+      }
+    } catch (err) {
+      // Die Spule ist bereits gespeichert - deshalb kein Fehler im Dialog, sondern ein Hinweis auf der Seite.
+      setNotice(t("spools.photoFailed", { reason: err instanceof Error ? err.message : "" }));
+    }
+  }
+
+  async function handleSubmitSpool(input: CreateSpoolInput, photo: PhotoChange): Promise<void> {
+    setNotice(null);
+    let spoolId: string;
     if (editingSpool) {
-      await apiRequest(`/spools/${editingSpool.id}`, {
-        method: "PATCH",
+      spoolId = editingSpool.id;
+      await apiRequest(`/spools/${spoolId}`, { method: "PATCH", body: JSON.stringify(input) });
+    } else {
+      const created = await apiRequest<{ id: string }>("/spools", {
+        method: "POST",
         body: JSON.stringify(input)
       });
-    } else {
-      await apiRequest("/spools", { method: "POST", body: JSON.stringify(input) });
+      spoolId = created.id;
     }
+    await applyPhotoChange(spoolId, photo);
     setModalOpen(false);
     await load();
   }
@@ -128,18 +157,29 @@ export function SpoolsPage(): React.JSX.Element {
         </button>
       </div>
 
+      {notice && <p className="text-sm text-[var(--color-danger)]">{notice}</p>}
+
       {spools.length === 0 ? (
         <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.empty")}</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {spools.map((spool) => {
             const percent = Math.round((spool.remainingWeightG / spool.initialWeightG) * 100);
+            const lowStock = spool.remainingWeightG / spool.initialWeightG <= LOW_STOCK_THRESHOLD_RATIO;
             const temps = materials.find((material) => material.id === spool.materialId);
             return (
               <div
                 key={spool.id}
                 className="rounded-xl border border-[var(--color-border)] bg-white p-4"
               >
+                {spool.photoUrl && (
+                  <img
+                    src={spool.photoUrl}
+                    alt=""
+                    loading="lazy"
+                    className="mb-3 h-32 w-full rounded-lg border border-[var(--color-border)] object-cover"
+                  />
+                )}
                 <div className="mb-2 flex items-center gap-2">
                   <div
                     className="h-5 w-5 shrink-0 rounded-full border border-[var(--color-border)]"
@@ -149,6 +189,11 @@ export function SpoolsPage(): React.JSX.Element {
                   <div className="text-sm font-semibold">
                     {spool.materialName} {spool.colorName}
                   </div>
+                  {lowStock && (
+                    <span className="ml-auto shrink-0 rounded-full bg-[var(--color-danger)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-danger)]">
+                      {t("spools.lowStock")}
+                    </span>
+                  )}
                 </div>
                 <div className="mb-2 text-xs text-[var(--color-text-muted)]">
                   {spool.manufacturerName}
@@ -199,6 +244,7 @@ export function SpoolsPage(): React.JSX.Element {
           onClose={() => setModalOpen(false)}
           onCreateMaterial={handleCreateMaterial}
           onCreateManufacturer={handleCreateManufacturer}
+          photoUploadEnabled={photoUploadEnabled}
           onSubmit={handleSubmitSpool}
         />
       )}

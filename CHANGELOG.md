@@ -3,6 +3,26 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.11.0] - 2026-09-25
+
+### Hinzugefuegt
+- Spulen-Fotos: Foto hinzufügen, ersetzen und entfernen im Spulen-Dialog (Handyfotos werden vor dem Upload
+  verkleinert); das Foto erscheint auf der Spulenkarte. Nur JPEG/PNG/WebP, max. 5 MB, nur mit Login sichtbar,
+  Teil der Sicherung. Funktioniert nur, wenn "Foto-Upload für Spulen erlauben" aktiv ist.
+- Spulenkarten zeigen "Fast leer" ab 15 % Restbestand.
+- Statistik: zusätzliche Auswertung nach Material-Typ (z. B. alle PLA-Varianten zusammen).
+- Sicherungen: "Sicherung hochladen" (Einstellungen → System) für den Umzug - eine per "Herunterladen"
+  gespeicherte .tar-Datei wird geprüft und abgelegt, danach kann sie wiederhergestellt werden.
+- Änderungsprotokoll: An- und Abmeldungen sowie Vorgänge des Systems (automatische Sicherung, Aufräumen,
+  Einspielen der Material-Vorlagen) werden vermerkt.
+
+### Sicherheit
+- Der Live-Status der Drucker (Socket.IO) ist jetzt nur noch mit gültiger Anmeldung erreichbar; Abmelden
+  beendet auch die laufende Verbindung.
+
+### Geändert
+- Das Foto einer Spule lässt sich nicht mehr als freie Web-Adresse setzen, sondern nur über den Upload.
+
 ## [0.10.0] - 2026-09-24
 
 ### Hinzugefuegt

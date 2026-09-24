@@ -25,10 +25,13 @@
   ausgeschaltet sind) loescht aeltere Eintraege (`services/auditRetentionService.ts`) und schreibt einen
   Eintrag von "System" mit der Anzahl. Eine Verkuerzung wirkt erst beim naechsten Lauf, nicht beim Speichern.
 
+- Erfolgreiche Anmeldungen und Abmeldungen (Bereich Benutzer) sowie Vorgaenge ohne Benutzer erscheinen im Protokoll;
+  Letztere unter dem Namen "System": automatische Sicherung, Aufraeumen des Protokolls, Einspielen der mitgelieferten
+  Material-Vorlagen. Foto hochgeladen/entfernt und Sicherung hochgeladen sind Ereignisse des jeweiligen Benutzers.
+
 ## 1.1 Offene Punkte
-- OP-AU2: Anmeldungen und Abmeldungen werden nicht protokolliert (der letzte Login steht in der Benutzerliste).
-- OP-AU3: Automatische Sicherungen (Zeitplan) und Systemvorgaenge (z.B. Einspielen der Hersteller-Vorlagen)
-  erscheinen nicht im Protokoll, nur Aktionen von Benutzern.
+- OP-AU2: Fehlgeschlagene Anmeldungen werden bewusst nicht protokolliert (im Benutzernamen-Feld koennten versehentlich
+  Passwoerter stehen); Schutz davor ist die Begrenzung der Anmeldeversuche.
 - OP-AU4: Das Protokoll ist aus Datenbank-Sicht nicht manipulationssicher (ein Admin mit Datenbank-Zugriff
   koennte Zeilen aendern); die Anwendung selbst bietet dafuer keinen Weg.
 
@@ -45,3 +48,5 @@
 - **R5**: Die Aufbewahrung (0-120 Monate) kann nur ein Admin aendern (USER -> 403, ungueltig -> 400); das
   Aufraeumen loescht nur Eintraege aelter als die Grenze, bei 0 nichts, und hinterlaesst einen Eintrag.
   Tests: `tests/security/settings.test.ts`, `tests/integration/auditRetention.test.ts`
+- **R6**: Erfolgreiche An- und Abmeldung werden protokolliert, eine fehlgeschlagene Anmeldung nicht.
+  Test: `tests/security/auditLogins.test.ts`

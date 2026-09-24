@@ -22,6 +22,9 @@ export interface AuditEntryInput {
   after?: Snapshot | null;
 }
 
+// Vorgaenge ohne Benutzer (Zeitplan, Einspielen der Vorlagen, Aufraeumen) erscheinen unter "System".
+export const SYSTEM_ACTOR: AuditActor = { id: null, username: "System" };
+
 export function actorFromRequest(req: Request): AuditActor {
   const user = getAuthenticatedUser(req);
   return { id: user.id, username: user.username };

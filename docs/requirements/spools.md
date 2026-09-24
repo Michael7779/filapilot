@@ -12,9 +12,13 @@
   Akzentfarbe.
 - Restgewicht wird aktuell nur manuell per `PATCH` gepflegt - der automatische Abzug ueber
   Druckauftraege (`PrintJob`) ist ein eigenes, noch nicht gebautes Subsystem (`stats.md`).
-- Foto-Upload (Datei, nicht nur `photoUrl`-Text) ist NICHT Teil dieser Runde - `photoUrl` existiert
-  im Schema, aber es gibt noch keinen Upload-Endpunkt und keine Pruefung des
-  `Settings.photoUploadEnabled`-Schalters. Siehe OP-SP2.
+- Foto-Upload (`routes/spoolPhotos.ts`, `services/spoolPhotoService.ts`): `PUT/GET/DELETE /api/spools/:id/photo`
+  (SCOPE user), max. 5 MB, nur JPEG/PNG/WebP (Erkennung an den Anfangsbytes, kein SVG), abgelegt unter
+  `<UPLOADS_FOLDER_PATH>/spool-photos/<Spulen-ID>` (also Teil von Sicherung/Wiederherstellung), Auslieferung nur
+  mit Login. Upload nur, wenn `Settings.photoUploadEnabled` an ist (sonst 403); `GET /api/spools/photo-settings`
+  meldet den Schalter an die Oberflaeche. `photoUrl` ist server-verwaltet und nicht mehr ueber Anlegen/Aendern
+  setzbar. Die Oberflaeche verkleinert Fotos vor dem Upload auf max. 1600 px (JPEG).
+- Niedriger Bestand: Spulenkarten zeigen ab `LOW_STOCK_THRESHOLD_RATIO` (15 %) das Kennzeichen "Fast leer".
 - QR-Label-Druck: rein client-seitig, kein Backend-Endpunkt noetig. Pro Spule ein Button
   ("QR-Label"), oeffnet `packages/frontend/src/components/SpoolLabelModal.tsx` mit einem
   clientseitig via `qrcode`-Paket erzeugten QR-Code (kodiert `filapilot:spool:<id>`), Material,
@@ -25,10 +29,6 @@
   machbar; `qrcode` ist aktiv gepflegt und hat >5 Mio. Downloads/Woche.
 
 ## 1.1 Offene Punkte
-- OP-SP1: Kein Low-Stock-Hinweis/Badge im Frontend, obwohl `LOW_STOCK_THRESHOLD_RATIO` in
-  `@filapilot/shared` schon definiert ist - noch nicht verdrahtet.
-- OP-SP2: Datei-Upload fuer Spulen-Fotos (inkl. Pruefung von `Settings.photoUploadEnabled`) fehlt
-  komplett - eigene Runde.
 - OP-SP3: Loeschen einer Spule, die noch in `AmsSlotAssignment` oder `PrintJob` referenziert wird -
   aktuell durch die DB-FK einfach verhindert (Fehler 500 statt sauberer Fehlermeldung). Sollte
   spaeter ein eigener Fehlercode werden (`CONFLICT`), sobald Drucker-Zuordnung gebaut ist.
@@ -49,3 +49,8 @@
   + QR-Code der Spulen-ID). Rein clientseitig, keine sicherheitsrelevante Route - manuell per
   Browser-Klickpfad verifiziert (QR-Code-Canvas nicht leer, Druck-Button loest `window.print()`
   aus, ESC schliesst das Modal).
+- **R7**: Foto-Routen: 401 ohne Login, 400 bei ungueltiger ID, 404 bei unbekannter Spule, 400 bei Nicht-Bildern
+  (auch mit vorgetaeuschtem Content-Type, SVG) und zu grossen Dateien, 403 wenn der Foto-Upload ausgeschaltet
+  ist; ein Client kann `photoUrl` nicht selbst setzen; Loeschen der Spule raeumt die Datei auf.
+  Test: `tests/security/spoolPhotos.test.ts`
+- **R8**: Das Kennzeichen "Fast leer" auf Spulenkarten ist rein clientseitig - manuell per Browser geprueft.

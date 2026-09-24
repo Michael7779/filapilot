@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SpoolWithRelations } from "@filapilot/shared";
-import { LOW_STOCK_THRESHOLD_RATIO } from "@filapilot/shared";
+import { LOW_STOCK_THRESHOLD_RATIO, materialTypeOf } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 
 interface StatCardProps {
@@ -110,6 +110,7 @@ export function StatsPage(): React.JSX.Element {
     (spool) => spool.remainingWeightG / spool.initialWeightG <= LOW_STOCK_THRESHOLD_RATIO
   ).length;
 
+  const byMaterialType = groupConsumption(spools, (spool) => materialTypeOf(spool.materialName));
   const byMaterial = groupConsumption(spools, (spool) => spool.materialName);
   const byManufacturer = groupConsumption(spools, (spool) => spool.manufacturerName);
 
@@ -129,6 +130,11 @@ export function StatsPage(): React.JSX.Element {
       </div>
 
       <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
+        <BreakdownList
+          title={t("stats.byMaterialType")}
+          entries={byMaterialType}
+          emptyLabel={t("stats.noConsumption")}
+        />
         <BreakdownList
           title={t("stats.byMaterial")}
           entries={byMaterial}

@@ -19,9 +19,12 @@
   gleichnamige allgemeine werden ausgeblendet); Temperaturen werden unter der Auswahl und auf der
   Spulenkarte angezeigt. Der Server lehnt ein herstellerfremdes Material an einer Spule ab.
 
+- Statistik nach Material-Typ: `materialTypeOf()` (`packages/shared/src/materialType.ts`) ordnet Produktnamen
+  ("PolyLite PLA", "PLA Silk", "PLA+") ihrem Grundmaterial ("PLA") zu; PETG, PETG-CF, PLA-CF, PA-CF getrennt.
+  Es ist eine Namens-Heuristik, kein gepflegtes Feld: Unbekanntes bleibt unter seinem eigenen Namen stehen.
+  Die Statistik-Seite zeigt zusaetzlich zur Auswertung nach Material-Name eine nach Typ.
+
 ## 1.1 Offene Punkte
-- OP-M1: Statistik gruppiert nach Materialname - "PLA Basic" und "PolyLite PLA" erscheinen getrennt.
-  Ein gemeinsamer Material-Typ (z.B. "PLA") waere eine Erweiterung.
 - OP-M2: Betttemperatur ist ein Einzelwert, kein Bereich.
 
 ## 1.2 Anforderungen
@@ -35,3 +38,5 @@
 - **R5**: Mitgelieferte Materialien werden eingespielt. Test: `tests/security/materials.test.ts`
 - **R6**: Eine Spule darf kein Material eines anderen Herstellers haben (400).
   Test: `tests/security/spools.test.ts`
+- **R7**: Produktnamen werden dem richtigen Material-Typ zugeordnet, Unbekanntes bleibt unveraendert.
+  Test: `tests/unit/materialType.test.ts`

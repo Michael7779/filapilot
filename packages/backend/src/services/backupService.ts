@@ -1,3 +1,4 @@
+import { env } from "../env.js";
 import { exec as execCallback } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
@@ -21,7 +22,7 @@ export async function createBackupUnlocked(options: CreateBackupOptions = {}): P
   const settings = await getSettings();
   const targetFolder = options.targetFolder ?? settings.backupFolderPath;
   const databaseUrl = options.databaseUrl ?? process.env.DATABASE_URL;
-  const uploadsFolder = options.uploadsFolder ?? "/data/uploads";
+  const uploadsFolder = options.uploadsFolder ?? env.UPLOADS_FOLDER_PATH;
 
   if (!databaseUrl) {
     throw new Error("DATABASE_URL ist nicht gesetzt - Backup kann nicht erstellt werden.");

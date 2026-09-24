@@ -9,7 +9,8 @@ const envSchema = z.object({
   // Anzahl vorgeschalteter Proxys (Synology-Reverse-Proxy + Frontend-nginx), damit das Rate-Limit
   // die echte Client-Adresse aus X-Forwarded-For nutzt.
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(2),
-  BACKUP_FOLDER_PATH: z.string().default("/data/backups")
+  BACKUP_FOLDER_PATH: z.string().default("/data/backups"),
+  UPLOADS_FOLDER_PATH: z.string().default("/data/uploads")
 });
 
 export const env = envSchema.parse(process.env);

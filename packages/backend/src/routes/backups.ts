@@ -11,6 +11,7 @@ import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../midd
 import { getSettings } from "../services/settingsService.js";
 import { backupFileNames, listBackups } from "../services/backupCatalog.js";
 import { getRestoreStatus, startRestore } from "../services/restoreService.js";
+import { importBackupArchive } from "../services/backupImportService.js";
 import { actorFromRequest, recordAudit } from "../services/auditService.js";
 
 export const backupsRouter = Router();
@@ -41,6 +42,34 @@ backupsRouter.get(
   ...requireAdmin,
   asyncHandler(async (_req, res) => {
     sendData(res, getRestoreStatus());
+  })
+);
+
+// Threat-Model: Ein hochgeladenes Archiv ist Fremdmaterial - ein Angreifer (oder ein versehentlich falsches Archiv)
+// koennte Dateien ausserhalb des Backup-Ordners ueberschreiben (Path-Traversal, Verknuepfungen), fremde Dateien
+// einschleusen, eine bestehende Sicherung ueberschreiben oder den Server mit riesigen Uploads fuellen.
+// Serverseitig erzwungen: nur Admin; Typ application/x-tar; Streaming mit hartem Limit (2 GB); das Archiv wird
+// VOR dem Entpacken geprueft (nur die erwarteten Dateinamen eines einzigen Satzes, nur normale Dateien, Datenbank-
+// Dump Pflicht); vorhandene Saetze werden nie ueberschrieben (409); es wird nichts eingespielt - Wiederherstellen
+// bleibt ein eigener, bestaetigter Schritt.
+// Negativ-Tests: kein Cookie -> 401, USER -> 403, kein tar -> 400, fremde Dateien/Pfade/Links -> 400, doppelt -> 409.
+// SCOPE: global
+backupsRouter.post(
+  "/upload",
+  ...requireAdmin,
+  asyncHandler(async (req, res) => {
+    if (!req.is("application/x-tar")) {
+      throw new AppError("VALIDATION_ERROR", "Bitte eine tar-Datei einer FilaPilot-Sicherung hochladen.");
+    }
+    const timestamp = await importBackupArchive(req, (await getSettings()).backupFolderPath);
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "EVENT",
+      area: "BACKUP",
+      entityId: timestamp,
+      description: `Sicherung hochgeladen (${timestamp})`
+    });
+    sendData(res, { timestamp }, 201);
   })
 );
 
