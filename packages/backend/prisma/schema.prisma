@@ -196,6 +196,8 @@ model Settings {
   backupEnabled                      Boolean  @default(true)
   // Wie viele Sicherungen aufbewahrt werden; aeltere werden nach jeder regulaeren Sicherung geloescht.
   backupRetentionCount               Int      @default(14)
+  // Wie viele Monate das Aenderungsprotokoll aufbewahrt wird; 0 = unbegrenzt.
+  auditRetentionMonths               Int      @default(12)
   // Stand der mitgelieferten Hersteller-/Material-Vorlagen, die zuletzt eingespielt wurden.
   catalogVersion                     Int      @default(0)
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt.

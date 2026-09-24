@@ -66,7 +66,8 @@ docker compose exec backend node dist/scripts/seedAdmin.js
 
 Unter **Einstellungen → Protokoll** (nur Admins) steht, wer wann was angelegt, geändert oder gelöscht hat — mit
 Vorher-/Nachher-Werten, Suche und Filtern nach Zeitraum, Bereich, Aktion und Benutzer. Passwörter, Zugangscodes
-und das SMTP-Passwort werden nie protokolliert.
+und das SMTP-Passwort werden nie protokolliert. Wie lange Einträge aufbewahrt werden (Standard 12 Monate,
+0 = unbegrenzt), stellst du unter Einstellungen → System → Allgemein ein; ältere werden täglich gelöscht.
 
 ## Backup und Wiederherstellung
 

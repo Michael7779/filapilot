@@ -66,6 +66,7 @@ export function settingsSnapshot(settings: Settings): Snapshot {
     defaultPrinterSyncIntervalSeconds: settings.defaultPrinterSyncIntervalSeconds,
     backupEnabled: settings.backupEnabled,
     backupRetentionCount: settings.backupRetentionCount,
+    auditRetentionMonths: settings.auditRetentionMonths,
     backupFolderPath: settings.backupFolderPath,
     smtpHost: settings.smtp?.host ?? null,
     smtpPort: settings.smtp?.port ?? null,

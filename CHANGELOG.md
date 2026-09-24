@@ -3,6 +3,18 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.10.0] - 2026-09-24
+
+### Hinzugefuegt
+- Änderungsprotokoll: Aufbewahrung in Monaten einstellbar (Einstellungen → System → Allgemein, Standard
+  12 Monate, 0 = unbegrenzt). Ältere Einträge werden täglich automatisch gelöscht; das Aufräumen selbst
+  wird im Protokoll vermerkt.
+
+### Hinweis zum Update
+- Neue Datenbank-Spalte (Aufbewahrung Protokoll); das Update-Skript gleicht sie automatisch ab.
+  Bestehende Installationen bekommen den Standard von 12 Monaten - ältere Einträge werden also nach dem
+  nächsten nächtlichen Lauf entfernt, wenn du den Wert nicht erhöhst oder auf 0 setzt.
+
 ## [0.9.0] - 2026-09-24
 
 ### Hinzugefuegt

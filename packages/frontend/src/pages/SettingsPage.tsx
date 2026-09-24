@@ -146,6 +146,7 @@ function GeneralSettingsSection({
   const [syncInterval, setSyncInterval] = useState(String(settings.defaultPrinterSyncIntervalSeconds));
   const [backupEnabled, setBackupEnabled] = useState(settings.backupEnabled);
   const [retention, setRetention] = useState(String(settings.backupRetentionCount));
+  const [auditMonths, setAuditMonths] = useState(String(settings.auditRetentionMonths));
   const [backupFolderPath, setBackupFolderPath] = useState(settings.backupFolderPath);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -160,6 +161,7 @@ function GeneralSettingsSection({
         defaultPrinterSyncIntervalSeconds: Number(syncInterval),
         backupEnabled,
         backupRetentionCount: Number(retention),
+        auditRetentionMonths: Number(auditMonths),
         backupFolderPath
       };
       const updated = await apiRequest<Settings>("/settings", {
@@ -223,6 +225,17 @@ function GeneralSettingsSection({
           />
         </Field>
         <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("settings.backupRetentionHint")}</p>
+        <Field label={t("settings.auditRetention")}>
+          <input
+            type="number"
+            min={0}
+            max={120}
+            value={auditMonths}
+            onChange={(event) => setAuditMonths(event.target.value)}
+            className={inputClass}
+          />
+        </Field>
+        <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("settings.auditRetentionHint")}</p>
         {message && <p className="text-sm text-[var(--color-text-secondary)]">{message}</p>}
         <button
           type="submit"

@@ -101,6 +101,25 @@ describe("Settings - Negativ-Tests", () => {
     assert.equal(ok.body.data.backupRetentionCount, 30);
   });
 
+  it("validiert und speichert die Aufbewahrung des Protokolls (0-120 Monate) und lehnt USER ab", async () => {
+    for (const bad of [-1, 121, 1.5]) {
+      const res = await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ auditRetentionMonths: bad });
+      assert.equal(res.status, 400, String(bad));
+    }
+    const ok = await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ auditRetentionMonths: 6 });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.data.auditRetentionMonths, 6);
+
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "normaluser", password: "correct-horse-battery-staple" });
+    const denied = await request(app)
+      .patch("/api/settings")
+      .set("Cookie", login.headers["set-cookie"])
+      .send({ auditRetentionMonths: 1 });
+    assert.equal(denied.status, 403);
+  });
+
   it("lehnt den SMTP-Test ohne Login (401) und durch nicht-Admin (403) ab", async () => {
     assert.equal((await request(app).post("/api/settings/smtp-test")).status, 401);
     const login = await request(app)

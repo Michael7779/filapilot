@@ -21,6 +21,7 @@ export const settingsSchema = z.object({
   backupFolderPath: z.string().min(1),
   backupEnabled: z.boolean(),
   backupRetentionCount: z.number().int().min(1).max(365),
+  auditRetentionMonths: z.number().int().min(0).max(120),
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt,
   // keine Pruef-/Gating-Logik ohne expliziten Auftrag bauen.
   licenseKey: z.string().nullable()
@@ -34,7 +35,8 @@ export const updateSettingsInputSchema = z
     smtp: smtpConfigInputSchema.nullable(),
     backupFolderPath: z.string().min(1),
     backupEnabled: z.boolean(),
-    backupRetentionCount: z.number().int().min(1).max(365)
+    backupRetentionCount: z.number().int().min(1).max(365),
+    auditRetentionMonths: z.number().int().min(0).max(120)
   })
   .partial();
 export type UpdateSettingsInput = z.infer<typeof updateSettingsInputSchema>;
