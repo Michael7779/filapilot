@@ -42,6 +42,20 @@ describe("Auth - Negativ-Tests", () => {
     assert.equal(res.status, 200);
   });
 
+  it("vermerkt die letzte Aktivitaet bei authentifizierten Anfragen (hoechstens einmal pro Minute)", async () => {
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "normaluser", password: "correct-horse-battery-staple" });
+    await prisma.user.updateMany({ where: { username: "normaluser" }, data: { lastActiveAt: null } });
+    await request(app).get("/api/users/me").set("Cookie", login.headers["set-cookie"]);
+    const first = await prisma.user.findFirstOrThrow({ where: { username: "normaluser" } });
+    assert.ok(first.lastActiveAt instanceof Date);
+
+    await request(app).get("/api/users/me").set("Cookie", login.headers["set-cookie"]);
+    const second = await prisma.user.findFirstOrThrow({ where: { username: "normaluser" } });
+    assert.equal(second.lastActiveAt?.getTime(), first.lastActiveAt.getTime());
+  });
+
   it("vermerkt beim Login das Datum des letzten Logins", async () => {
     await request(app)
       .post("/api/auth/login")

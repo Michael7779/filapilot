@@ -68,3 +68,5 @@ wirklich verschickt wurde).
 - **R12**: Die Benutzerliste zeigt Anlagedatum und Datum des letzten Logins (`User.lastLoginAt`, gesetzt bei
   jeder Anmeldung und bei der Einrichtung; leer = noch nie angemeldet).
   Test: `packages/backend/tests/security/auth.test.ts`
+- **R13**: Die Benutzerliste zeigt zusaetzlich "Zuletzt aktiv" (`User.lastActiveAt`, bei authentifizierten
+  Anfragen hoechstens einmal pro Minute aktualisiert). Test: `packages/backend/tests/security/auth.test.ts`

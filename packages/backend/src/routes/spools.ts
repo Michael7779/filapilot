@@ -7,6 +7,8 @@ import { sendData, AppError } from "../lib/apiResult.js";
 import { requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
 import { toPublicSpool, toPublicSpoolWithRelations } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
+import { describeSpool, spoolSnapshot } from "../lib/auditSnapshots.js";
+import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 
 export const spoolsRouter = Router();
 
@@ -82,7 +84,15 @@ spoolsRouter.post("/", ...requireActiveUser, async (req, res, next) => {
     await assertMaterialExists(input.materialId);
     await assertManufacturerExists(input.manufacturerId);
     await assertMaterialMatchesManufacturer(input.materialId, input.manufacturerId);
-    const created = await prisma.spool.create({ data: input });
+    const created = await prisma.spool.create({ data: input, include: SPOOL_INCLUDE });
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "CREATE",
+      area: "SPOOL",
+      entityId: created.id,
+      description: describeSpool(created),
+      after: spoolSnapshot(created)
+    });
     sendData(res, toPublicSpool(created), 201);
   } catch (err) {
     next(err);
@@ -101,25 +111,33 @@ spoolsRouter.patch("/:id", ...requireActiveUser, async (req, res, next) => {
     if (input.manufacturerId) {
       await assertManufacturerExists(input.manufacturerId);
     }
+    const before = await prisma.spool.findUnique({ where: { id }, include: SPOOL_INCLUDE });
+    if (!before) {
+      throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
+    }
     if (input.materialId || input.manufacturerId) {
-      const existing = await prisma.spool.findUnique({ where: { id } });
-      if (!existing) {
-        throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
-      }
       await assertMaterialMatchesManufacturer(
-        input.materialId ?? existing.materialId,
-        input.manufacturerId ?? existing.manufacturerId
+        input.materialId ?? before.materialId,
+        input.manufacturerId ?? before.manufacturerId
       );
     }
 
     const updated = await prisma.spool
-      .update({ where: { id }, data: omitUndefined(input) })
+      .update({ where: { id }, data: omitUndefined(input), include: SPOOL_INCLUDE })
       .catch((err: unknown) => {
         if (err instanceof Error && err.message.includes("Record to update not found")) {
           throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
         }
         throw err;
       });
+    await recordUpdate({
+      actor: actorFromRequest(req),
+      area: "SPOOL",
+      entityId: id,
+      description: describeSpool(updated),
+      before: spoolSnapshot(before),
+      after: spoolSnapshot(updated)
+    });
     sendData(res, toPublicSpool(updated));
   } catch (err) {
     next(err);
@@ -130,11 +148,23 @@ spoolsRouter.patch("/:id", ...requireActiveUser, async (req, res, next) => {
 spoolsRouter.delete("/:id", ...requireActiveUser, async (req, res, next) => {
   try {
     const id = idParamSchema.parse(req.params.id);
+    const before = await prisma.spool.findUnique({ where: { id }, include: SPOOL_INCLUDE });
+    if (!before) {
+      throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
+    }
     await prisma.spool.delete({ where: { id } }).catch((err: unknown) => {
       if (err instanceof Error && err.message.includes("Record to delete does not exist")) {
         throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
       }
       throw err;
+    });
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "DELETE",
+      area: "SPOOL",
+      entityId: id,
+      description: describeSpool(before),
+      before: spoolSnapshot(before)
     });
     sendData(res, { deleted: true });
   } catch (err) {

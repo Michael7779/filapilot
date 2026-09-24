@@ -11,6 +11,7 @@ import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../midd
 import { getSettings } from "../services/settingsService.js";
 import { backupFileNames, listBackups } from "../services/backupCatalog.js";
 import { getRestoreStatus, startRestore } from "../services/restoreService.js";
+import { actorFromRequest, recordAudit } from "../services/auditService.js";
 
 export const backupsRouter = Router();
 
@@ -50,7 +51,9 @@ backupsRouter.post(
   asyncHandler(async (req, res) => {
     const timestamp = z.string().pipe(backupTimestampSchema).parse(req.params.timestamp);
     restoreBackupInputSchema.parse(req.body);
-    await startRestore(timestamp);
+    // Der Eintrag "wiederhergestellt" entsteht erst nach dem Einspielen (in der wiederhergestellten Datenbank),
+    // sonst wuerde er mit ersetzt - deshalb wird der Akteur hier nur mitgegeben.
+    await startRestore(timestamp, { auditActor: actorFromRequest(req) });
     sendData(res, { started: true }, 202);
   })
 );
@@ -79,6 +82,13 @@ backupsRouter.get(
       throw new AppError("NOT_FOUND", "Diese Sicherung wurde nicht gefunden.");
     }
 
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "EVENT",
+      area: "BACKUP",
+      entityId: timestamp,
+      description: `Sicherung heruntergeladen (${timestamp})`
+    });
     res.setHeader("Content-Type", "application/x-tar");
     res.setHeader("Content-Disposition", `attachment; filename="filapilot-backup-${timestamp}.tar"`);
     const tar = spawn("/usr/bin/tar", ["-cf", "-", "-C", folder, ...present]);

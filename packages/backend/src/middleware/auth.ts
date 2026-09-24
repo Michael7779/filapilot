@@ -1,9 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
 import type { User, UserRole } from "@prisma/client";
 import { AppError } from "../lib/apiResult.js";
+import { prisma } from "../prisma.js";
 import { findUserBySessionToken } from "../services/authService.js";
 
 const SESSION_COOKIE_NAME = "fp_session";
+// "Zuletzt aktiv" wird hoechstens einmal pro Minute geschrieben - nicht bei jedem Request.
+const ACTIVITY_UPDATE_INTERVAL_MS = 60_000;
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -12,20 +15,31 @@ declare module "express-serve-static-core" {
 }
 
 export async function requireAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
-  const rawToken: unknown = req.cookies?.[SESSION_COOKIE_NAME];
-  if (typeof rawToken !== "string" || rawToken.length === 0) {
-    next(new AppError("UNAUTHORIZED", "Anmeldung erforderlich."));
-    return;
-  }
+  try {
+    const rawToken: unknown = req.cookies?.[SESSION_COOKIE_NAME];
+    if (typeof rawToken !== "string" || rawToken.length === 0) {
+      next(new AppError("UNAUTHORIZED", "Anmeldung erforderlich."));
+      return;
+    }
 
-  const user = await findUserBySessionToken(rawToken);
-  if (!user) {
-    next(new AppError("UNAUTHORIZED", "Sitzung ungueltig oder abgelaufen."));
-    return;
-  }
+    const user = await findUserBySessionToken(rawToken);
+    if (!user) {
+      next(new AppError("UNAUTHORIZED", "Sitzung ungueltig oder abgelaufen."));
+      return;
+    }
 
-  req.user = user;
-  next();
+    const now = new Date();
+    if (!user.lastActiveAt || now.getTime() - user.lastActiveAt.getTime() > ACTIVITY_UPDATE_INTERVAL_MS) {
+      await prisma.user.update({ where: { id: user.id }, data: { lastActiveAt: now } });
+      user.lastActiveAt = now;
+    }
+
+    req.user = user;
+    next();
+  } catch (err) {
+    // Async-Middleware: ohne das wuerde ein Datenbankfehler den Prozess beenden.
+    next(err);
+  }
 }
 
 // Nach requireAuth einsetzen auf jeder Route AUSSER /api/auth/change-password und

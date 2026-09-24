@@ -5,6 +5,7 @@ import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { CatalogSection } from "../components/CatalogSettings.js";
 import { EditUserModal } from "../components/EditUserModal.js";
 import { BackupManager } from "../components/BackupManager.js";
+import { AuditLogView } from "../components/AuditLogView.js";
 import { useLogout } from "../hooks/useLogout.js";
 import type {
   CreateUserInput,
@@ -613,7 +614,7 @@ function UserManagementSection(): React.JSX.Element {
         <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>
       ) : (
         <div className="overflow-x-auto">
-<table className="w-full min-w-[820px] text-left text-sm">
+<table className="w-full min-w-[960px] text-left text-sm">
           <thead>
             <tr className="text-xs text-[var(--color-text-muted)]">
               <th className="pb-2 font-medium">{t("auth.username")}</th>
@@ -621,6 +622,7 @@ function UserManagementSection(): React.JSX.Element {
               <th className="pb-2 font-medium">{t("settings.role")}</th>
               <th className="pb-2 font-medium">{t("settings.createdAt")}</th>
               <th className="pb-2 font-medium">{t("settings.lastLogin")}</th>
+              <th className="pb-2 font-medium">{t("settings.lastActive")}</th>
               <th />
             </tr>
           </thead>
@@ -647,6 +649,14 @@ function UserManagementSection(): React.JSX.Element {
                         timeStyle: "short"
                       })
                     : t("settings.neverLoggedIn")}
+                </td>
+                <td className="py-2 text-[var(--color-text-secondary)]">
+                  {u.lastActiveAt
+                    ? new Date(u.lastActiveAt).toLocaleString(i18n.language, {
+                        dateStyle: "short",
+                        timeStyle: "short"
+                      })
+                    : "—"}
                 </td>
                 <td className="py-2">
                   <div className="flex justify-end gap-3 text-xs font-medium">
@@ -701,13 +711,14 @@ function UserManagementSection(): React.JSX.Element {
   );
 }
 
-type SettingsTab = "konto" | "benutzer" | "filamente" | "system";
+type SettingsTab = "konto" | "benutzer" | "filamente" | "system" | "protokoll";
 
 const TABS: { key: SettingsTab; labelKey: string; adminOnly: boolean }[] = [
   { key: "konto", labelKey: "settings.tabAccount", adminOnly: false },
   { key: "benutzer", labelKey: "settings.tabUsers", adminOnly: true },
   { key: "filamente", labelKey: "settings.tabFilaments", adminOnly: true },
-  { key: "system", labelKey: "settings.tabSystem", adminOnly: true }
+  { key: "system", labelKey: "settings.tabSystem", adminOnly: true },
+  { key: "protokoll", labelKey: "settings.tabAudit", adminOnly: true }
 ];
 
 export function SettingsPage(): React.JSX.Element {
@@ -763,6 +774,7 @@ export function SettingsPage(): React.JSX.Element {
       {active.key === "konto" && <OwnAccountSection />}
       {active.key === "benutzer" && <UserManagementSection />}
       {active.key === "filamente" && <CatalogSection />}
+      {active.key === "protokoll" && <AuditLogView />}
       {active.key === "system" && (
         <>
           {loadError && <p className="text-sm text-[var(--color-danger)]">{loadError}</p>}

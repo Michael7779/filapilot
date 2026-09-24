@@ -17,6 +17,7 @@ import { requireAuth, getAuthenticatedUser, SESSION_COOKIE_NAME } from "../middl
 import { startSession } from "../lib/sessionCookie.js";
 import { createPasswordResetToken, consumePasswordResetToken } from "../services/passwordResetService.js";
 import { sendPasswordResetEmail } from "../services/mailService.js";
+import { recordAudit } from "../services/auditService.js";
 
 export const authRouter = Router();
 
@@ -77,6 +78,13 @@ authRouter.post("/change-password", requireAuth, async (req, res, next) => {
       where: { id: user.id },
       data: { passwordHash: newHash, mustChangePassword: false }
     });
+    await recordAudit({
+      actor: { id: user.id, username: user.username },
+      action: "EVENT",
+      area: "USER",
+      entityId: user.id,
+      description: `${user.username}: Passwort geaendert`
+    });
     sendData(res, { changed: true });
   } catch (err) {
     next(err);
@@ -111,9 +119,16 @@ authRouter.post("/reset-password", async (req, res, next) => {
       throw new AppError("UNAUTHORIZED", "Der Link ist ungueltig oder abgelaufen.");
     }
     const newHash = await hashPassword(input.newPassword);
-    await prisma.user.update({
+    const resetUser = await prisma.user.update({
       where: { id: userId },
       data: { passwordHash: newHash, mustChangePassword: false }
+    });
+    await recordAudit({
+      actor: { id: resetUser.id, username: resetUser.username },
+      action: "EVENT",
+      area: "USER",
+      entityId: resetUser.id,
+      description: `${resetUser.username}: Passwort per E-Mail-Link zurueckgesetzt`
     });
     sendData(res, { reset: true });
   } catch (err) {

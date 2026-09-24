@@ -11,6 +11,8 @@ import {
 import { toPublicMaterial } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
 import { ensureCatalog } from "../services/catalogService.js";
+import { materialSnapshot } from "../lib/auditSnapshots.js";
+import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 
 export const materialsRouter = Router();
 
@@ -26,6 +28,17 @@ async function assertManufacturerExists(manufacturerId: string | null): Promise<
   if (!manufacturer) {
     throw new AppError("VALIDATION_ERROR", "Unbekannter Hersteller.");
   }
+}
+
+async function manufacturerNameOf(manufacturerId: string | null): Promise<string | null> {
+  if (manufacturerId === null) {
+    return null;
+  }
+  return (await prisma.manufacturer.findUnique({ where: { id: manufacturerId } }))?.name ?? null;
+}
+
+function describeMaterial(name: string, manufacturerName: string | null): string {
+  return manufacturerName ? `${manufacturerName} ${name}` : `${name} (allgemein)`;
 }
 
 // Name ist je Hersteller eindeutig (ohne Gross-/Kleinschreibung); "kein Hersteller" zaehlt als eigene Gruppe.
@@ -73,6 +86,15 @@ materialsRouter.post("/", ...requireActiveUser, async (req, res, next) => {
     await assertManufacturerExists(input.manufacturerId);
     await assertNameFree(input.name, input.manufacturerId);
     const created = await prisma.material.create({ data: input });
+    const manufacturerName = await manufacturerNameOf(created.manufacturerId);
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "CREATE",
+      area: "MATERIAL",
+      entityId: created.id,
+      description: describeMaterial(created.name, manufacturerName),
+      after: materialSnapshot(created, manufacturerName)
+    });
     sendData(res, toPublicMaterial(created), 201);
   } catch (err) {
     next(err);
@@ -104,6 +126,16 @@ materialsRouter.patch("/:id", ...requireAdmin, async (req, res, next) => {
       }
     }
     const updated = await prisma.material.update({ where: { id }, data: omitUndefined(input) });
+    const beforeManufacturer = await manufacturerNameOf(current.manufacturerId);
+    const afterManufacturer = await manufacturerNameOf(updated.manufacturerId);
+    await recordUpdate({
+      actor: actorFromRequest(req),
+      area: "MATERIAL",
+      entityId: id,
+      description: describeMaterial(updated.name, afterManufacturer),
+      before: materialSnapshot(current, beforeManufacturer),
+      after: materialSnapshot(updated, afterManufacturer)
+    });
     sendData(res, toPublicMaterial(updated));
   } catch (err) {
     next(err);
@@ -121,11 +153,19 @@ materialsRouter.delete("/:id", ...requireAdmin, async (req, res, next) => {
         `Das Material wird noch von ${inUse} Spule(n) verwendet und kann nicht geloescht werden.`
       );
     }
-    await prisma.material.delete({ where: { id } }).catch((err: unknown) => {
-      if (err instanceof Error && err.message.includes("Record to delete does not exist")) {
-        throw new AppError("NOT_FOUND", "Material wurde nicht gefunden.");
-      }
-      throw err;
+    const before = await prisma.material.findUnique({ where: { id } });
+    if (!before) {
+      throw new AppError("NOT_FOUND", "Material wurde nicht gefunden.");
+    }
+    await prisma.material.delete({ where: { id } });
+    const manufacturerName = await manufacturerNameOf(before.manufacturerId);
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "DELETE",
+      area: "MATERIAL",
+      entityId: id,
+      description: describeMaterial(before.name, manufacturerName),
+      before: materialSnapshot(before, manufacturerName)
     });
     sendData(res, { deleted: true });
   } catch (err) {

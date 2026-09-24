@@ -6,6 +6,8 @@ import { sendData, AppError } from "../lib/apiResult.js";
 import { hashPassword } from "../services/authService.js";
 import { startSession } from "../lib/sessionCookie.js";
 import { toPublicUser } from "../lib/mappers.js";
+import { userSnapshot } from "../lib/auditSnapshots.js";
+import { recordAudit } from "../services/auditService.js";
 
 export const setupRouter = Router();
 
@@ -41,6 +43,14 @@ setupRouter.post("/", asyncHandler(async (req, res) => {
     },
     { isolationLevel: "Serializable" }
   );
+  await recordAudit({
+    actor: { id: created.id, username: created.username },
+    action: "CREATE",
+    area: "USER",
+    entityId: created.id,
+    description: `${created.username} (erster Administrator, Einrichtung)`,
+    after: userSnapshot(created)
+  });
   await startSession(res, created.id);
   sendData(res, toPublicUser(created), 201);
 }));

@@ -25,6 +25,7 @@ export function toPublicUser(user: User): UserPublic {
     mustChangePassword: user.mustChangePassword,
     themeAccentColor: user.themeAccentColor,
     lastLoginAt: user.lastLoginAt,
+    lastActiveAt: user.lastActiveAt,
     createdAt: user.createdAt
   };
 }

@@ -1,0 +1,40 @@
+# Aenderungsprotokoll
+
+## 1.0 Ist-Stand
+- Tabelle `AuditLog` (`schema.prisma`): Zeitpunkt, Benutzer (`userId` ohne Relation + `username` als
+  Momentaufnahme), Aktion (`CREATE`/`UPDATE`/`DELETE`/`EVENT`), Bereich (`SPOOL`, `MATERIAL`,
+  `MANUFACTURER`, `PRINTER`, `USER`, `SETTINGS`, `BACKUP`), Bezeichnung, `before`/`after` als JSON.
+  Eintraege bleiben lesbar, auch wenn der Benutzer geloescht oder umbenannt wird.
+- Aufgezeichnet wird in den Routen (`services/auditService.ts`, Momentaufnahmen in
+  `lib/auditSnapshots.ts`): Anlegen/Aendern/Loeschen von Spulen, Materialien, Herstellern, Druckern,
+  Benutzern und Einstellungen; Ereignisse: Passwort geaendert/zurueckgesetzt, Sicherung erstellt/
+  heruntergeladen/wiederhergestellt, Einrichtung (erster Admin), eigene Akzentfarbe.
+- Eine Aenderung ohne Wirkung ("Speichern ohne Aenderung") erzeugt keinen Eintrag (`recordUpdate`).
+- Ein fehlgeschlagener Protokoll-Eintrag laesst die eigentliche Aktion nicht scheitern (wird geloggt).
+- **Nie im Protokoll**: Passwort-Hashes, Start-/Reset-Passwoerter, Drucker-Zugangscode, SMTP-Passwort - bei
+  Aenderung steht nur `accessCodeChanged`/`smtpPasswordChanged`.
+- Anzeige: Einstellungen -> Protokoll (`components/AuditLogView.tsx`), nur Admins: Suche, Zeitraum, Bereich,
+  Aktion, Benutzer, Seitengroesse (10/25/50/100), Seiten, Detailansicht mit Vorher/Nachher (bei Aenderungen nur
+  geaenderte Felder). `GET /api/audit-log`.
+- Das Protokoll ist nur lesbar - es gibt keine Route zum Aendern oder Loeschen von Eintraegen.
+- Die Wiederherstellung eines Backups ersetzt die ganze Datenbank, also auch das Protokoll auf den Stand der
+  Sicherung; der Eintrag "Sicherung wiederhergestellt" wird deshalb erst nach dem Einspielen geschrieben.
+
+## 1.1 Offene Punkte
+- OP-AU1: Keine automatische Bereinigung alter Eintraege (das Protokoll waechst unbegrenzt).
+- OP-AU2: Anmeldungen und Abmeldungen werden nicht protokolliert (der letzte Login steht in der Benutzerliste).
+- OP-AU3: Automatische Sicherungen (Zeitplan) und Systemvorgaenge (z.B. Einspielen der Hersteller-Vorlagen)
+  erscheinen nicht im Protokoll, nur Aktionen von Benutzern.
+- OP-AU4: Das Protokoll ist aus Datenbank-Sicht nicht manipulationssicher (ein Admin mit Datenbank-Zugriff
+  koennte Zeilen aendern); die Anwendung selbst bietet dafuer keinen Weg.
+
+## 1.2 Anforderungen
+- **R1**: Nur Admins duerfen das Protokoll lesen (401 ohne Login, 403 als Benutzer); ungueltige Filter
+  (Seitengroesse, Bereich, Aktion, Datum, Seite) ergeben 400; es gibt keine Schreib-/Loesch-Routen.
+  Test: `packages/backend/tests/security/audit.test.ts`
+- **R2**: Anlegen, Aendern (mit Vorher/Nachher) und Loeschen einer Spule werden mit Benutzer und Bezeichnung
+  protokolliert; eine Aenderung ohne Wirkung nicht. Test: `tests/security/audit.test.ts`
+- **R3**: Geheimnisse (Zugangscode, SMTP-Passwort, Passwort-Hash, Start-Passwort) landen nie im Protokoll.
+  Test: `tests/security/audit.test.ts`
+- **R4**: Suche, Zeitraum, Bereich, Aktion, Benutzer und Seiteneinteilung filtern/teilen korrekt.
+  Test: `tests/security/audit.test.ts`

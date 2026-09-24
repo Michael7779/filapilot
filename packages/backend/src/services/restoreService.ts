@@ -10,6 +10,7 @@ import { getSettings } from "./settingsService.js";
 import { createBackupUnlocked } from "./backupService.js";
 import { acquireBackupLock } from "./backupLock.js";
 import { backupFileNames } from "./backupCatalog.js";
+import { recordAudit, type AuditActor } from "./auditService.js";
 import { connectAllPrinters, disconnectAllPrinters } from "./printerRuntime.js";
 
 const execFile = promisify(execFileCallback);
@@ -35,6 +36,8 @@ export interface RestoreDependencies {
   afterDatabaseRestore: () => Promise<void>;
   afterAllRestored: () => Promise<void>;
   syncSchema: boolean;
+  // Wer die Wiederherstellung ausgeloest hat - fuer den Protokoll-Eintrag nach dem Einspielen.
+  auditActor?: AuditActor;
 }
 
 const IDLE: RestoreStatus = { state: "idle", step: null, timestamp: null, message: null };
@@ -157,6 +160,15 @@ async function performRestore(
     await deps.afterAllRestored();
     status = { state: "done", step: null, timestamp, message: warning };
     logger.info("Backup wiederhergestellt", { timestamp });
+    if (deps.auditActor) {
+      await recordAudit({
+        actor: deps.auditActor,
+        action: "EVENT",
+        area: "BACKUP",
+        entityId: timestamp,
+        description: `Sicherung wiederhergestellt (${timestamp})`
+      });
+    }
   } catch (err) {
     logger.error("Wiederherstellung fehlgeschlagen", { err, timestamp });
     status = {
@@ -165,6 +177,15 @@ async function performRestore(
       timestamp,
       message: describeError(err, deps.databaseUrl)
     };
+    if (deps.auditActor) {
+      await recordAudit({
+        actor: deps.auditActor,
+        action: "EVENT",
+        area: "BACKUP",
+        entityId: timestamp,
+        description: `Wiederherstellung fehlgeschlagen (${timestamp})`
+      });
+    }
   } finally {
     release();
   }

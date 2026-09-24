@@ -17,6 +17,8 @@ import {
 import { generateRandomPassword, hashPassword } from "../services/authService.js";
 import { sendNewAccountEmail, sendPasswordResetByAdminEmail } from "../services/mailService.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
+import { userSnapshot } from "../lib/auditSnapshots.js";
+import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 import { toPublicUser } from "../lib/mappers.js";
 
 export const usersRouter = Router();
@@ -34,9 +36,18 @@ usersRouter.get("/me", requireAuth, (req, res) => {
 usersRouter.patch("/me/theme", requireAuth, requirePasswordAlreadyChanged, async (req, res, next) => {
   try {
     const input = updateOwnThemeInputSchema.parse(req.body);
+    const current = getAuthenticatedUser(req);
     const updated = await prisma.user.update({
-      where: { id: getAuthenticatedUser(req).id },
+      where: { id: current.id },
       data: { themeAccentColor: input.themeAccentColor }
+    });
+    await recordUpdate({
+      actor: actorFromRequest(req),
+      area: "USER",
+      entityId: current.id,
+      description: `${current.username}: Akzentfarbe`,
+      before: { themeAccentColor: current.themeAccentColor },
+      after: { themeAccentColor: updated.themeAccentColor }
     });
     sendData(res, toPublicUser(updated));
   } catch (err) {
@@ -81,6 +92,14 @@ usersRouter.post(
           mustChangePassword: input.forcePasswordChange,
           passwordHash
         }
+      });
+      await recordAudit({
+        actor: actorFromRequest(req),
+        action: "CREATE",
+        area: "USER",
+        entityId: created.id,
+        description: created.username,
+        after: userSnapshot(created)
       });
       const emailSent = await sendNewAccountEmail(created.email, created.username, temporaryPassword);
       sendData(
@@ -167,6 +186,14 @@ usersRouter.patch("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
     }
   }
   const updated = await prisma.user.update({ where: { id }, data: omitUndefined(input) });
+  await recordUpdate({
+    actor: actorFromRequest(req),
+    area: "USER",
+    entityId: id,
+    description: updated.username,
+    before: userSnapshot(target),
+    after: userSnapshot(updated)
+  });
   sendData(res, toPublicUser(updated));
 }));
 
@@ -181,6 +208,14 @@ usersRouter.delete("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
     await assertAnotherAdminExists(id);
   }
   await prisma.user.delete({ where: { id } });
+  await recordAudit({
+    actor: actorFromRequest(req),
+    action: "DELETE",
+    area: "USER",
+    entityId: id,
+    description: target.username,
+    before: userSnapshot(target)
+  });
   sendData(res, { deleted: true });
 }));
 
@@ -204,6 +239,13 @@ usersRouter.post("/:id/reset-password", ...requireAdmin, asyncHandler(async (req
     }),
     prisma.session.deleteMany({ where: { userId: id } })
   ]);
+  await recordAudit({
+    actor: actorFromRequest(req),
+    action: "EVENT",
+    area: "USER",
+    entityId: id,
+    description: `${target.username}: Passwort zurueckgesetzt`
+  });
   const emailSent = await sendPasswordResetByAdminEmail(target.email, target.username, temporaryPassword);
   sendData(res, { username: target.username, ...(emailSent ? {} : { temporaryPassword }) });
 }));

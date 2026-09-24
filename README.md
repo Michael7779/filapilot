@@ -62,6 +62,12 @@ Login geändert werden muss):
 docker compose exec backend node dist/scripts/seedAdmin.js
 ```
 
+## Änderungsprotokoll
+
+Unter **Einstellungen → Protokoll** (nur Admins) steht, wer wann was angelegt, geändert oder gelöscht hat — mit
+Vorher-/Nachher-Werten, Suche und Filtern nach Zeitraum, Bereich, Aktion und Benutzer. Passwörter, Zugangscodes
+und das SMTP-Passwort werden nie protokolliert.
+
 ## Backup und Wiederherstellung
 
 Unter **Einstellungen → System** legt FilaPilot täglich automatisch eine Sicherung an (Datenbank + hochgeladene

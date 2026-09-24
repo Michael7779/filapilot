@@ -27,6 +27,7 @@ model User {
   mustChangePassword  Boolean   @default(true)
   themeAccentColor    String?
   lastLoginAt         DateTime?
+  lastActiveAt        DateTime?
   resetToken          String?   @unique
   resetTokenExpiresAt DateTime?
   createdAt           DateTime  @default(now())
@@ -34,6 +35,45 @@ model User {
   sessions            Session[]
 
   @@map("users")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  EVENT
+}
+
+enum AuditArea {
+  SPOOL
+  MATERIAL
+  MANUFACTURER
+  PRINTER
+  USER
+  SETTINGS
+  BACKUP
+}
+
+// Aenderungsprotokoll: wer hat wann was angelegt/geaendert/geloescht. userId ist bewusst KEINE Relation und
+// username eine Momentaufnahme - Eintraege bleiben lesbar, auch wenn der Benutzer geloescht/umbenannt wird
+// oder eine Wiederherstellung die Benutzertabelle ersetzt. before/after enthalten nie Geheimnisse
+// (Passwort-Hashes, Zugangscodes, SMTP-Passwort).
+model AuditLog {
+  id          String      @id @default(uuid())
+  createdAt   DateTime    @default(now())
+  userId      String?
+  username    String
+  action      AuditAction
+  area        AuditArea
+  entityId    String?
+  description String
+  before      Json?
+  after       Json?
+
+  @@index([createdAt])
+  @@index([area])
+  @@index([username])
+  @@map("audit_logs")
 }
 
 model Session {

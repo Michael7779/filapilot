@@ -3,6 +3,8 @@ import { z } from "zod";
 import { createPrinterInputSchema, updatePrinterInputSchema } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
+import { printerSnapshot } from "../lib/auditSnapshots.js";
+import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 import { sendData, AppError } from "../lib/apiResult.js";
 import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../middleware/auth.js";
 import { toPublicPrinter } from "../lib/mappers.js";
@@ -59,6 +61,14 @@ printersRouter.post("/", ...requireAdmin, async (req, res, next) => {
       throw err;
     });
     connectPrinter(created);
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "CREATE",
+      area: "PRINTER",
+      entityId: created.id,
+      description: created.name,
+      after: printerSnapshot(created)
+    });
     sendData(res, toPublicPrinter(created), 201);
   } catch (err) {
     next(err);
@@ -70,6 +80,10 @@ printersRouter.patch("/:id", ...requireAdmin, async (req, res, next) => {
   try {
     const id = idParamSchema.parse(req.params.id);
     const input = updatePrinterInputSchema.parse(req.body);
+    const before = await prisma.printer.findUnique({ where: { id } });
+    if (!before) {
+      throw new AppError("NOT_FOUND", "Drucker wurde nicht gefunden.");
+    }
     const updated = await prisma.printer
       .update({ where: { id }, data: omitUndefined(input) })
       .catch((err: unknown) => {
@@ -79,6 +93,16 @@ printersRouter.patch("/:id", ...requireAdmin, async (req, res, next) => {
         throw err;
       });
     connectPrinter(updated);
+    // Der Zugangscode ist ein Geheimnis: nie im Protokoll, nur dass er geaendert wurde.
+    const accessCodeChanged = input.accessCode !== undefined && input.accessCode !== before.accessCode;
+    await recordUpdate({
+      actor: actorFromRequest(req),
+      area: "PRINTER",
+      entityId: id,
+      description: updated.name,
+      before: printerSnapshot(before),
+      after: { ...printerSnapshot(updated), ...(accessCodeChanged ? { accessCodeChanged: true } : {}) }
+    });
     sendData(res, toPublicPrinter(updated));
   } catch (err) {
     next(err);
@@ -89,12 +113,19 @@ printersRouter.patch("/:id", ...requireAdmin, async (req, res, next) => {
 printersRouter.delete("/:id", ...requireAdmin, async (req, res, next) => {
   try {
     const id = idParamSchema.parse(req.params.id);
+    const before = await prisma.printer.findUnique({ where: { id } });
+    if (!before) {
+      throw new AppError("NOT_FOUND", "Drucker wurde nicht gefunden.");
+    }
     disconnectPrinter(id);
-    await prisma.printer.delete({ where: { id } }).catch((err: unknown) => {
-      if (err instanceof Error && err.message.includes("Record to delete does not exist")) {
-        throw new AppError("NOT_FOUND", "Drucker wurde nicht gefunden.");
-      }
-      throw err;
+    await prisma.printer.delete({ where: { id } });
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "DELETE",
+      area: "PRINTER",
+      entityId: id,
+      description: before.name,
+      before: printerSnapshot(before)
     });
     sendData(res, { deleted: true });
   } catch (err) {

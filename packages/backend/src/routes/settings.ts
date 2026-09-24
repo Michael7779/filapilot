@@ -7,6 +7,8 @@ import { getSettings, updateSettings } from "../services/settingsService.js";
 import { createBackup } from "../services/backupService.js";
 import { sendTestEmail } from "../services/mailService.js";
 import { getAuthenticatedUser } from "../middleware/auth.js";
+import { settingsSnapshot } from "../lib/auditSnapshots.js";
+import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 
 export const settingsRouter = Router();
 
@@ -28,16 +30,36 @@ settingsRouter.get(
 settingsRouter.patch("/", ...requireAdmin, async (req, res, next) => {
   try {
     const input = updateSettingsInputSchema.parse(req.body);
-    sendData(res, await updateSettings(input));
+    const before = await getSettings();
+    const updated = await updateSettings(input);
+    // Das SMTP-Passwort ist ein Geheimnis: nie im Protokoll, nur dass es gesetzt wurde.
+    await recordUpdate({
+      actor: actorFromRequest(req),
+      area: "SETTINGS",
+      description: "Einstellungen",
+      before: settingsSnapshot(before),
+      after: {
+        ...settingsSnapshot(updated),
+        ...(input.smtp?.password ? { smtpPasswordChanged: true } : {})
+      }
+    });
+    sendData(res, updated);
   } catch (err) {
     next(err);
   }
 });
 
 // SCOPE: global
-settingsRouter.post("/backup", ...requireAdmin, async (_req, res, next) => {
+settingsRouter.post("/backup", ...requireAdmin, async (req, res, next) => {
   try {
     const timestamp = await createBackup();
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "EVENT",
+      area: "BACKUP",
+      entityId: timestamp,
+      description: `Sicherung erstellt (${timestamp})`
+    });
     sendData(res, { timestamp }, 201);
   } catch (err) {
     next(err);

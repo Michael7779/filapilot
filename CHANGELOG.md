@@ -3,6 +3,18 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.9.0] - 2026-09-24
+
+### Hinzugefuegt
+- Änderungsprotokoll (Einstellungen → Protokoll, nur Admins): wer hat wann was angelegt, geändert oder gelöscht -
+  mit Vorher-/Nachher-Werten, Suche und Filtern nach Zeitraum, Bereich, Aktion und Benutzer, Seiteneinteilung.
+  Passwörter, Zugangscodes und das SMTP-Passwort werden nie protokolliert.
+- Benutzerliste: neue Spalte "Zuletzt aktiv".
+
+### Hinweis zum Update
+- Neue Datenbank-Tabelle und -Spalte (Protokoll, zuletzt aktiv); das Update-Skript gleicht sie automatisch ab.
+  Das Protokoll beginnt beim Update, frühere Änderungen sind nicht nachträglich erfasst.
+
 ## [0.8.0] - 2026-09-24
 
 ### Hinzugefuegt
