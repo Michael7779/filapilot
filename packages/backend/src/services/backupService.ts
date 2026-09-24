@@ -4,6 +4,8 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { getSettings } from "./settingsService.js";
 import { logger } from "../logger.js";
+import { runExclusive } from "./backupLock.js";
+import { backupFileNames } from "./backupCatalog.js";
 
 const exec = promisify(execCallback);
 
@@ -14,7 +16,8 @@ export interface CreateBackupOptions {
   uploadsFolder?: string;
 }
 
-export async function createBackup(options: CreateBackupOptions = {}): Promise<string> {
+// Ohne Sperre - fuer die Wiederherstellung, die die Sperre schon haelt und vorher eine Sicherung anlegt.
+export async function createBackupUnlocked(options: CreateBackupOptions = {}): Promise<string> {
   const settings = await getSettings();
   const targetFolder = options.targetFolder ?? settings.backupFolderPath;
   const databaseUrl = options.databaseUrl ?? process.env.DATABASE_URL;
@@ -29,9 +32,10 @@ export async function createBackup(options: CreateBackupOptions = {}): Promise<s
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   await fs.mkdir(targetFolder, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const dumpPath = path.join(targetFolder, `filapilot-db-${timestamp}.sql`);
-  const settingsPath = path.join(targetFolder, `filapilot-settings-${timestamp}.json`);
-  const filesArchivePath = path.join(targetFolder, `filapilot-uploads-${timestamp}.tar.gz`);
+  const names = backupFileNames(timestamp);
+  const dumpPath = path.join(targetFolder, names.database);
+  const settingsPath = path.join(targetFolder, names.settings);
+  const filesArchivePath = path.join(targetFolder, names.uploads);
 
   await exec(`pg_dump "${databaseUrl}" --no-owner --file="${dumpPath}"`);
   // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -47,4 +51,8 @@ export async function createBackup(options: CreateBackupOptions = {}): Promise<s
 
   logger.info("Backup erstellt", { targetFolder, timestamp });
   return timestamp;
+}
+
+export function createBackup(options: CreateBackupOptions = {}): Promise<string> {
+  return runExclusive(() => createBackupUnlocked(options));
 }

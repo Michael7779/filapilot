@@ -3,6 +3,18 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.7.0] - 2026-09-24
+
+### Hinzugefuegt
+- Sicherungen: Übersicht aller vorhandenen Sicherungen (Datum, Inhalt, Größe) unter Einstellungen → System.
+- Backup wiederherstellen (nur Admin, mit Bestätigungswort): sichert vorher automatisch den aktuellen Stand,
+  spielt in einer Transaktion ein (bei Fehler bleibt alles unverändert), zeigt den Fortschritt an und setzt
+  auch hochgeladene Dateien zurück. Damit ist der Umzug auf eine neue Synology möglich (siehe README).
+
+### Behoben
+- Ein SMTP-Passwort, das mit einem anderen `SESSION_SECRET` verschlüsselt wurde (z. B. nach einem Umzug),
+  führt nicht mehr zu Fehlern beim Anlegen von Benutzern.
+
 ## [0.6.0] - 2026-09-24
 
 ### Hinzugefuegt

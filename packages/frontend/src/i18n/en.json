@@ -55,6 +55,38 @@
     "create": "Create administrator",
     "failed": "Setup failed."
   },
+  "backup": {
+    "existing": "Existing backups",
+    "existingHint": "Backups in the backup folder currently set for this installation.",
+    "refresh": "Refresh",
+    "none": "No backup yet.",
+    "createdAt": "Created on",
+    "contents": "Contents",
+    "contentsDatabase": "Database",
+    "contentsWithUploads": "Database and files",
+    "size": "Size",
+    "restore": "Restore",
+    "loadFailed": "Couldn't load the backups.",
+    "restoreTitle": "Restore backup",
+    "restoreWarning": "The backup from {{date}} will be restored. The current state of the database will be replaced.",
+    "restoreInfoSafety": "A backup of the current state is created automatically first.",
+    "restoreInfoLogin": "Afterwards the users and passwords from the backup apply, so you need to sign in again.",
+    "restoreInfoUploads": "Uploaded files are replaced by the state of the backup.",
+    "typeToConfirm": "Type \"{{word}}\" to confirm",
+    "restoreNow": "Restore now",
+    "restoreFailed": "The restore couldn't be started.",
+    "pleaseWait": "Please keep this page open. It can take a few minutes for large databases.",
+    "restoreDone": "The backup was restored. Please sign in again.",
+    "restoreFailedUnchanged": "The restore failed. The database was not changed.",
+    "toLogin": "Go to sign-in",
+    "step": {
+      "safety-backup": "Creating a backup of the current state …",
+      "database": "Restoring the database …",
+      "uploads": "Restoring files …",
+      "schema": "Updating the database structure …",
+      "finish": "Finishing up …"
+    }
+  },
   "update": {
     "available": "A new version is ready. Please update to use the latest version.",
     "refresh": "Update"

@@ -1,5 +1,6 @@
 import { prisma } from "../prisma.js";
 import { env } from "../env.js";
+import { logger } from "../logger.js";
 import { encryptSecret, decryptSecret } from "../lib/secretCrypto.js";
 import type { Settings, SmtpConfig, UpdateSettingsInput } from "@filapilot/shared";
 
@@ -36,7 +37,18 @@ export async function getSettings(): Promise<Settings> {
 
 export async function getDecryptedSmtpPassword(): Promise<string | null> {
   const row = await ensureRow();
-  return row.smtpPasswordEncrypted ? decryptSecret(row.smtpPasswordEncrypted) : null;
+  if (!row.smtpPasswordEncrypted) {
+    return null;
+  }
+  try {
+    return decryptSecret(row.smtpPasswordEncrypted);
+  } catch (err) {
+    // Typisch nach einem Umzug/einer Wiederherstellung mit anderem SESSION_SECRET: das Passwort ist mit dem
+    // alten Schluessel verschluesselt. Kein Absturz - der Versand scheitert dann sichtbar (Test-Mail-Button),
+    // und der Admin gibt das SMTP-Passwort einmal neu ein.
+    logger.warn("SMTP-Passwort konnte nicht entschluesselt werden (anderes SESSION_SECRET?)", { err });
+    return null;
+  }
 }
 
 export async function updateSettings(input: UpdateSettingsInput): Promise<Settings> {

@@ -4,6 +4,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { CatalogSection } from "../components/CatalogSettings.js";
 import { EditUserModal } from "../components/EditUserModal.js";
+import { BackupManager } from "../components/BackupManager.js";
 import { useLogout } from "../hooks/useLogout.js";
 import type {
   CreateUserInput,
@@ -390,40 +391,6 @@ function SmtpSettingsSection({ settings }: { settings: Settings }): React.JSX.El
   );
 }
 
-function BackupSection(): React.JSX.Element {
-  const { t } = useTranslation();
-  const [running, setRunning] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-
-  async function handleBackup(): Promise<void> {
-    setRunning(true);
-    setMessage(null);
-    try {
-      const result = await apiRequest<{ timestamp: string }>("/settings/backup", { method: "POST" });
-      setMessage(t("settings.backupDone", { timestamp: result.timestamp }));
-    } catch (err) {
-      setMessage(err instanceof ApiRequestError ? err.message : t("settings.backupFailed"));
-    } finally {
-      setRunning(false);
-    }
-  }
-
-  return (
-    <SectionCard title={t("settings.backup")}>
-      <p className="text-xs text-[var(--color-text-muted)]">{t("settings.backupExplanation")}</p>
-      <button
-        type="button"
-        disabled={running}
-        onClick={() => void handleBackup()}
-        className="w-fit rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium disabled:opacity-60"
-      >
-        {t("settings.backupNow")}
-      </button>
-      {message && <p className="text-sm text-[var(--color-text-secondary)]">{message}</p>}
-    </SectionCard>
-  );
-}
-
 function NewUserModal({
   onClose,
   onCreated
@@ -775,7 +742,7 @@ export function SettingsPage(): React.JSX.Element {
           {loadError && <p className="text-sm text-[var(--color-danger)]">{loadError}</p>}
           {settings && <GeneralSettingsSection settings={settings} onSaved={setSettings} />}
           {settings && <SmtpSettingsSection settings={settings} />}
-          <BackupSection />
+          <BackupManager />
         </>
       )}
     </div>

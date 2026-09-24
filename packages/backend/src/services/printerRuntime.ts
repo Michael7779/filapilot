@@ -76,3 +76,9 @@ export async function connectAllPrinters(): Promise<void> {
   }
   logger.info(`${printers.length} Drucker-Verbindung(en) gestartet`);
 }
+
+export function disconnectAllPrinters(): void {
+  for (const printerId of [...activeConnections.keys()]) {
+    disconnectPrinter(printerId);
+  }
+}

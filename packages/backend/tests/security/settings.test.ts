@@ -4,6 +4,7 @@ import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/prisma.js";
 import { hashPassword } from "../../src/services/authService.js";
+import { getDecryptedSmtpPassword } from "../../src/services/settingsService.js";
 
 describe("Settings - Negativ-Tests", () => {
   const app = createApp();
@@ -85,6 +86,11 @@ describe("Settings - Negativ-Tests", () => {
     assert.equal(res.status, 200);
     assert.equal("password" in res.body.data.smtp, false);
     assert.equal(JSON.stringify(res.body).includes("super-geheimes-smtp-passwort"), false);
+  });
+
+  it("stuerzt nicht ab, wenn das SMTP-Passwort mit einem anderen SESSION_SECRET verschluesselt wurde", async () => {
+    await prisma.settings.update({ where: { id: 1 }, data: { smtpPasswordEncrypted: "aaaa.bbbb.cccc" } });
+    assert.equal(await getDecryptedSmtpPassword(), null);
   });
 
   it("lehnt den SMTP-Test ohne Login (401) und durch nicht-Admin (403) ab", async () => {

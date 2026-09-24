@@ -62,6 +62,25 @@ Login geändert werden muss):
 docker compose exec backend node dist/scripts/seedAdmin.js
 ```
 
+## Backup und Wiederherstellung
+
+Unter **Einstellungen → System** legt FilaPilot täglich automatisch eine Sicherung an (Datenbank + hochgeladene
+Dateien) und listet alle vorhandenen Sicherungen. Mit **Wiederherstellen** wird der Stand einer Sicherung
+eingespielt: Vorher wird automatisch eine Sicherung des aktuellen Stands angelegt, das Einspielen läuft in einer
+Transaktion (bei einem Fehler bleibt alles unverändert), und danach gelten Benutzer und Passwörter aus der
+Sicherung.
+
+**Umzug auf eine neue Synology:**
+
+1. FilaPilot dort normal installieren und im Browser den Einrichtungsbildschirm durchlaufen (der Zugang ist nur
+   vorläufig, er wird durch die Sicherung ersetzt).
+2. Die Sicherungsdateien (`filapilot-db-<Zeitstempel>.sql`, optional `-uploads-` und `-settings-`) in den
+   Backup-Ordner der neuen Installation kopieren:
+   `docker cp <datei> <projekt>-backend-1:/data/backups/`
+3. Unter Einstellungen → System die Sicherung wiederherstellen und mit den Zugangsdaten aus der Sicherung anmelden.
+4. Das SMTP-Passwort ist mit einem Schlüssel aus `SESSION_SECRET` verschlüsselt: Hast du in der neuen `.env` ein
+   anderes Secret, gibst du das SMTP-Passwort einmal neu ein.
+
 ## Updates
 
 Auf der Synology per Aufgabenplanung regelmäßig ausführen lassen (siehe

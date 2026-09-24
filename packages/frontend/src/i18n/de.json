@@ -55,6 +55,38 @@
     "create": "Administrator anlegen",
     "failed": "Die Einrichtung ist fehlgeschlagen."
   },
+  "backup": {
+    "existing": "Vorhandene Sicherungen",
+    "existingHint": "Sicherungen im aktuell eingestellten Backup-Ordner dieser Installation.",
+    "refresh": "Aktualisieren",
+    "none": "Noch keine Sicherung vorhanden.",
+    "createdAt": "Erstellt am",
+    "contents": "Inhalt",
+    "contentsDatabase": "Datenbank",
+    "contentsWithUploads": "Datenbank und Dateien",
+    "size": "Größe",
+    "restore": "Wiederherstellen",
+    "loadFailed": "Die Sicherungen konnten nicht geladen werden.",
+    "restoreTitle": "Sicherung wiederherstellen",
+    "restoreWarning": "Die Sicherung vom {{date}} wird eingespielt. Der aktuelle Stand der Datenbank wird dabei ersetzt.",
+    "restoreInfoSafety": "Vorher wird automatisch eine Sicherung des aktuellen Stands angelegt.",
+    "restoreInfoLogin": "Danach gelten die Benutzer und Passwörter aus der Sicherung, du musst dich neu anmelden.",
+    "restoreInfoUploads": "Hochgeladene Dateien werden durch den Stand der Sicherung ersetzt.",
+    "typeToConfirm": "Zur Bestätigung „{{word}}“ eintippen",
+    "restoreNow": "Jetzt wiederherstellen",
+    "restoreFailed": "Die Wiederherstellung konnte nicht gestartet werden.",
+    "pleaseWait": "Bitte diese Seite offen lassen. Das kann bei großen Datenbanken einige Minuten dauern.",
+    "restoreDone": "Die Sicherung wurde wiederhergestellt. Bitte melde dich neu an.",
+    "restoreFailedUnchanged": "Die Wiederherstellung ist fehlgeschlagen. Die Datenbank wurde nicht verändert.",
+    "toLogin": "Zur Anmeldung",
+    "step": {
+      "safety-backup": "Sicherung des aktuellen Stands wird angelegt …",
+      "database": "Datenbank wird wiederhergestellt …",
+      "uploads": "Dateien werden wiederhergestellt …",
+      "schema": "Datenbank-Struktur wird abgeglichen …",
+      "finish": "Wird abgeschlossen …"
+    }
+  },
   "update": {
     "available": "Eine neue Version ist bereit. Bitte aktualisieren, damit die aktuelle Version genutzt wird.",
     "refresh": "Aktualisieren"

@@ -9,6 +9,7 @@ import { authRouter } from "./routes/auth.js";
 import { setupRouter } from "./routes/setup.js";
 import { usersRouter } from "./routes/users.js";
 import { settingsRouter } from "./routes/settings.js";
+import { backupsRouter } from "./routes/backups.js";
 import { materialsRouter } from "./routes/materials.js";
 import { manufacturersRouter } from "./routes/manufacturers.js";
 import { spoolsRouter } from "./routes/spools.js";
@@ -34,6 +35,7 @@ export function createApp() {
   app.use("/api/auth", authRateLimiter, authRouter);
   app.use("/api/setup", authRateLimiter, setupRouter);
   app.use("/api/users", usersRouter);
+  app.use("/api/settings/backups", backupsRouter);
   app.use("/api/settings", settingsRouter);
   app.use("/api/materials", materialsRouter);
   app.use("/api/manufacturers", manufacturersRouter);
