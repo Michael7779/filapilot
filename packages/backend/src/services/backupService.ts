@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import { getSettings } from "./settingsService.js";
 import { logger } from "../logger.js";
 import { runExclusive } from "./backupLock.js";
-import { backupFileNames } from "./backupCatalog.js";
+import { backupFileNames, pruneBackups } from "./backupCatalog.js";
 
 const exec = promisify(execCallback);
 
@@ -53,6 +53,25 @@ export async function createBackupUnlocked(options: CreateBackupOptions = {}): P
   return timestamp;
 }
 
+// Regulaere Sicherung (Zeitplan oder Knopf): danach werden aeltere Sicherungen gemaess Einstellung geloescht.
+// Die Sicherungen, die vor einer Wiederherstellung entstehen, laufen ueber createBackupUnlocked und werden
+// erst bei der naechsten regulaeren Sicherung mit aufgeraeumt - so kann nie der Satz verschwinden, der gerade
+// wiederhergestellt wird.
 export function createBackup(options: CreateBackupOptions = {}): Promise<string> {
-  return runExclusive(() => createBackupUnlocked(options));
+  return runExclusive(async () => {
+    const timestamp = await createBackupUnlocked(options);
+    const settings = await getSettings();
+    try {
+      const removed = await pruneBackups(
+        options.targetFolder ?? settings.backupFolderPath,
+        settings.backupRetentionCount
+      );
+      if (removed.length > 0) {
+        logger.info("Alte Sicherungen geloescht", { removed });
+      }
+    } catch (err) {
+      logger.warn("Aufraeumen alter Sicherungen fehlgeschlagen", { err });
+    }
+    return timestamp;
+  });
 }

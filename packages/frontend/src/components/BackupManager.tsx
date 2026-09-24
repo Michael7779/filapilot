@@ -174,7 +174,7 @@ function BackupTable({
   }
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[460px] text-left text-sm">
+      <table className="w-full min-w-[520px] text-left text-sm">
         <thead>
           <tr className="text-xs uppercase text-[var(--color-text-muted)]">
             <th className="pb-2 font-medium">{t("backup.createdAt")}</th>
@@ -191,15 +191,23 @@ function BackupTable({
                 {backup.hasUploads ? t("backup.contentsWithUploads") : t("backup.contentsDatabase")}
               </td>
               <td className="py-2.5 text-right">{formatSize(backup.sizeBytes, i18n.language)}</td>
-              <td className="py-2.5 text-right">
-                <button
-                  type="button"
-                  onClick={() => onRestore(backup)}
-                  className="text-xs font-medium"
-                  style={{ color: "var(--accent)" }}
-                >
-                  {t("backup.restore")}
-                </button>
+              <td className="py-2.5">
+                <div className="flex justify-end gap-3 text-xs font-medium">
+                  <a
+                    href={`/api/settings/backups/${backup.timestamp}/download`}
+                    download
+                    style={{ color: "var(--accent)" }}
+                  >
+                    {t("backup.download")}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => onRestore(backup)}
+                    style={{ color: "var(--accent)" }}
+                  >
+                    {t("backup.restore")}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

@@ -144,6 +144,7 @@ function GeneralSettingsSection({
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(settings.photoUploadEnabled);
   const [syncInterval, setSyncInterval] = useState(String(settings.defaultPrinterSyncIntervalSeconds));
   const [backupEnabled, setBackupEnabled] = useState(settings.backupEnabled);
+  const [retention, setRetention] = useState(String(settings.backupRetentionCount));
   const [backupFolderPath, setBackupFolderPath] = useState(settings.backupFolderPath);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -157,6 +158,7 @@ function GeneralSettingsSection({
         photoUploadEnabled,
         defaultPrinterSyncIntervalSeconds: Number(syncInterval),
         backupEnabled,
+        backupRetentionCount: Number(retention),
         backupFolderPath
       };
       const updated = await apiRequest<Settings>("/settings", {
@@ -209,6 +211,17 @@ function GeneralSettingsSection({
             className={inputClass}
           />
         </Field>
+        <Field label={t("settings.backupRetention")}>
+          <input
+            type="number"
+            min={1}
+            max={365}
+            value={retention}
+            onChange={(event) => setRetention(event.target.value)}
+            className={inputClass}
+          />
+        </Field>
+        <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("settings.backupRetentionHint")}</p>
         {message && <p className="text-sm text-[var(--color-text-secondary)]">{message}</p>}
         <button
           type="submit"
@@ -513,7 +526,7 @@ function NewUserModal({
 }
 
 function UserManagementSection(): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [users, setUsers] = useState<UserPublic[] | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [newUserNotice, setNewUserNotice] = useState<CreateUserResult | null>(null);
@@ -600,12 +613,14 @@ function UserManagementSection(): React.JSX.Element {
         <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>
       ) : (
         <div className="overflow-x-auto">
-<table className="w-full min-w-[560px] text-left text-sm">
+<table className="w-full min-w-[820px] text-left text-sm">
           <thead>
             <tr className="text-xs text-[var(--color-text-muted)]">
               <th className="pb-2 font-medium">{t("auth.username")}</th>
               <th className="pb-2 font-medium">{t("settings.email")}</th>
               <th className="pb-2 font-medium">{t("settings.role")}</th>
+              <th className="pb-2 font-medium">{t("settings.createdAt")}</th>
+              <th className="pb-2 font-medium">{t("settings.lastLogin")}</th>
               <th />
             </tr>
           </thead>
@@ -621,6 +636,17 @@ function UserManagementSection(): React.JSX.Element {
                       {t("settings.pendingPasswordChange")}
                     </span>
                   )}
+                </td>
+                <td className="py-2 text-[var(--color-text-secondary)]">
+                  {new Date(u.createdAt).toLocaleDateString(i18n.language)}
+                </td>
+                <td className="py-2 text-[var(--color-text-secondary)]">
+                  {u.lastLoginAt
+                    ? new Date(u.lastLoginAt).toLocaleString(i18n.language, {
+                        dateStyle: "short",
+                        timeStyle: "short"
+                      })
+                    : t("settings.neverLoggedIn")}
                 </td>
                 <td className="py-2">
                   <div className="flex justify-end gap-3 text-xs font-medium">

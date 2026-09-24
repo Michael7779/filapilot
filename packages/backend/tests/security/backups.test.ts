@@ -43,7 +43,8 @@ describe("Backups (Uebersicht + Wiederherstellung) - Negativ-Tests", () => {
     const calls = [
       () => request(app).get("/api/settings/backups"),
       () => request(app).get("/api/settings/backups/restore-status"),
-      () => request(app).post(`/api/settings/backups/${TIMESTAMP}/restore`).send({ confirmation: "WIEDERHERSTELLEN" })
+      () => request(app).post(`/api/settings/backups/${TIMESTAMP}/restore`).send({ confirmation: "WIEDERHERSTELLEN" }),
+      () => request(app).get(`/api/settings/backups/${TIMESTAMP}/download`)
     ];
     for (const call of calls) {
       assert.equal((await call()).status, 401);
@@ -54,7 +55,8 @@ describe("Backups (Uebersicht + Wiederherstellung) - Negativ-Tests", () => {
       request(app)
         .post(`/api/settings/backups/${TIMESTAMP}/restore`)
         .set("Cookie", userCookie)
-        .send({ confirmation: "WIEDERHERSTELLEN" })
+        .send({ confirmation: "WIEDERHERSTELLEN" }),
+      request(app).get(`/api/settings/backups/${TIMESTAMP}/download`).set("Cookie", userCookie)
     ];
     for (const res of await Promise.all(asUser)) {
       assert.equal(res.status, 403);
@@ -91,5 +93,30 @@ describe("Backups (Uebersicht + Wiederherstellung) - Negativ-Tests", () => {
 
     const status = await request(app).get("/api/settings/backups/restore-status").set("Cookie", adminCookie);
     assert.equal(status.body.data.state, "idle");
+  });
+
+  it("laesst Admins eine Sicherung als tar herunterladen; ungueltige/unbekannte Zeitstempel werden abgelehnt", async () => {
+    const ok = await request(app)
+      .get(`/api/settings/backups/${TIMESTAMP}/download`)
+      .set("Cookie", adminCookie)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => callback(null, Buffer.concat(chunks)));
+      });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.headers["content-type"], "application/x-tar");
+    assert.equal(
+      ok.headers["content-disposition"],
+      `attachment; filename="filapilot-backup-${TIMESTAMP}.tar"`
+    );
+    // Ein tar-Archiv beginnt mit dem Dateinamen des ersten Eintrags
+    assert.ok((ok.body as Buffer).subarray(0, 100).toString("utf8").startsWith(`filapilot-db-${TIMESTAMP}.sql`));
+
+    const traversal = await request(app).get("/api/settings/backups/..%2F..%2Fetc%2Fpasswd/download").set("Cookie", adminCookie);
+    assert.equal(traversal.status, 400);
+    const unknown = await request(app).get("/api/settings/backups/2020-01-01T00-00-00-000Z/download").set("Cookie", adminCookie);
+    assert.equal(unknown.status, 404);
   });
 });

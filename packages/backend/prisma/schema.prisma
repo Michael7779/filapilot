@@ -26,6 +26,7 @@ model User {
   role                UserRole  @default(USER)
   mustChangePassword  Boolean   @default(true)
   themeAccentColor    String?
+  lastLoginAt         DateTime?
   resetToken          String?   @unique
   resetTokenExpiresAt DateTime?
   createdAt           DateTime  @default(now())
@@ -153,6 +154,8 @@ model Settings {
   smtpFromAddress                    String?
   backupFolderPath                   String   @default("/data/backups")
   backupEnabled                      Boolean  @default(true)
+  // Wie viele Sicherungen aufbewahrt werden; aeltere werden nach jeder regulaeren Sicherung geloescht.
+  backupRetentionCount               Int      @default(14)
   // Stand der mitgelieferten Hersteller-/Material-Vorlagen, die zuletzt eingespielt wurden.
   catalogVersion                     Int      @default(0)
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt.

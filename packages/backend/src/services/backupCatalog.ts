@@ -58,3 +58,17 @@ export async function listBackups(folder: string): Promise<BackupInfo[]> {
   }
   return infos.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 }
+
+// Loescht die aeltesten Saetze (alle zugehoerigen Dateien), sodass nur die neuesten `keep` uebrig bleiben.
+// Saetze ohne Datenbank-Dump werden nie angefasst. Gibt die geloeschten Zeitstempel zurueck.
+export async function pruneBackups(folder: string, keep: number): Promise<string[]> {
+  const all = await listBackups(folder);
+  const obsolete = all.slice(Math.max(keep, 1));
+  for (const backup of obsolete) {
+    for (const fileName of Object.values(backupFileNames(backup.timestamp))) {
+      // fileName entsteht aus einem per Regex geprueften Zeitstempel, folder aus den Admin-Einstellungen.
+      await fs.rm(path.join(folder, fileName), { force: true });
+    }
+  }
+  return obsolete.map((backup) => backup.timestamp);
+}

@@ -42,6 +42,15 @@ describe("Auth - Negativ-Tests", () => {
     assert.equal(res.status, 200);
   });
 
+  it("vermerkt beim Login das Datum des letzten Logins", async () => {
+    await request(app)
+      .post("/api/auth/login")
+      .send({ username: "normaluser", password: "correct-horse-battery-staple" });
+    const user = await prisma.user.findFirstOrThrow({ where: { username: "normaluser" } });
+    assert.ok(user.lastLoginAt instanceof Date);
+    assert.ok(Date.now() - user.lastLoginAt.getTime() < 60_000);
+  });
+
   it("lehnt Login fuer unbekannten Benutzernamen mit gleicher Meldung ab (kein User-Enumeration-Leak)", async () => {
     const resUnknown = await request(app)
       .post("/api/auth/login")
@@ -126,6 +135,8 @@ describe("Auth - Negativ-Tests", () => {
     assert.equal(res.status, 201);
     assert.equal(typeof res.body.data.temporaryPassword, "string");
     assert.ok(res.body.data.temporaryPassword.length > 0);
+    assert.equal(res.body.data.lastLoginAt, null);
+    assert.ok(!Number.isNaN(Date.parse(res.body.data.createdAt)));
 
     const duplicate = await request(app)
       .post("/api/users")

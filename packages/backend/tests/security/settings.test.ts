@@ -93,6 +93,14 @@ describe("Settings - Negativ-Tests", () => {
     assert.equal(await getDecryptedSmtpPassword(), null);
   });
 
+  it("validiert und speichert die Anzahl aufzubewahrender Sicherungen", async () => {
+    const tooLow = await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ backupRetentionCount: 0 });
+    assert.equal(tooLow.status, 400);
+    const ok = await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ backupRetentionCount: 30 });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.data.backupRetentionCount, 30);
+  });
+
   it("lehnt den SMTP-Test ohne Login (401) und durch nicht-Admin (403) ab", async () => {
     assert.equal((await request(app).post("/api/settings/smtp-test")).status, 401);
     const login = await request(app)

@@ -20,6 +20,7 @@ export const settingsSchema = z.object({
   smtp: smtpConfigSchema.nullable(),
   backupFolderPath: z.string().min(1),
   backupEnabled: z.boolean(),
+  backupRetentionCount: z.number().int().min(1).max(365),
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt,
   // keine Pruef-/Gating-Logik ohne expliziten Auftrag bauen.
   licenseKey: z.string().nullable()
@@ -32,7 +33,8 @@ export const updateSettingsInputSchema = z
     defaultPrinterSyncIntervalSeconds: z.number().int().min(10).max(3600),
     smtp: smtpConfigInputSchema.nullable(),
     backupFolderPath: z.string().min(1),
-    backupEnabled: z.boolean()
+    backupEnabled: z.boolean(),
+    backupRetentionCount: z.number().int().min(1).max(365)
   })
   .partial();
 export type UpdateSettingsInput = z.infer<typeof updateSettingsInputSchema>;

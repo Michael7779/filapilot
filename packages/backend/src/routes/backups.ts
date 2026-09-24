@@ -1,11 +1,15 @@
+import { spawn } from "node:child_process";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Router } from "express";
 import { z } from "zod";
 import { backupTimestampSchema, restoreBackupInputSchema } from "@filapilot/shared";
-import { sendData } from "../lib/apiResult.js";
+import { sendData, AppError } from "../lib/apiResult.js";
+import { logger } from "../logger.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../middleware/auth.js";
 import { getSettings } from "../services/settingsService.js";
-import { listBackups } from "../services/backupCatalog.js";
+import { backupFileNames, listBackups } from "../services/backupCatalog.js";
 import { getRestoreStatus, startRestore } from "../services/restoreService.js";
 
 export const backupsRouter = Router();
@@ -48,5 +52,47 @@ backupsRouter.post(
     restoreBackupInputSchema.parse(req.body);
     await startRestore(timestamp);
     sendData(res, { started: true }, 202);
+  })
+);
+
+// Threat-Model: Der Download liefert die komplette Datenbank inkl. Passwort-Hashes - ein normaler Benutzer
+// oder ein Angreifer mit manipuliertem Zeitstempel (Path-Traversal) duerfte nie drankommen. Serverseitig
+// erzwungen: requireRole("ADMIN"); Zeitstempel per Regex, Dateinamen werden daraus neu gebaut; es werden nur
+// Dateien des Sicherungssatzes im Backup-Ordner gepackt (nie ein frei waehlbarer Pfad).
+// Negativ-Tests: kein Cookie -> 401, USER -> 403, ungueltiger Zeitstempel -> 400, unbekannt -> 404.
+// SCOPE: global
+backupsRouter.get(
+  "/:timestamp/download",
+  ...requireAdmin,
+  asyncHandler(async (req, res) => {
+    const timestamp = z.string().pipe(backupTimestampSchema).parse(req.params.timestamp);
+    const folder = (await getSettings()).backupFolderPath;
+    const names = backupFileNames(timestamp);
+    const present: string[] = [];
+    for (const fileName of Object.values(names)) {
+      // fileName stammt aus dem per Regex geprueften Zeitstempel, folder aus den Admin-Einstellungen.
+      if (await fs.access(path.join(folder, fileName)).then(() => true, () => false)) {
+        present.push(fileName);
+      }
+    }
+    if (!present.includes(names.database)) {
+      throw new AppError("NOT_FOUND", "Diese Sicherung wurde nicht gefunden.");
+    }
+
+    res.setHeader("Content-Type", "application/x-tar");
+    res.setHeader("Content-Disposition", `attachment; filename="filapilot-backup-${timestamp}.tar"`);
+    const tar = spawn("/usr/bin/tar", ["-cf", "-", "-C", folder, ...present]);
+    tar.stdout.pipe(res);
+    tar.on("error", (err) => {
+      logger.error("Sicherung konnte nicht gepackt werden", { err, timestamp });
+      res.destroy(err);
+    });
+    tar.on("close", (code) => {
+      if (code !== 0) {
+        logger.error("tar beim Sicherungs-Download fehlgeschlagen", { code, timestamp });
+        res.destroy();
+      }
+    });
+    res.on("close", () => tar.kill());
   })
 );

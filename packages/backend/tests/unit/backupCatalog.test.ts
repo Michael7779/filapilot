@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listBackups, timestampToIso } from "../../src/services/backupCatalog.js";
+import { listBackups, pruneBackups, timestampToIso } from "../../src/services/backupCatalog.js";
 
 describe("Backup-Katalog", () => {
   let folder = "";
@@ -46,5 +46,27 @@ describe("Backup-Katalog", () => {
   it("wandelt den Zeitstempel in ein gueltiges ISO-Datum um", () => {
     assert.equal(timestampToIso("2026-09-24T01-00-00-008Z"), "2026-09-24T01:00:00.008Z");
     assert.ok(!Number.isNaN(Date.parse(timestampToIso("2026-09-24T01-00-00-008Z"))));
+  });
+
+  it("loescht beim Aufraeumen nur die aeltesten Saetze samt aller Dateien und behaelt die neuesten", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "filapilot-prune-"));
+    const stamps = ["2026-09-20T01-00-00-000Z", "2026-09-21T01-00-00-000Z", "2026-09-22T01-00-00-000Z"];
+    for (const ts of stamps) {
+      await fs.writeFile(path.join(dir, `filapilot-db-${ts}.sql`), "x");
+      await fs.writeFile(path.join(dir, `filapilot-uploads-${ts}.tar.gz`), "x");
+    }
+    await fs.writeFile(path.join(dir, "notizen.txt"), "bleibt");
+
+    const removed = await pruneBackups(dir, 2);
+    assert.deepEqual(removed, ["2026-09-20T01-00-00-000Z"]);
+    assert.deepEqual((await fs.readdir(dir)).sort(), [
+      "filapilot-db-2026-09-21T01-00-00-000Z.sql",
+      "filapilot-db-2026-09-22T01-00-00-000Z.sql",
+      "filapilot-uploads-2026-09-21T01-00-00-000Z.tar.gz",
+      "filapilot-uploads-2026-09-22T01-00-00-000Z.tar.gz",
+      "notizen.txt"
+    ]);
+    assert.deepEqual(await pruneBackups(dir, 2), []);
+    await fs.rm(dir, { recursive: true, force: true });
   });
 });

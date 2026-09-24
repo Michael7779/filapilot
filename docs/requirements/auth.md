@@ -65,3 +65,6 @@ wirklich verschickt wurde).
   lehnt der Server jede weitere Einrichtung ab (403); gleichzeitige Aufrufe erzeugen genau einen Admin
   (Serializable-Transaktion). Bewusst akzeptiert: Auf einer frischen, offen erreichbaren Instanz gewinnt,
   wer zuerst einrichtet. Test: `packages/backend/tests/security/setup.test.ts`
+- **R12**: Die Benutzerliste zeigt Anlagedatum und Datum des letzten Logins (`User.lastLoginAt`, gesetzt bei
+  jeder Anmeldung und bei der Einrichtung; leer = noch nie angemeldet).
+  Test: `packages/backend/tests/security/auth.test.ts`

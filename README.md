@@ -70,6 +70,11 @@ eingespielt: Vorher wird automatisch eine Sicherung des aktuellen Stands angeleg
 Transaktion (bei einem Fehler bleibt alles unverändert), und danach gelten Benutzer und Passwörter aus der
 Sicherung.
 
+Die Anzahl aufbewahrter Sicherungen (Standard: 14) stellst du unter Einstellungen → System → Allgemein ein,
+ältere werden nach jeder regulären Sicherung automatisch gelöscht. Mit **Herunterladen** speicherst du eine
+Sicherung als `.tar`-Datei auf deinem Rechner (enthält die komplette Datenbank inkl. Passwort-Hashes — sicher
+aufbewahren).
+
 **Umzug auf eine neue Synology:**
 
 1. FilaPilot dort normal installieren und im Browser den Einrichtungsbildschirm durchlaufen (der Zugang ist nur

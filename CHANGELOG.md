@@ -3,6 +3,17 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.8.0] - 2026-09-24
+
+### Hinzugefuegt
+- Sicherungen: Aufbewahrung (Einstellung "Anzahl aufzubewahrender Sicherungen", Standard 14) - ältere werden
+  nach jeder regulären Sicherung automatisch gelöscht.
+- Sicherungen: "Herunterladen" speichert eine Sicherung als tar-Datei.
+- Benutzerliste: Spalten "Erstellt am" und "Letzter Login".
+
+### Hinweis zum Update
+- Zwei neue Datenbank-Spalten (letzter Login, Anzahl Sicherungen); das Update-Skript gleicht sie automatisch ab.
+
 ## [0.7.0] - 2026-09-24
 
 ### Hinzugefuegt

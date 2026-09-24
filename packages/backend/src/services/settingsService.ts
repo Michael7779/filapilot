@@ -31,6 +31,7 @@ export async function getSettings(): Promise<Settings> {
     smtp,
     backupFolderPath: row.backupFolderPath,
     backupEnabled: row.backupEnabled,
+    backupRetentionCount: row.backupRetentionCount,
     licenseKey: row.licenseKey
   };
 }
@@ -64,6 +65,9 @@ export async function updateSettings(input: UpdateSettingsInput): Promise<Settin
       }),
       ...(input.backupFolderPath !== undefined && { backupFolderPath: input.backupFolderPath }),
       ...(input.backupEnabled !== undefined && { backupEnabled: input.backupEnabled }),
+      ...(input.backupRetentionCount !== undefined && {
+        backupRetentionCount: input.backupRetentionCount
+      }),
       ...(input.smtp !== undefined && {
         smtpHost: input.smtp?.host ?? null,
         smtpPort: input.smtp?.port ?? null,

@@ -14,6 +14,7 @@ export const userPublicSchema = z.object({
   role: userRoleSchema,
   mustChangePassword: z.boolean(),
   themeAccentColor: hexColorSchema.nullable(),
+  lastLoginAt: z.coerce.date().nullable(),
   createdAt: z.coerce.date()
 });
 export type UserPublic = z.infer<typeof userPublicSchema>;

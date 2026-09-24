@@ -31,6 +31,12 @@
     bleibt unveraendert, (3) Uploads-Ordner leeren und Archiv entpacken (nur wenn die Sicherung eines
     enthaelt), (4) `prisma db push` fuer Sicherungen aus aelteren Versionen, (5) Drucker-Verbindungen neu
     aufbauen. Laeuft im Hintergrund; der Fortschritt kommt ueber `GET /api/settings/backups/restore-status`.
+  - Aufbewahrung: `Settings.backupRetentionCount` (Standard 14). Nach jeder *regulaeren* Sicherung
+    (Zeitplan oder Knopf) loescht `pruneBackups` die aeltesten Saetze samt aller Dateien. Die Sicherungen, die
+    vor einer Wiederherstellung entstehen, werden erst bei der naechsten regulaeren Sicherung mit aufgeraeumt,
+    damit nie der Satz verschwindet, der gerade wiederhergestellt wird.
+  - Download: `GET /api/settings/backups/:timestamp/download` liefert die Dateien des Satzes als `.tar`
+    (Stream, nur Admin).
   - Sperre: Sicherung und Wiederherstellung laufen nie gleichzeitig (409).
   - Nie automatisch beim Start, nur durch einen Admin mit Bestaetigungswort.
   - **Umzug auf eine neue Synology**: neue Instanz einrichten (Einrichtungsbildschirm), Sicherungsdateien
@@ -39,8 +45,8 @@
     `SESSION_SECRET` verschluesselt: bei anderem Secret einmal neu eingeben (kein Absturz, siehe R8).
 
 ## 1.1 Offene Punkte
-- OP-S1: Kein Herunterladen einzelner Sicherungen ueber die Oberflaeche und keine automatische Aufbewahrung
-  (alte Sicherungen werden nie geloescht - bei taeglichem Backup waechst der Ordner).
+- OP-S1: Kein Hochladen von Sicherungen ueber die Oberflaeche (Dateien muessen per `docker cp` in den
+  Backup-Ordner kopiert werden, siehe README).
 - OP-S4: Wiederherstellung wurde nur mit einer Sicherung aus derselben Version praktisch geprueft;
   Sicherungen aus einer *neueren* Version in eine aeltere Installation einzuspielen ist nicht unterstuetzt.
 
@@ -64,3 +70,9 @@
   neue Daten und Upload-Datei weg).
 - **R8**: Ein nicht entschluesselbares SMTP-Passwort (anderes SESSION_SECRET) fuehrt nicht zum Absturz.
   Test: `tests/security/settings.test.ts`
+- **R9**: Der Download einer Sicherung ist nur fuer Admins moeglich (401/403), ein ungueltiger Zeitstempel
+  ergibt 400, eine unbekannte Sicherung 404; die Antwort ist ein tar-Archiv mit den Dateien des Satzes.
+  Test: `tests/security/backups.test.ts`
+- **R10**: Nach einer regulaeren Sicherung bleiben nur die neuesten `backupRetentionCount` Saetze uebrig, fremde
+  Dateien bleiben unangetastet; der Wert ist mit 1-365 validiert.
+  Test: `tests/unit/backupCatalog.test.ts`, `tests/security/settings.test.ts`
