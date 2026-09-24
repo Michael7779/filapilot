@@ -131,7 +131,7 @@ export function SpoolsPage(): React.JSX.Element {
       {spools.length === 0 ? (
         <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.empty")}</p>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {spools.map((spool) => {
             const percent = Math.round((spool.remainingWeightG / spool.initialWeightG) * 100);
             const temps = materials.find((material) => material.id === spool.materialId);

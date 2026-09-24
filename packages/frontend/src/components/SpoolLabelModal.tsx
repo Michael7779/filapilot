@@ -36,7 +36,7 @@ export function SpoolLabelModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="flex w-[380px] flex-col gap-4 rounded-xl border border-[var(--color-border)] bg-white p-6">
+      <div className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-4 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6">
         <h2 className="text-lg font-bold">{t("spools.qrLabel")}</h2>
 
         <div className="print-only flex flex-col items-center gap-2 rounded-lg border border-[var(--color-border)] p-4">

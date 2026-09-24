@@ -60,10 +60,10 @@ export function LoginPage(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-[var(--color-bg)]">
+    <div className="flex min-h-dvh items-center justify-center bg-[var(--color-bg)] p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
-        className="flex w-[340px] flex-col gap-4 rounded-xl border border-[var(--color-border)] bg-white p-7"
+        className="flex w-full max-w-[340px] flex-col gap-4 rounded-xl border border-[var(--color-border)] bg-white p-7"
       >
         <div className="mb-1 flex items-center gap-2">
           <img src="/icons/icon.svg" alt="" className="h-7 w-7" aria-hidden="true" />

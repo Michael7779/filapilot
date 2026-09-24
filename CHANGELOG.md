@@ -3,6 +3,13 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+## [0.6.0] - 2026-09-24
+
+### Hinzugefuegt
+- Mobile Ansicht für das Smartphone (auch als installierte PWA): Navigation als Leiste unten mit
+  Symbolen, Karten und Kennzahlen passen sich der Breite an, Dialoge und Tabellen sind auf kleinen
+  Bildschirmen bedienbar, Abmelden unter Einstellungen → Mein Konto.
+
 ## [0.5.0] - 2026-09-23
 
 ### Hinzugefuegt

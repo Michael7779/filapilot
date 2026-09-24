@@ -56,7 +56,7 @@ export function EditUserModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
-        className="flex w-[380px] flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-6"
+        className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
       >
         <h2 className="text-lg font-bold">{t("settings.editUser")}</h2>
         <label className={LABEL_CLASS}>

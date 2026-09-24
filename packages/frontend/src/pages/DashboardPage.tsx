@@ -41,7 +41,7 @@ export function DashboardPage(): React.JSX.Element {
     : "0";
 
   return (
-    <div className="grid grid-cols-4 gap-3.5">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-3.5">
       <StatCard label={t("dashboard.totalSpools")} value={spools ? String(spools.length) : "…"} />
       <StatCard label={t("dashboard.totalWeight")} value={spools ? `${totalWeightKg} kg` : "…"} />
       <StatCard

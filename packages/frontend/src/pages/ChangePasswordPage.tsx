@@ -49,10 +49,10 @@ export function ChangePasswordPage(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-[var(--color-bg)]">
+    <div className="flex min-h-dvh items-center justify-center bg-[var(--color-bg)] p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
-        className="flex w-[360px] flex-col gap-4 rounded-xl border border-[var(--color-border)] bg-white p-7"
+        className="flex w-full max-w-[360px] flex-col gap-4 rounded-xl border border-[var(--color-border)] bg-white p-7"
       >
         <div>
           <h1 className="text-lg font-bold">{t("auth.changePasswordTitle")}</h1>

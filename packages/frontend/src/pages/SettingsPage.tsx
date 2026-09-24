@@ -4,6 +4,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { CatalogSection } from "../components/CatalogSettings.js";
 import { EditUserModal } from "../components/EditUserModal.js";
+import { useLogout } from "../hooks/useLogout.js";
 import type {
   CreateUserInput,
   CreateUserResult,
@@ -34,7 +35,7 @@ function SectionCard({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
   return (
-    <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+    <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
       {label}
       {children}
     </label>
@@ -42,7 +43,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputClass =
-  "rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]";
+  "w-full min-w-0 rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]";
 
 function OwnAccountSection(): React.JSX.Element {
   const { t } = useTranslation();
@@ -52,6 +53,7 @@ function OwnAccountSection(): React.JSX.Element {
   const setAccentColor = useThemeStore((state) => state.setAccentColor);
   const resetAccent = useThemeStore((state) => state.resetToDefault);
   const [saving, setSaving] = useState(false);
+  const logout = useLogout();
 
   async function applyColor(hex: string | null): Promise<void> {
     setSaving(true);
@@ -119,6 +121,13 @@ function OwnAccountSection(): React.JSX.Element {
       <a href="/passwort-aendern" className="w-fit text-xs font-medium" style={{ color: "var(--accent)" }}>
         {t("settings.changePassword")}
       </a>
+      <button
+        type="button"
+        onClick={() => void logout()}
+        className="w-fit rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium md:hidden"
+      >
+        {t("common.logout")}
+      </button>
     </SectionCard>
   );
 }
@@ -287,7 +296,7 @@ function SmtpSettingsSection({ settings }: { settings: Settings }): React.JSX.El
         <Field label={t("settings.smtpHost")}>
           <input type="text" value={host} onChange={(e) => setHost(e.target.value)} className={inputClass} />
         </Field>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Field label={t("settings.smtpPort")}>
             <input
               type="number"
@@ -471,7 +480,7 @@ function NewUserModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
-        className="flex w-[380px] flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-6"
+        className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
       >
         <h2 className="text-lg font-bold">{t("settings.newUser")}</h2>
         <Field label={t("auth.username")}>
@@ -623,7 +632,8 @@ function UserManagementSection(): React.JSX.Element {
       {users === null ? (
         <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>
       ) : (
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto">
+<table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr className="text-xs text-[var(--color-text-muted)]">
               <th className="pb-2 font-medium">{t("auth.username")}</th>
@@ -674,6 +684,7 @@ function UserManagementSection(): React.JSX.Element {
             ))}
           </tbody>
         </table>
+</div>
       )}
       <button
         type="button"

@@ -12,6 +12,7 @@ Status-Legende: ⬜ nicht begonnen · 🔶 in Arbeit · ✅ fertig + getestet
 | Statistik / Druckauftraege | `stats.md` | 🔶 |
 | Einstellungen / Backup | `settings.md` | ✅ |
 | Theming pro Konto | `theming.md` | ✅ |
+| Mobile Ansicht / PWA | `mobile.md` | 🔶 |
 
 Neue Funktion → erst hier eine ID eintragen + mit einem Test verknuepfen, dann committen
 (siehe `anforderung`-Skill und CLAUDE.md, Abschnitt „Vor jeder Implementierung — PFLICHT").

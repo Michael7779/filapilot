@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import type { UserPublic } from "@filapilot/shared";
 import { Sidebar } from "./components/Sidebar.js";
+import { BottomNav } from "./components/BottomNav.js";
 import { UpdateBanner } from "./components/UpdateBanner.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { LoginPage } from "./pages/LoginPage.js";
@@ -39,8 +40,8 @@ function TopBar(): React.JSX.Element {
   const path = location.pathname.startsWith("/settings") ? "/settings" : location.pathname;
   const titleKey = TITLE_BY_PATH[path] ?? "nav.dashboard";
   return (
-    <header className="flex h-[68px] shrink-0 items-center justify-between border-b border-[var(--color-border)] px-7">
-      <h1 className="text-[19px] font-bold">{t(titleKey)}</h1>
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] px-4 pt-[env(safe-area-inset-top)] md:h-[68px] md:px-7">
+      <h1 className="text-[17px] font-bold md:text-[19px]">{t(titleKey)}</h1>
       <span className="text-xs text-[var(--color-text-muted)]">v{__APP_VERSION__}</span>
     </header>
   );
@@ -48,11 +49,11 @@ function TopBar(): React.JSX.Element {
 
 function AppShell(): React.JSX.Element {
   return (
-    <div className="flex h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
+    <div className="flex h-dvh bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
-        <main className="flex-1 overflow-auto p-7">
+        <main className="flex-1 overflow-auto p-4 pb-24 md:p-7 md:pb-7">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/spools" element={<SpoolsPage />} />
@@ -62,6 +63,7 @@ function AppShell(): React.JSX.Element {
           </Routes>
         </main>
       </div>
+      <BottomNav />
     </div>
   );
 }
@@ -73,7 +75,7 @@ function RequireAuth({ children }: { children: React.JSX.Element }): React.JSX.E
   const location: Location = useLocation();
 
   if (status === "loading") {
-    return <div className="flex h-screen items-center justify-center">{t("common.loading")}</div>;
+    return <div className="flex h-dvh items-center justify-center">{t("common.loading")}</div>;
   }
   if (status === "anonymous") {
     return <Navigate to="/login" state={{ from: location }} replace />;

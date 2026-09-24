@@ -95,7 +95,7 @@ function NewPrinterModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
-        className="flex max-h-[90vh] w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
+        className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
       >
         <h2 className="text-lg font-bold">{t("printers.newPrinter")}</h2>
         <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
@@ -326,7 +326,7 @@ export function PrintersPage(): React.JSX.Element {
       {printers.length === 0 ? (
         <p className="text-sm text-[var(--color-text-secondary)]">{t("printers.empty")}</p>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {printers.map((printer) => (
             <PrinterCard
               key={printer.id}

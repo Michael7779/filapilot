@@ -60,17 +60,17 @@ export function SetupPage(): React.JSX.Element {
   }
 
   if (needsSetup === null) {
-    return <div className="flex h-screen items-center justify-center">{t("common.loading")}</div>;
+    return <div className="flex h-dvh items-center justify-center">{t("common.loading")}</div>;
   }
   if (!needsSetup) {
     return <Navigate to="/login" replace />;
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-[var(--color-bg)] p-4">
+    <div className="flex min-h-dvh items-center justify-center bg-[var(--color-bg)] p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
-        className="flex w-[380px] flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-7"
+        className="flex w-full max-w-[380px] flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-7"
       >
         <div className="flex items-center gap-2">
           <img src="/icons/icon.svg" alt="" className="h-7 w-7" aria-hidden="true" />

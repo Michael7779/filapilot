@@ -172,7 +172,7 @@ export function SpoolFormModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
-        className="flex max-h-[90vh] w-[420px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
+        className="flex max-h-[90dvh] w-full max-w-[420px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
       >
         <h2 className="text-lg font-bold">
           {initialSpool ? t("spools.editSpool") : t("spools.addSpool")}

@@ -54,7 +54,7 @@ function ModalForm({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <form
         onSubmit={handleSubmit}
-        className="flex w-[380px] flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-6"
+        className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
       >
         <h2 className="text-lg font-bold">{title}</h2>
         {children}
@@ -303,7 +303,8 @@ export function CatalogSection(): React.JSX.Element {
     <>
       {message && <p className="text-sm text-[var(--color-danger)]">{message}</p>}
       <Card title={t("catalog.manufacturers")}>
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto">
+<table className="w-full text-left text-sm">
           <tbody>
             {sortAlphabetically(manufacturers, (m) => m.name, i18n.language).map((m) => (
               <tr key={m.id} className="border-t border-[var(--color-border)] first:border-t-0">
@@ -320,6 +321,7 @@ export function CatalogSection(): React.JSX.Element {
             ))}
           </tbody>
         </table>
+</div>
         <button
           type="button"
           onClick={() => setManufacturerModal("new")}
@@ -342,7 +344,8 @@ export function CatalogSection(): React.JSX.Element {
             ))}
           </select>
         </label>
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto">
+<table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr className="text-xs text-[var(--color-text-muted)]">
               <th className="pb-2 font-medium">{t("catalog.name")}</th>
@@ -371,6 +374,7 @@ export function CatalogSection(): React.JSX.Element {
             ))}
           </tbody>
         </table>
+</div>
         <p className="text-xs text-[var(--color-text-muted)]">{t("catalog.tempsHint")}</p>
         <button
           type="button"

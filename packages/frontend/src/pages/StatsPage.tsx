@@ -115,7 +115,7 @@ export function StatsPage(): React.JSX.Element {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-3.5">
         <StatCard label={t("stats.totalSpools")} value={String(spools.length)} />
         <StatCard
           label={t("stats.totalConsumed")}
@@ -128,7 +128,7 @@ export function StatsPage(): React.JSX.Element {
         <StatCard label={t("stats.lowStock")} value={String(lowStockCount)} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
         <BreakdownList
           title={t("stats.byMaterial")}
           entries={byMaterial}

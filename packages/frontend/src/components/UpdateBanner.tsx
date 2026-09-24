@@ -57,7 +57,7 @@ export function UpdateBanner(): React.JSX.Element | null {
   return (
     <div
       role="status"
-      className="fixed bottom-4 right-4 z-[60] flex max-w-sm flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-4 text-sm"
+      className="fixed inset-x-4 bottom-20 z-[60] flex md:inset-x-auto md:bottom-4 md:right-4 md:max-w-sm flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-4 text-sm"
     >
       <span>{t("update.available")}</span>
       <button
