@@ -65,3 +65,6 @@
   `SpoolWeightLog` (nie beim Anlegen, nie ohne Aenderung); Loeschen einer Spule entfernt ihren Verlauf, Archivieren behaelt ihn.
   Tests: `tests/security/spoolArchive.test.ts`, `tests/security/bambuImport.test.ts`
 - **R10**: Ab 0.14.0 lassen sich Spulen aus der Bambu-Cloud importieren (siehe `bambu-import.md`); `Spool.bambuCloudId` markiert importierte Spulen.
+- **R13**: Ab 0.15.0 lassen sich Spulen im Browser durchsuchen, filtern (Hersteller, Material, Farbe, Lagerort, Restgewicht, Kaufpreis, Fast leer), sortieren
+  und zaehlen; die Logik ist rein (`packages/shared/src/spoolFilter.ts`), Oberflaeche `SpoolFilterBar.tsx`. Die Liste ist bereits auf das Lager begrenzt (keine
+  serverseitige Filterung, keine Rechte-Auswirkung). Test: `tests/unit/spoolFilter.test.ts`; die Oberflaeche wurde manuell geprueft.

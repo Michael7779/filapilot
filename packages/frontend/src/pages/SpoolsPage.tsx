@@ -1,6 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LOW_STOCK_THRESHOLD_RATIO } from "@filapilot/shared";
+import {
+  EMPTY_SPOOL_FILTER,
+  LOW_STOCK_THRESHOLD_RATIO,
+  filterSpools,
+  isFilterActive,
+  sortSpools,
+  type SpoolFilter,
+  type SpoolSortKey
+} from "@filapilot/shared";
 import type {
   CreateManufacturerInput,
   CreateMaterialInput,
@@ -11,6 +19,7 @@ import type {
 } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
+import { SpoolFilterBar } from "../components/SpoolFilterBar.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
 import { BambuImportModal } from "../components/BambuImportModal.js";
 import type { BambuConnectionInfo, BambuSyncSummary } from "@filapilot/shared";
@@ -24,7 +33,9 @@ import {
 } from "../lib/spoolPhoto.js";
 
 export function SpoolsPage(): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [filter, setFilter] = useState<SpoolFilter>(EMPTY_SPOOL_FILTER);
+  const [sort, setSort] = useState<SpoolSortKey>("name");
   const [spools, setSpools] = useState<SpoolWithRelations[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
@@ -185,6 +196,21 @@ export function SpoolsPage(): React.JSX.Element {
     await load();
   }
 
+  const visibleSpools = useMemo(
+    () => sortSpools(filterSpools(spools, filter, LOW_STOCK_THRESHOLD_RATIO), sort, i18n.language),
+    [spools, filter, sort, i18n.language]
+  );
+  let emptyText = "";
+  if (spools.length === 0) {
+    emptyText = t("spools.empty");
+  } else if (visibleSpools.length === 0) {
+    emptyText = t("spools.filter.noMatch");
+  }
+  const archivedCount = spools.filter((spool) => spool.archivedAt).length;
+  const totalRemainingG = visibleSpools.reduce((sum, spool) => sum + spool.remainingWeightG, 0);
+  const formatWeight = (grams: number): string =>
+    grams >= 1000 ? `${(grams / 1000).toLocaleString(i18n.language, { maximumFractionDigits: 2 })} kg` : `${grams.toLocaleString(i18n.language)} g`;
+
   if (loading) {
     return <div>{t("common.loading")}</div>;
   }
@@ -247,11 +273,25 @@ export function SpoolsPage(): React.JSX.Element {
 
       {notice && <p className="text-sm text-[var(--color-danger)]">{notice}</p>}
 
-      {spools.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.empty")}</p>
+      {spools.length > 0 && (
+        <>
+          <SpoolFilterBar spools={spools} filter={filter} sort={sort} onFilterChange={setFilter} onSortChange={setSort} />
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            {isFilterActive(filter)
+              ? t("spools.filter.countSome", { shown: visibleSpools.length, total: spools.length })
+              : t("spools.filter.countAll", { count: spools.length })}
+            {showArchived && archivedCount > 0 ? ` (${t("spools.filter.archivedPart", { count: archivedCount })})` : ""}
+            {" · "}
+            {t("spools.filter.remainingTotal", { weight: formatWeight(totalRemainingG) })}
+          </p>
+        </>
+      )}
+
+      {emptyText ? (
+        <p className="text-sm text-[var(--color-text-secondary)]">{emptyText}</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {spools.map((spool) => {
+          {visibleSpools.map((spool) => {
             const percent = Math.round((spool.remainingWeightG / spool.initialWeightG) * 100);
             const lowStock = spool.remainingWeightG / spool.initialWeightG <= LOW_STOCK_THRESHOLD_RATIO;
             const temps = materials.find((material) => material.id === spool.materialId);

@@ -52,3 +52,6 @@ Design: `docs/design/lager.md` (abgestimmt 2026-09-26). Umgesetzt in Version 0.1
   Test: `tests/security/inventories.test.ts`
 - **R11** ✅ Oberflaeche (Umschalter, "Alle Lager", Einstellungen -> Lager, Mitglieder-Dialog, Loeschen mit Namen, Betrachter ohne Bearbeiten-Knoepfe):
   manuell per Browser mit zwei Benutzern geprueft (2026-09-26).
+- **R12** ✅ Ab 0.15.0: `POST /api/inventories/:id/move-spools` verschiebt alle Spulen (auch archivierte) samt Gewichtsverlauf: `OWNER` in der Quelle, `EDITOR` im Ziel,
+  Quelle = Ziel 400, Fremde 404, anonym 401; wird protokolliert. Beim Verschieben einer einzelnen Spule zieht deren Verlauf mit. Test: `tests/security/moveSpools.test.ts`
+  Offen (OP-L3): Cloud-verknuepfte Spulen behalten ihre Bambu-ID; ein Abgleich im Ziel-Lager mit einem anderen Bambu-Konto wuerde sie als "in der Cloud entfernt" archivieren.

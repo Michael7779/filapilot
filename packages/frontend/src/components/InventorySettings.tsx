@@ -4,12 +4,14 @@ import type { Inventory } from "@filapilot/shared";
 import { InventoryDeleteModal } from "./InventoryDeleteModal.js";
 import { InventoryFormModal } from "./InventoryFormModal.js";
 import { InventoryMembersModal } from "./InventoryMembersModal.js";
+import { InventoryMoveModal } from "./InventoryMoveModal.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 
 type Dialog =
   | { kind: "create" }
   | { kind: "rename"; inventory: Inventory }
   | { kind: "members"; inventory: Inventory }
+  | { kind: "move"; inventory: Inventory }
   | { kind: "delete"; inventory: Inventory };
 
 const linkButton = "text-xs font-medium";
@@ -96,6 +98,16 @@ export function InventorySettings(): React.JSX.Element {
                     >
                       {t("inventory.rename")}
                     </button>
+                    {inventory.spoolCount > 0 && (
+                      <button
+                        type="button"
+                        className={linkButton}
+                        style={{ color: "var(--accent)" }}
+                        onClick={() => setDialog({ kind: "move", inventory })}
+                      >
+                        {t("inventory.moveSpools")}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className={`${linkButton} text-[var(--color-danger)]`}
@@ -136,6 +148,16 @@ export function InventorySettings(): React.JSX.Element {
           inventory={dialog.inventory}
           onClose={close}
           onChanged={() => void reload()}
+        />
+      )}
+      {dialog?.kind === "move" && (
+        <InventoryMoveModal
+          inventory={dialog.inventory}
+          onClose={close}
+          onMoved={() => {
+            close();
+            void reload();
+          }}
         />
       )}
       {dialog?.kind === "delete" && (

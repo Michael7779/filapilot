@@ -8,6 +8,16 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.15.0] - 2026-09-26
+
+### Hinzugefügt
+- Spulen durchsuchen und filtern: Suchfeld (Hersteller, Material, Farbe, Lagerort) sowie Filter nach Hersteller, Material, Farbe, Lagerort, Restgewicht (von/bis), Kaufpreis (von/bis) und "Nur fast leere". Die Liste lässt sich nach Material und Farbe, Hersteller, Restgewicht, Kaufpreis oder zuletzt hinzugefügt sortieren.
+- Anzahlen: Über der Liste steht, wie viele Spulen erfasst sind ("5 von 12 Spulen", bei Bedarf mit Anzahl der archivierten) und das gesamte Restgewicht der angezeigten Spulen.
+- Einstellungen → Lager → "Spulen verschieben": alle Spulen eines Lagers (auch archivierte) samt Verbrauchsverlauf in ein anderes Lager verschieben. Dafür braucht man Besitzer-Rechte im Quell-Lager und Bearbeiten-Rechte im Ziel-Lager.
+
+### Behoben
+- Wird eine einzelne Spule in ein anderes Lager verschoben, zieht ihr Verbrauchsverlauf jetzt mit um, sodass die Statistik beider Lager stimmt.
+
 ## [0.14.6] - 2026-09-26
 
 ### Behoben

@@ -65,3 +65,10 @@ export type UpdateInventoryMemberInput = z.infer<typeof updateInventoryMemberInp
 
 export const memberCandidateSchema = z.object({ id: z.string().uuid(), username: z.string() });
 export type MemberCandidate = z.infer<typeof memberCandidateSchema>;
+
+// Alle Spulen (auch archivierte) eines Lagers in ein anderes Lager verschieben.
+export const moveSpoolsInputSchema = z.object({ targetInventoryId: z.string().uuid() });
+export type MoveSpoolsInput = z.infer<typeof moveSpoolsInputSchema>;
+export interface MoveSpoolsResult {
+  moved: number;
+}

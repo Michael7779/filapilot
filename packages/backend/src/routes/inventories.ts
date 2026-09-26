@@ -4,6 +4,7 @@ import {
   addInventoryMemberInputSchema,
   createInventoryInputSchema,
   deleteInventoryInputSchema,
+  moveSpoolsInputSchema,
   updateInventoryInputSchema,
   updateInventoryMemberInputSchema
 } from "@filapilot/shared";
@@ -13,6 +14,7 @@ import { getAuthenticatedUser, requireAuth, requirePasswordAlreadyChanged } from
 import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 import { requireInventoryRole } from "../services/inventoryAccess.js";
 import { refreshSocketAccess } from "../socket.js";
+import { moveAllSpools } from "../services/spoolMoveService.js";
 import {
   addMember,
   changeMemberRole,
@@ -120,6 +122,32 @@ inventoriesRouter.delete(
     });
     void refreshSocketAccess();
     sendData(res, { deleted: true, ...summary });
+  })
+);
+
+// Alle Spulen in ein anderes Lager verschieben: Besitzer der Quelle, Bearbeiter im Ziel.
+// SCOPE: user
+inventoriesRouter.post(
+  "/:id/move-spools",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const id = idParamSchema.parse(req.params.id);
+    const input = moveSpoolsInputSchema.parse(req.body);
+    const user = getAuthenticatedUser(req);
+    await requireInventoryRole(user, id, "OWNER");
+    await requireInventoryRole(user, input.targetInventoryId, "EDITOR");
+    const [source, target] = await Promise.all([getInventoryRow(id), getInventoryRow(input.targetInventoryId)]);
+    const moved = await moveAllSpools(id, input.targetInventoryId);
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "UPDATE",
+      area: "INVENTORY",
+      entityId: id,
+      inventory: source,
+      description: `${moved} Spulen von ${source.name} nach ${target.name} verschoben`,
+      after: { moved, from: source.name, to: target.name }
+    });
+    sendData(res, { moved });
   })
 );
 

@@ -181,6 +181,10 @@ spoolsRouter.patch(
         }
         throw err;
       });
+    // Beim Verschieben zieht der Gewichtsverlauf der Spule mit ins neue Lager (Statistik)
+    if (input.inventoryId && input.inventoryId !== before.inventoryId) {
+      await prisma.spoolWeightLog.updateMany({ where: { spoolId: id }, data: { inventoryId: input.inventoryId } });
+    }
     // Aenderung des Restgewichts fuer die Zeit-Statistik festhalten (nur bei echter Aenderung)
     await recordWeightChange({
       spoolId: id,

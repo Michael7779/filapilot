@@ -15,3 +15,4 @@ export * from "./schemas/printJob.js";
 export * from "./schemas/settings.js";
 export * from "./materialType.js";
 export * from "./changelog.js";
+export * from "./spoolFilter.js";
