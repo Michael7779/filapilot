@@ -1,4 +1,5 @@
 import { env } from "../env.js";
+import { ensureDefaultInventory } from "./inventoryService.js";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import fs from "node:fs/promises";
@@ -67,6 +68,8 @@ async function defaultDependencies(): Promise<RestoreDependencies> {
     afterDatabaseRestore: () => prisma.$disconnect(),
     afterAllRestored: async () => {
       disconnectAllPrinters();
+      // Eine Sicherung aus einer Version vor den Lagern hat keine Lager: das Hauptlager wird neu angelegt.
+      await ensureDefaultInventory();
       await connectAllPrinters();
     },
     syncSchema: true

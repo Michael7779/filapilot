@@ -17,6 +17,8 @@ export interface AuditEntryInput {
   action: AuditAction;
   area: AuditArea;
   entityId?: string | null;
+  // Lager, zu dem der Eintrag gehoert (Name als Momentaufnahme, damit er nach dem Loeschen lesbar bleibt).
+  inventory?: { id: string; name: string } | null;
   description: string;
   before?: Snapshot | null;
   after?: Snapshot | null;
@@ -46,6 +48,8 @@ export async function recordAudit(input: AuditEntryInput): Promise<void> {
         action: input.action,
         area: input.area,
         entityId: input.entityId ?? null,
+        inventoryId: input.inventory?.id ?? null,
+        inventoryName: input.inventory?.name ?? null,
         description: input.description,
         ...(input.before ? { before: toJson(input.before) } : {}),
         ...(input.after ? { after: toJson(input.after) } : {})

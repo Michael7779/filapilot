@@ -13,6 +13,12 @@ enum UserRole {
   USER
 }
 
+enum InventoryRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
 enum PrinterSyncMode {
   LIVE
   PERIODIC
@@ -33,6 +39,7 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   sessions            Session[]
+  inventoryMemberships InventoryMember[]
 
   @@map("users")
 }
@@ -52,6 +59,7 @@ enum AuditArea {
   USER
   SETTINGS
   BACKUP
+  INVENTORY
 }
 
 // Aenderungsprotokoll: wer hat wann was angelegt/geaendert/geloescht. userId ist bewusst KEINE Relation und
@@ -66,14 +74,45 @@ model AuditLog {
   action      AuditAction
   area        AuditArea
   entityId    String?
+  // Lager, zu dem der Eintrag gehoert (ohne Fremdschluessel, damit Eintraege nach dem Loeschen lesbar bleiben).
+  inventoryId   String?
+  inventoryName String?
   description String
   before      Json?
   after       Json?
 
+  @@index([inventoryId])
   @@index([createdAt])
   @@index([area])
   @@index([username])
   @@map("audit_logs")
+}
+
+// Ein Lager: ein benannter Filament-Bestand mit eigenen Spulen, Druckern und Mitgliedern (siehe docs/design/lager.md).
+model Inventory {
+  id        String            @id @default(uuid())
+  name      String
+  color     String            @default("#2F6FED")
+  createdAt DateTime          @default(now())
+  members   InventoryMember[]
+  spools    Spool[]
+  printers  Printer[]
+
+  @@map("inventories")
+}
+
+model InventoryMember {
+  id          String        @id @default(uuid())
+  inventoryId String
+  inventory   Inventory     @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        InventoryRole
+  createdAt   DateTime      @default(now())
+
+  @@unique([inventoryId, userId])
+  @@index([userId])
+  @@map("inventory_members")
 }
 
 model Session {
@@ -129,6 +168,9 @@ model Spool {
   purchasePriceCents  Int?
   purchasedAt         DateTime?
   location            String?
+  // Optional nur wegen der Datenuebernahme per "db push"; ensureDefaultInventory() fuellt es, der Code schreibt nie ohne Lager.
+  inventoryId         String?
+  inventory           Inventory? @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   printJobs           PrintJob[]
@@ -136,6 +178,7 @@ model Spool {
 
   @@index([materialId])
   @@index([manufacturerId])
+  @@index([inventoryId])
   @@map("spools")
 }
 
@@ -147,10 +190,13 @@ model Printer {
   accessCode          String
   syncMode            PrinterSyncMode     @default(PERIODIC)
   syncIntervalSeconds Int                 @default(60)
+  inventoryId         String?
+  inventory           Inventory?          @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
   createdAt           DateTime            @default(now())
   printJobs           PrintJob[]
   amsSlots            AmsSlotAssignment[]
 
+  @@index([inventoryId])
   @@map("printers")
 }
 

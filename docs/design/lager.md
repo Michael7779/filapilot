@@ -1,6 +1,6 @@
 # Design: Mehrere Lager (Multi-Filamentverwaltung)
 
-Stand: Entwurf zur Abstimmung. Ziel-Version: 0.13.0. Der Import aus der Bambu-Cloud (0.14.0) ist ein eigenes Design
+Stand: abgestimmt am 2026-09-26 (Annahmen 1-5 entschieden, siehe Abschnitt 11). Ziel-Version: 0.13.0. Der Import aus der Bambu-Cloud (0.14.0) ist ein eigenes Design
 und baut auf diesem auf.
 
 ## 1. Ziel
@@ -59,8 +59,8 @@ model InventoryMember {
 ```
 
 Änderungen an bestehenden Tabellen:
-- `Spool.inventoryId` und `Printer.inventoryId` (Fremdschlüssel auf `Inventory`, `onDelete: Restrict` - ein Lager mit
-  Spulen oder Druckern lässt sich nicht löschen).
+- `Spool.inventoryId` und `Printer.inventoryId` (Fremdschlüssel auf `Inventory`, `onDelete: Restrict` als Sicherung:
+  Das Löschen eines Lagers räumt seinen Inhalt ausdrücklich und in einer Transaktion auf, siehe Abschnitt 4).
 - `AuditLog.inventoryId` (optional, ohne Fremdschlüssel wie `userId`, damit Einträge nach dem Löschen lesbar bleiben)
   plus `inventoryName` als Momentaufnahme; Index auf `inventoryId`.
 - `PrintJob` und `AmsSlotAssignment` bekommen **keine** eigene Spalte: Das Lager ergibt sich aus Drucker bzw. Spule.
@@ -90,14 +90,24 @@ Ohne Zugriff antwortet der Server mit **404**, nicht mit 403, damit niemand erke
 | Lager ansehen, Spulen/Drucker/Statistik lesen | `VIEWER` |
 | Spule anlegen, ändern, löschen, Foto ändern | `EDITOR` |
 | Spule in anderes Lager verschieben | `EDITOR` im Quell- **und** Ziel-Lager |
-| Lager umbenennen, Farbe, Mitglieder verwalten, leeres Lager löschen | `OWNER` |
+| Lager umbenennen, Farbe, Mitglieder verwalten | `OWNER` |
+| Lager samt Inhalt löschen (mit Bestätigung durch Eintippen des Lager-Namens) | `OWNER` |
 | Neues Lager anlegen | jeder angemeldete Benutzer (wird Besitzer) |
-| Drucker anlegen/ändern/löschen | **Admin** (unverändert, wegen des Zugangscodes) |
+| Drucker anlegen/ändern/löschen | `OWNER` des Lagers (oder Admin). Der Zugangscode wird nie angezeigt, auch Besitzern nicht |
 | Drucker-Live-Status lesen | `VIEWER` des zugehörigen Lagers |
 
 Schutzregeln: Das letzte `OWNER`-Mitglied eines Lagers kann sich nicht selbst entfernen oder herabstufen (außer ein Admin
-übernimmt); ein Benutzer wird beim Löschen seines Kontos aus allen Lagern entfernt; ein Lager mit Spulen oder Druckern
-lässt sich nicht löschen (409, mit Hinweis "erst Spulen verschieben oder löschen").
+übernimmt); ein Benutzer wird beim Löschen seines Kontos aus allen Lagern entfernt (ein Lager ohne Besitzer bleibt für
+Admins verwaltbar).
+
+**Lager löschen:** nur `OWNER`/Admin und nur, wenn im Body der exakte Lager-Name mitgeschickt wird (sonst 400). In einer
+Transaktion werden Druckaufträge, AMS-Zuordnungen, Spulen (samt Foto-Dateien), Drucker, Mitgliedschaften und das Lager
+gelöscht; die Oberfläche zeigt vorher, wie viele Spulen und Drucker betroffen sind, und ein Eintrag im Protokoll hält es
+fest. Empfehlung dort: vorher eine Sicherung erstellen.
+
+**Sicherheitshinweis Drucker:** Besitzer geben IP-Adresse und Zugangscode eines Druckers ein; der Server verbindet sich
+dorthin (MQTT, Port 8883). Das ist für Mitglieder eines Teams vertretbar, gilt aber als Vertrauensentscheidung: Wer
+Besitzer wird, kann den Server zu Verbindungen im lokalen Netz veranlassen.
 
 ## 5. Schnittstellen (API)
 
@@ -108,10 +118,12 @@ Bestehende Pfade bleiben, bekommen aber einen Lager-Bezug (die eigene Oberfläch
 | `GET /api/spools?inventoryId=<id>` | Pflicht-Parameter; `inventoryId=all` liefert die Spulen **aller Lager, in denen man Mitglied ist**, mit `inventoryId` und `inventoryName` (Nur-Lesen-Übersicht) |
 | `POST /api/spools` | `inventoryId` im Body, Rolle `EDITOR` |
 | `GET/PATCH/DELETE /api/spools/:id`, `/api/spools/:id/photo` | Lager der Spule wird geladen und geprüft; `PATCH` darf `inventoryId` ändern (Verschieben) |
-| `GET /api/printers?inventoryId=<id>` | analog; Anlegen/Ändern: Admin, mit `inventoryId` |
+| `GET /api/printers?inventoryId=<id>` | analog; Anlegen/Ändern/Löschen: `OWNER` des Lagers oder Admin (Anlegen mit `inventoryId`) |
 | `GET /api/inventories` | eigene Lager mit Rolle und Kennzahlen (Anzahl Spulen); Admin: alle |
 | `POST /api/inventories` | anlegen (Name, Farbe) |
-| `PATCH/DELETE /api/inventories/:id` | umbenennen/Farbe (`OWNER`); löschen nur wenn leer |
+| `PATCH /api/inventories/:id` | umbenennen/Farbe (`OWNER`) |
+| `DELETE /api/inventories/:id` | samt Inhalt löschen (`OWNER`), Body `{ confirmName }` |
+| `GET /api/inventories/:id/member-candidates` | Benutzer, die noch nicht Mitglied sind (nur Name), für Besitzer |
 | `GET/POST/PATCH/DELETE /api/inventories/:id/members[/:userId]` | Mitglieder (`OWNER`) |
 | `GET /api/audit-log?inventoryId=` | zusätzlicher Filter (Admin) |
 
@@ -129,8 +141,10 @@ gleicht Räume nach Mitgliedschaftsänderungen ab.
 - Wer nur in **einem** Lager ist, sieht dessen Namen ohne Auswahlliste (nur der Weg "Neues Lager" bleibt in den
   Einstellungen).
 - **"Alle Lager"**: Dashboard mit Zahlen je Lager und Summen (nur lesen, Bearbeiten erst nach Wechsel in ein Lager).
-- **Einstellungen → Lager** (Besitzer/Admin): Liste, anlegen, umbenennen, Farbe aus fester Palette, Mitglieder mit Rolle
-  (Auswahlliste alphabetisch sortiert), Lager löschen (nur leer).
+- **Einstellungen → Lager** (jeder Angemeldete sieht seine Lager, Besitzer/Admin verwalten): Liste, anlegen, umbenennen,
+  Farbe aus fester Palette, Mitglieder mit Rolle (Auswahlliste alphabetisch sortiert), Lager samt Inhalt löschen mit
+  Bestätigung (Namen eintippen, Anzeige der betroffenen Spulen/Drucker).
+- Drucker anlegen/ändern zeigt sich Besitzern und Admins im gewählten Lager (nicht mehr nur Admins).
 - Spulenkarte: Aktion "In anderes Lager verschieben" (Auswahlliste der Lager mit Bearbeiter-Recht).
 - Die Anzeige passt sich an: Betrachter sehen keine Bearbeiten-Knöpfe (die Prüfung passiert zusätzlich serverseitig).
 - Texte über i18n (DE/EN), Mobile aus denselben Komponenten.
@@ -169,7 +183,8 @@ Vor dem Freigeben: Typecheck, Lint, alle Tests, echter Durchlauf im Browser (zwe
 - Betrachter → 403 bei Spule anlegen/ändern/löschen/Foto; Bearbeiter → 403 bei Mitglieder verwalten, umbenennen, löschen.
 - Verschieben: nur mit `EDITOR` in beiden Lagern (sonst 404/403), Ziel-Lager unbekannt → 404.
 - `inventoryId=all` zeigt nur eigene Lager; Admin sieht alle.
-- Lager löschen mit Spulen/Druckern → 409; letzter Besitzer entfernen → 409; doppelter Name (Groß-/Kleinschreibung) → 409.
+- Lager löschen: ohne exakten Namen → 400, Bearbeiter/Betrachter → 403, fremd → 404; mit Namen räumt es Spulen, Drucker, Fotos, Mitgliedschaften auf. Letzten Besitzer entfernen → 409; doppelter Name (Groß-/Kleinschreibung) → 409.
+- Drucker anlegen/ändern/löschen: Besitzer und Admin ja, Bearbeiter/Betrachter 403, fremdes Lager 404.
 - Benutzer löschen entfernt Mitgliedschaften; Lager-Name/Farbe/Rolle-Eingaben werden validiert (400).
 - Migration: bestehende Spulen/Drucker landen im "Hauptlager", bestehende Benutzer als Mitglieder; zweiter Start ändert nichts.
 - Socket: Client ohne Mitgliedschaft erhält keinen Status; nach Entzug der Mitgliedschaft nach spätestens einer Minute nicht mehr.
@@ -181,10 +196,10 @@ Vor dem Freigeben: Typecheck, Lint, alle Tests, echter Durchlauf im Browser (zwe
 - Lager-spezifische Benachrichtigungen, Einladungen per E-Mail-Link, Archivieren statt Löschen.
 - Ein Drucker für mehrere Lager (Entscheidung: fest ein Lager).
 
-## 11. Annahmen, die du korrigieren kannst
+## 11. Entschiedene Annahmen (2026-09-26)
 
-1. **Jeder angemeldete Benutzer darf ein Lager anlegen** (und wird dessen Besitzer). Alternative: nur Admins.
-2. **Ein Lager lässt sich nur löschen, wenn es leer ist.** Alternative: Löschen mit Bestätigungswort samt Inhalt.
-3. **Drei Rollen** (Besitzer, Bearbeiter, Betrachter). Alternative: nur "Mitglied" (alle dürfen bearbeiten).
-4. **Bestehende Benutzer werden Mitglieder des "Hauptlagers"** (Admins Besitzer, andere Bearbeiter).
-5. **Drucker anlegen bleibt Admin-Sache**, auch wenn ein Besitzer sein Lager verwaltet (Schutz des Zugangscodes).
+1. Jeder angemeldete Benutzer darf ein Lager anlegen und wird dessen Besitzer. **Entschieden: ja, jeder.**
+2. Ein Lager lässt sich samt Inhalt löschen, mit Bestätigung. **Entschieden: Löschen mit Bestätigung (Namen eintippen).**
+3. Drei Rollen (Besitzer, Bearbeiter, Betrachter). **Entschieden: ja.**
+4. Bestehende Benutzer werden Mitglieder des Hauptlagers (Admins Besitzer, andere Bearbeiter). **Entschieden: ja.**
+5. Drucker anlegen und verwalten. **Entschieden: jeder Besitzer und die Admins, nicht nur Admins.**
