@@ -14,6 +14,10 @@ import { createInventoryWithMembers, createLoggedInUser, resetInventoryData, typ
 const SECRET_TOKEN = "GEHEIMES-TOKEN-123";
 const SECRET_PASSWORD = "GEHEIMES-PASSWORT";
 
+// Diese Hersteller legt der Import selbst an - der Test braucht dafuer eine Datenbank ohne sie (auch wenn frueher jemand von Hand
+// etwas importiert hat).
+const IMPORT_VENDORS = ["Bambu Lab", "eSun", "Polymaker"];
+
 const HITS = [
   { id: 101, filamentVendor: "Bambu Lab", filamentType: "PLA", filamentName: "PLA Basic", color: "#FFFFFFFF", netWeight: 931, totalNetWeight: 1000, status: 0, inPrinter: true, deviceName: "X1C" },
   { id: 102, filamentVendor: "eSun", filamentType: "PETG", filamentName: "PETG Blau", color: "#2F6FEDFF", netWeight: 250, totalNetWeight: 1000, status: 0, inPrinter: false },
@@ -55,6 +59,9 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
 
   before(async () => {
     await resetInventoryData();
+    await prisma.material.deleteMany({ where: { manufacturer: { name: { in: IMPORT_VENDORS } } } });
+    await prisma.manufacturer.deleteMany({ where: { name: { in: IMPORT_VENDORS } } });
+    await prisma.material.deleteMany({ where: { name: { in: ["PLA Basic", "PETG Blau"] } } });
     editor = await createLoggedInUser(app, "bbeditor");
     colleague = await createLoggedInUser(app, "bbcolleague");
     viewer = await createLoggedInUser(app, "bbviewer");
@@ -81,7 +88,8 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     setBambuCloudClientForTests(null);
     setSessionClockForTests(null);
     await prisma.spool.deleteMany();
-    await prisma.material.deleteMany({ where: { name: "PLA", manufacturerId: null } });
+    await prisma.material.deleteMany({ where: { OR: [{ name: "PLA", manufacturerId: null }, { manufacturer: { name: { in: IMPORT_VENDORS } } }] } });
+    await prisma.manufacturer.deleteMany({ where: { name: { in: IMPORT_VENDORS } } });
     await resetInventoryData();
     await prisma.$disconnect();
   });
