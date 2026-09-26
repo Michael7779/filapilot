@@ -7,6 +7,7 @@ import type {
   CreateManufacturerInput,
   CreateMaterialInput,
   CreateSpoolInput,
+  Inventory,
   Manufacturer,
   Material,
   SpoolWithRelations
@@ -37,6 +38,9 @@ interface SpoolFormModalProps {
   onCreateMaterial: (input: CreateMaterialInput) => Promise<Material>;
   onCreateManufacturer: (input: CreateManufacturerInput) => Promise<Manufacturer>;
   photoUploadEnabled: boolean;
+  // Lager, in denen der Benutzer Spulen anlegen/aendern darf, und das vorbelegte Lager
+  inventories: Inventory[];
+  defaultInventoryId: string;
   onSubmit: (input: CreateSpoolInput, photo: PhotoChange) => Promise<void>;
 }
 
@@ -61,6 +65,8 @@ export function SpoolFormModal({
   onCreateMaterial,
   onCreateManufacturer,
   photoUploadEnabled,
+  inventories,
+  defaultInventoryId,
   onSubmit
 }: SpoolFormModalProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
@@ -77,6 +83,7 @@ export function SpoolFormModal({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [photo, setPhoto] = useState<PhotoChange>({ kind: "none" });
+  const [inventoryId, setInventoryId] = useState(initialSpool?.inventoryId ?? defaultInventoryId);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -156,6 +163,7 @@ export function SpoolFormModal({
         {
         materialId,
         manufacturerId,
+        inventoryId,
         colorName: form.colorName.trim(),
         colorHex: form.colorHex.trim() ? form.colorHex.trim() : null,
         initialWeightG: Number(form.initialWeightG),
@@ -184,6 +192,19 @@ export function SpoolFormModal({
         <h2 className="text-lg font-bold">
           {initialSpool ? t("spools.editSpool") : t("spools.addSpool")}
         </h2>
+
+        {inventories.length > 1 && (
+          <label className={LABEL_CLASS}>
+            {t("spools.inventory")}
+            <select value={inventoryId} onChange={(event) => setInventoryId(event.target.value)} className={SELECT_CLASS}>
+              {sortAlphabetically(inventories, (entry) => entry.name, i18n.language).map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className={LABEL_CLASS}>
           {t("spools.manufacturer")}

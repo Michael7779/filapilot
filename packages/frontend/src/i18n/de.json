@@ -10,6 +10,8 @@
     "settings": "Einstellungen"
   },
   "dashboard": {
+    "perInventory": "Lager im Vergleich",
+    "inventoryRow": "{{spools}} Spulen · {{kg}} kg Rest · {{low}} fast leer",
     "totalSpools": "Spulen gesamt",
     "totalWeight": "Gesamtgewicht",
     "activePrints": "Aktive Drucke",
@@ -102,6 +104,8 @@
     "areaAll": "Bereich: Alle",
     "actionAll": "Aktion: Alle",
     "userAll": "Benutzer: Alle",
+    "inventoryAll": "Lager: Alle",
+    "inventory": "Lager",
     "perPage": "Pro Seite",
     "time": "Zeitpunkt",
     "user": "Benutzer",
@@ -134,7 +138,8 @@
       "PRINTER": "Drucker",
       "USER": "Benutzer",
       "SETTINGS": "Einstellungen",
-      "BACKUP": "Sicherung"
+      "BACKUP": "Sicherung",
+      "INVENTORY": "Lager"
     },
     "values": {
       "ADMIN": "Admin",
@@ -189,6 +194,43 @@
     "open": "Änderungsverlauf anzeigen",
     "openNew": "Neu: Änderungsverlauf anzeigen"
   },
+  "inventory": {
+    "all": "Alle Lager",
+    "current": "Dein Lager",
+    "switch": "Lager wechseln",
+    "manage": "Lager verwalten",
+    "new": "Neues Lager",
+    "rename": "Umbenennen",
+    "name": "Name",
+    "namePlaceholder": "z. B. Werkstatt",
+    "color": "Farbe",
+    "nameRequired": "Bitte einen Namen eingeben.",
+    "saveFailed": "Das Lager konnte nicht gespeichert werden.",
+    "loadFailed": "Die Mitglieder konnten nicht geladen werden.",
+    "noneTitle": "Du bist noch in keinem Lager",
+    "noneText": "Ein Lager ist dein eigener Filament-Bestand mit Spulen, Druckern und Dashboard. Lege dein erstes Lager an, oder bitte den Besitzer eines Lagers, dich als Mitglied hinzuzufügen.",
+    "settingsTitle": "Deine Lager",
+    "settingsHint": "Jedes Lager hat eigene Spulen, Drucker und Mitglieder. Hersteller und Materialien sind für alle Lager gleich.",
+    "open": "Öffnen",
+    "members": "Mitglieder",
+    "membersTitle": "Mitglieder von „{{name}}“",
+    "you": "du",
+    "roleLabel": "Rolle",
+    "role": { "OWNER": "Besitzer", "EDITOR": "Bearbeiter", "VIEWER": "Betrachter" },
+    "rolesHint": "Besitzer verwalten das Lager und die Drucker, Bearbeiter pflegen die Spulen, Betrachter dürfen nur ansehen.",
+    "leave": "Verlassen",
+    "removeMember": "Entfernen",
+    "addMember": "Mitglied hinzufügen",
+    "chooseUser": "Benutzer auswählen",
+    "add": "Hinzufügen",
+    "counts": "{{spools}} Spulen · {{printers}} Drucker · {{members}} Mitglieder",
+    "deleteTitle": "Lager „{{name}}“ löschen",
+    "deleteWarning": "Dabei werden auch alle {{spools}} Spulen und {{printers}} Drucker dieses Lagers unwiderruflich gelöscht.",
+    "deleteBackupHint": "Erstelle vorher unter Einstellungen → System eine Sicherung, wenn du dir nicht sicher bist.",
+    "typeName": "Zur Bestätigung den Namen „{{name}}“ eintippen",
+    "deleteNow": "Endgültig löschen",
+    "deleteFailed": "Das Lager konnte nicht gelöscht werden."
+  },
   "common": {
     "loading": "Lädt…",
     "logout": "Abmelden",
@@ -205,6 +247,8 @@
     "addSpool": "Neue Spule",
     "editSpool": "Spule bearbeiten",
     "empty": "Noch keine Spulen angelegt.",
+    "inventory": "Lager",
+    "allHint": "Übersicht über alle deine Lager. Zum Bearbeiten wechsle in ein Lager.",
     "manufacturer": "Hersteller",
     "colorName": "Farbe",
     "colorHex": "Farbcode (optional)",
@@ -300,6 +344,7 @@
     "pendingPasswordChange": "wartet auf Passwortwechsel",
     "temporaryPasswordNotice": "Kein SMTP konfiguriert — Start-Passwort für {{username}} lautet: {{password}} (bitte manuell weitergeben, wird nur einmalig angezeigt).",
     "tabAudit": "Protokoll",
+    "tabInventories": "Lager",
     "lastActive": "Zuletzt aktiv"
   },
   "catalog": {

@@ -3,6 +3,8 @@ import request from "supertest";
 import { prisma } from "../../src/prisma.js";
 import { hashPassword } from "../../src/services/authService.js";
 
+// Nur fuer Testkonten in der Test-Datenbank, kein echtes Passwort.
+// eslint-disable-next-line sonarjs/no-hardcoded-passwords
 export const TEST_PASSWORD = "correct-horse-battery-staple";
 
 export interface TestUser {

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { SpoolWithRelations } from "@filapilot/shared";
 import { LOW_STOCK_THRESHOLD_RATIO, materialTypeOf } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
+import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 
 interface StatCardProps {
   label: string;
@@ -84,14 +85,20 @@ export function StatsPage(): React.JSX.Element {
   const { t } = useTranslation();
   const [spools, setSpools] = useState<SpoolWithRelations[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const { selectedId } = useCurrentInventory();
 
   useEffect(() => {
-    apiRequest<SpoolWithRelations[]>("/spools")
+    if (!selectedId) {
+      return;
+    }
+    setSpools(null);
+    setLoadError(null);
+    apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}`)
       .then(setSpools)
       .catch((err: unknown) => {
         setLoadError(err instanceof ApiRequestError ? err.message : t("stats.loadFailed"));
       });
-  }, [t]);
+  }, [t, selectedId]);
 
   if (loadError) {
     return <p className="text-sm text-[var(--color-danger)]">{loadError}</p>;

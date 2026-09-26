@@ -70,19 +70,19 @@ export async function authenticateSocket(
 
 // Bringt die Raeume einer Verbindung auf den Stand der Mitgliedschaften: tritt neuen Lagern bei, verlaesst
 // Lager ohne Zugriff. Andere Raeume (z.B. die eigene Verbindungs-ID) bleiben unberuehrt.
-export function applyInventoryRooms(
+export async function applyInventoryRooms(
   socket: Pick<Socket, "rooms" | "join" | "leave">,
   inventoryIds: readonly string[]
-): void {
+): Promise<void> {
   const wanted = new Set(inventoryIds.map((id) => inventoryRoom(id)));
   for (const room of [...socket.rooms]) {
     if (room.startsWith(ROOM_PREFIX) && !wanted.has(room)) {
-      void socket.leave(room);
+      await socket.leave(room);
     }
   }
   for (const room of wanted) {
     if (!socket.rooms.has(room)) {
-      void socket.join(room);
+      await socket.join(room);
     }
   }
 }
@@ -94,7 +94,7 @@ async function syncSocket(socket: Socket): Promise<void> {
     socket.disconnect(true);
     return;
   }
-  applyInventoryRooms(socket, await accessibleInventoryIds(user));
+  await applyInventoryRooms(socket, await accessibleInventoryIds(user));
 }
 
 // Prueft alle Verbindungen erneut (Sitzung noch gueltig?) und gleicht ihre Lager-Raeume ab. Wird jede Minute und

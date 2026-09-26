@@ -6,6 +6,7 @@ import { CatalogSection } from "../components/CatalogSettings.js";
 import { EditUserModal } from "../components/EditUserModal.js";
 import { BackupManager } from "../components/BackupManager.js";
 import { AuditLogView } from "../components/AuditLogView.js";
+import { InventorySettings } from "../components/InventorySettings.js";
 import { useLogout } from "../hooks/useLogout.js";
 import type {
   CreateUserInput,
@@ -724,10 +725,11 @@ function UserManagementSection(): React.JSX.Element {
   );
 }
 
-type SettingsTab = "konto" | "benutzer" | "filamente" | "system" | "protokoll";
+type SettingsTab = "konto" | "lager" | "benutzer" | "filamente" | "system" | "protokoll";
 
 const TABS: { key: SettingsTab; labelKey: string; adminOnly: boolean }[] = [
   { key: "konto", labelKey: "settings.tabAccount", adminOnly: false },
+  { key: "lager", labelKey: "settings.tabInventories", adminOnly: false },
   { key: "benutzer", labelKey: "settings.tabUsers", adminOnly: true },
   { key: "filamente", labelKey: "settings.tabFilaments", adminOnly: true },
   { key: "system", labelKey: "settings.tabSystem", adminOnly: true },
@@ -785,6 +787,7 @@ export function SettingsPage(): React.JSX.Element {
         </nav>
       )}
       {active.key === "konto" && <OwnAccountSection />}
+      {active.key === "lager" && <InventorySettings />}
       {active.key === "benutzer" && <UserManagementSection />}
       {active.key === "filamente" && <CatalogSection />}
       {active.key === "protokoll" && <AuditLogView />}

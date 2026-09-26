@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { NAV_ITEMS, isNavActive } from "../lib/navItems.js";
 import { useLogout } from "../hooks/useLogout.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
+import { InventorySwitcher } from "./InventorySwitcher.js";
 
 function initialsFor(name: string): string {
   return name.slice(0, 2).toUpperCase();
@@ -16,9 +17,12 @@ export function Sidebar(): React.JSX.Element {
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col md:flex border-r border-[var(--color-border)] bg-[var(--color-sidebar)] p-4">
-      <div className="mb-6 flex items-center gap-2 px-2">
+      <div className="mb-4 flex items-center gap-2 px-2">
         <img src="/icons/icon.svg" alt="" className="h-7 w-7" aria-hidden="true" />
         <span className="text-base font-semibold tracking-tight">{t("app.name")}</span>
+      </div>
+      <div className="mb-4">
+        <InventorySwitcher variant="sidebar" />
       </div>
       <nav className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => {

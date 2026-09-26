@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-fs-filename -- Testdatei im konfigurierten Test-Upload-Ordner mit einer Spulen-ID aus der eigenen Test-Datenbank, keine fremden Pfad-Eingaben. */
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";

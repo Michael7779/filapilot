@@ -12,9 +12,6 @@ import {
   type TestUser
 } from "../helpers/fixtures.js";
 
-/* eslint-disable sonarjs/no-hardcoded-ip -- Test-Fixture-Adressen im Testnetz-Bereich, nie erreicht
-   (Verbindungsversuch schlaegt bewusst fehl), kein echtes Ziel. */
-
 describe("Printers - Negativ-Tests (Rechte im Lager)", () => {
   const app = createApp();
   let admin: TestUser;

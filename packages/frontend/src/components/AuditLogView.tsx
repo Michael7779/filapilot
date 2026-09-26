@@ -10,7 +10,7 @@ import {
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 
-const AREAS: AuditArea[] = ["SPOOL", "MATERIAL", "MANUFACTURER", "PRINTER", "USER", "SETTINGS", "BACKUP"];
+const AREAS: AuditArea[] = ["SPOOL", "MATERIAL", "MANUFACTURER", "PRINTER", "USER", "SETTINGS", "BACKUP", "INVENTORY"];
 const ACTIONS: AuditAction[] = ["CREATE", "UPDATE", "DELETE", "EVENT"];
 const FIELD_CLASS =
   "rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text-primary)]";
@@ -85,6 +85,12 @@ function DetailModal({ entry, onClose }: { entry: AuditEntry; onClose: () => voi
           <dd>{t(`audit.actions.${entry.action}`)}</dd>
           <dt className="text-[var(--color-text-muted)]">{t("audit.area")}</dt>
           <dd>{t(`audit.areas.${entry.area}`)}</dd>
+          {entry.inventoryName && (
+            <>
+              <dt className="text-[var(--color-text-muted)]">{t("audit.inventory")}</dt>
+              <dd>{entry.inventoryName}</dd>
+            </>
+          )}
           <dt className="text-[var(--color-text-muted)]">{t("audit.description")}</dt>
           <dd className="break-words">{entry.description}</dd>
         </dl>
@@ -138,6 +144,7 @@ export function AuditLogView(): React.JSX.Element {
   const [area, setArea] = useState("");
   const [action, setAction] = useState("");
   const [username, setUsername] = useState("");
+  const [inventoryId, setInventoryId] = useState("");
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<AuditListResult | null>(null);
@@ -148,7 +155,7 @@ export function AuditLogView(): React.JSX.Element {
   // Jede Aenderung eines Filters springt zurueck auf Seite 1.
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, from, to, area, action, username, pageSize]);
+  }, [debouncedSearch, from, to, area, action, username, inventoryId, pageSize]);
 
   useEffect(() => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
@@ -170,6 +177,9 @@ export function AuditLogView(): React.JSX.Element {
     if (username) {
       params.set("username", username);
     }
+    if (inventoryId) {
+      params.set("inventoryId", inventoryId);
+    }
     let cancelled = false;
     apiRequest<AuditListResult>(`/audit-log?${params.toString()}`)
       .then((data) => {
@@ -186,7 +196,7 @@ export function AuditLogView(): React.JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [page, pageSize, debouncedSearch, from, to, area, action, username, t]);
+  }, [page, pageSize, debouncedSearch, from, to, area, action, username, inventoryId, t]);
 
   const totalPages = result ? Math.max(1, Math.ceil(result.total / result.pageSize)) : 1;
   const areaOptions = sortAlphabetically(AREAS, (value) => t(`audit.areas.${value}`), i18n.language);
@@ -244,6 +254,14 @@ export function AuditLogView(): React.JSX.Element {
           {(result?.usernames ?? []).map((name) => (
             <option key={name} value={name}>
               {name}
+            </option>
+          ))}
+        </select>
+        <select value={inventoryId} onChange={(event) => setInventoryId(event.target.value)} className={FIELD_CLASS}>
+          <option value="">{t("audit.inventoryAll")}</option>
+          {sortAlphabetically(result?.inventories ?? [], (entry) => entry.name, i18n.language).map((entry) => (
+            <option key={entry.id} value={entry.id}>
+              {entry.name}
             </option>
           ))}
         </select>

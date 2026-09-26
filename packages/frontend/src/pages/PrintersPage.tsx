@@ -4,7 +4,8 @@ import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import type { CreatePrinterInput, PrinterLiveStatus, PrinterPublic } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { getSocket } from "../lib/socket.js";
-import { useAuthStore } from "../stores/useAuthStore.js";
+import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
+import { useInventoryStore } from "../stores/useInventoryStore.js";
 
 function MqttSetupGuide(): React.JSX.Element {
   const { t } = useTranslation();
@@ -33,9 +34,11 @@ function MqttSetupGuide(): React.JSX.Element {
 }
 
 function NewPrinterModal({
+  inventoryId,
   onClose,
   onCreated
 }: {
+  inventoryId: string;
   onClose: () => void;
   onCreated: (printer: PrinterPublic) => void;
 }): React.JSX.Element {
@@ -74,7 +77,8 @@ function NewPrinterModal({
         serialNumber: serialNumber.trim(),
         accessCode: accessCode.trim(),
         syncMode,
-        syncIntervalSeconds: Number(syncIntervalSeconds)
+        syncIntervalSeconds: Number(syncIntervalSeconds),
+        inventoryId
       };
       const created = await apiRequest<PrinterPublic>("/printers", {
         method: "POST",
@@ -242,7 +246,8 @@ function PrinterCard({
 
 export function PrintersPage(): React.JSX.Element {
   const { t } = useTranslation();
-  const user = useAuthStore((state) => state.user);
+  const { selectedId, isAll, isOwner } = useCurrentInventory();
+  const inventories = useInventoryStore((state) => state.inventories);
   const [printers, setPrinters] = useState<PrinterPublic[]>([]);
   const [statusByPrinter, setStatusByPrinter] = useState<Record<string, PrinterLiveStatus>>({});
   const [loading, setLoading] = useState(true);
@@ -250,10 +255,13 @@ export function PrintersPage(): React.JSX.Element {
   const [modalOpen, setModalOpen] = useState(false);
 
   const load = useCallback(async () => {
+    if (!selectedId) {
+      return;
+    }
     setLoading(true);
     setLoadError(null);
     try {
-      const data = await apiRequest<PrinterPublic[]>("/printers");
+      const data = await apiRequest<PrinterPublic[]>(`/printers?inventoryId=${selectedId}`);
       setPrinters(data);
       const statuses = await Promise.all(
         data.map((printer) => apiRequest<PrinterLiveStatus>(`/printers/${printer.id}/status`))
@@ -264,7 +272,7 @@ export function PrintersPage(): React.JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, selectedId]);
 
   useEffect(() => {
     void load();
@@ -309,7 +317,7 @@ export function PrintersPage(): React.JSX.Element {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">{t("nav.printers")}</h2>
-        {user?.role === "ADMIN" && (
+        {isOwner && (
           <button
             type="button"
             onClick={() => setModalOpen(true)}
@@ -328,16 +336,21 @@ export function PrintersPage(): React.JSX.Element {
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {printers.map((printer) => (
-            <PrinterCard
-              key={printer.id}
-              printer={printer}
-              status={statusByPrinter[printer.id] ?? null}
-            />
+            <div key={printer.id} className="flex flex-col gap-1">
+              {isAll && (
+                <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                  {inventories.find((inventory) => inventory.id === printer.inventoryId)?.name ?? ""}
+                </span>
+              )}
+              <PrinterCard printer={printer} status={statusByPrinter[printer.id] ?? null} />
+            </div>
           ))}
         </div>
       )}
 
-      {modalOpen && <NewPrinterModal onClose={() => setModalOpen(false)} onCreated={handleCreated} />}
+      {modalOpen && selectedId && !isAll && (
+        <NewPrinterModal inventoryId={selectedId} onClose={() => setModalOpen(false)} onCreated={handleCreated} />
+      )}
     </div>
   );
 }

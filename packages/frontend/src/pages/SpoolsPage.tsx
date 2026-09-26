@@ -12,6 +12,8 @@ import type {
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
+import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
+import { useInventoryStore } from "../stores/useInventoryStore.js";
 import {
   fetchPhotoUploadEnabled,
   removeSpoolPhoto,
@@ -30,14 +32,20 @@ export function SpoolsPage(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const { selectedId, isAll, canEdit } = useCurrentInventory();
+  const inventories = useInventoryStore((state) => state.inventories);
+  const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
 
   const load = useCallback(async () => {
+    if (!selectedId) {
+      return;
+    }
     setLoading(true);
     setLoadError(null);
     try {
       const [spoolsData, materialsData, manufacturersData, photosEnabled] = await Promise.all([
-        apiRequest<SpoolWithRelations[]>("/spools"),
+        apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}`),
         apiRequest<Material[]>("/materials"),
         apiRequest<Manufacturer[]>("/manufacturers"),
         fetchPhotoUploadEnabled()
@@ -51,7 +59,7 @@ export function SpoolsPage(): React.JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, selectedId]);
 
   useEffect(() => {
     void load();
@@ -147,15 +155,18 @@ export function SpoolsPage(): React.JSX.Element {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">{t("spools.title")}</h2>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
-          style={{ backgroundColor: "var(--accent)" }}
-        >
-          {t("spools.addSpool")}
-        </button>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={openCreate}
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
+            style={{ backgroundColor: "var(--accent)" }}
+          >
+            {t("spools.addSpool")}
+          </button>
+        )}
       </div>
+      {isAll && <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.allHint")}</p>}
 
       {notice && <p className="text-sm text-[var(--color-danger)]">{notice}</p>}
 
@@ -196,6 +207,7 @@ export function SpoolsPage(): React.JSX.Element {
                   )}
                 </div>
                 <div className="mb-2 text-xs text-[var(--color-text-muted)]">
+                  {isAll && spool.inventoryName ? `${spool.inventoryName} · ` : ""}
                   {spool.manufacturerName}
                   {spool.location ? ` · ${spool.location}` : ""}
                 </div>
@@ -216,19 +228,23 @@ export function SpoolsPage(): React.JSX.Element {
                   {spool.remainingWeightG} g / {spool.initialWeightG} g
                 </div>
                 <div className="flex gap-2 text-xs font-medium">
-                  <button type="button" onClick={() => openEdit(spool)} style={{ color: "var(--accent)" }}>
-                    {t("common.edit")}
-                  </button>
+                  {canEdit && (
+                    <button type="button" onClick={() => openEdit(spool)} style={{ color: "var(--accent)" }}>
+                      {t("common.edit")}
+                    </button>
+                  )}
                   <button type="button" onClick={() => setLabelSpool(spool)} style={{ color: "var(--accent)" }}>
                     {t("spools.qrLabel")}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete(spool)}
-                    className="text-[var(--color-danger)]"
-                  >
-                    {t("common.delete")}
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(spool)}
+                      className="text-[var(--color-danger)]"
+                    >
+                      {t("common.delete")}
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -245,6 +261,8 @@ export function SpoolsPage(): React.JSX.Element {
           onCreateMaterial={handleCreateMaterial}
           onCreateManufacturer={handleCreateManufacturer}
           photoUploadEnabled={photoUploadEnabled}
+          inventories={editableInventories}
+          defaultInventoryId={selectedId ?? ""}
           onSubmit={handleSubmitSpool}
         />
       )}

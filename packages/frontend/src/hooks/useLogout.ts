@@ -2,12 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
 import { useThemeStore } from "../stores/useThemeStore.js";
+import { useInventoryStore } from "../stores/useInventoryStore.js";
 
 export function useLogout(): () => Promise<void> {
   const navigate = useNavigate();
   const setUser = useAuthStore((state) => state.setUser);
   const setStatus = useAuthStore((state) => state.setStatus);
   const resetAccent = useThemeStore((state) => state.resetToDefault);
+  const resetInventories = useInventoryStore((state) => state.reset);
 
   return async () => {
     try {
@@ -16,6 +18,7 @@ export function useLogout(): () => Promise<void> {
       setUser(null);
       setStatus("anonymous");
       resetAccent();
+      resetInventories();
       navigate("/login");
     }
   };
