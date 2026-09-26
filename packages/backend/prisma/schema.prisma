@@ -171,6 +171,8 @@ model Spool {
   // Optional nur wegen der Datenuebernahme per "db push"; ensureDefaultInventory() fuellt es, der Code schreibt nie ohne Lager.
   inventoryId         String?
   inventory           Inventory? @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
+  // Spulen-ID der Bambu-Cloud beim Import (verhindert Doppelimport im selben Lager, erlaubt Aktualisieren des Restgewichts).
+  bambuCloudId        String?
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   printJobs           PrintJob[]
@@ -179,6 +181,7 @@ model Spool {
   @@index([materialId])
   @@index([manufacturerId])
   @@index([inventoryId])
+  @@unique([inventoryId, bambuCloudId])
   @@map("spools")
 }
 

@@ -22,6 +22,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   NOT_FOUND: 404,
   VALIDATION_ERROR: 400,
   CONFLICT: 409,
+  UPSTREAM_ERROR: 502,
   INTERNAL_ERROR: 500
 };
 

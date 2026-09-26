@@ -12,6 +12,7 @@ import type {
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
+import { BambuImportModal } from "../components/BambuImportModal.js";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 import {
@@ -32,7 +33,8 @@ export function SpoolsPage(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const { selectedId, isAll, canEdit } = useCurrentInventory();
+  const [importOpen, setImportOpen] = useState(false);
+  const { selectedId, isAll, canEdit, inventory } = useCurrentInventory();
   const inventories = useInventoryStore((state) => state.inventories);
   const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
@@ -156,14 +158,23 @@ export function SpoolsPage(): React.JSX.Element {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">{t("spools.title")}</h2>
         {canEdit && (
-          <button
-            type="button"
-            onClick={openCreate}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
-            style={{ backgroundColor: "var(--accent)" }}
-          >
-            {t("spools.addSpool")}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
+            >
+              {t("bambu.open")}
+            </button>
+            <button
+              type="button"
+              onClick={openCreate}
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
+              style={{ backgroundColor: "var(--accent)" }}
+            >
+              {t("spools.addSpool")}
+            </button>
+          </div>
         )}
       </div>
       {isAll && <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.allHint")}</p>}
@@ -264,6 +275,15 @@ export function SpoolsPage(): React.JSX.Element {
           inventories={editableInventories}
           defaultInventoryId={selectedId ?? ""}
           onSubmit={handleSubmitSpool}
+        />
+      )}
+
+      {importOpen && selectedId && inventory && (
+        <BambuImportModal
+          inventoryId={selectedId}
+          inventoryName={inventory.name}
+          onClose={() => setImportOpen(false)}
+          onImported={() => void load()}
         />
       )}
 

@@ -5,6 +5,8 @@ export * from "./schemas/backup.js";
 export * from "./schemas/audit.js";
 export * from "./schemas/manufacturer.js";
 export * from "./schemas/inventory.js";
+export * from "./schemas/bambuImport.js";
+export * from "./colorNames.js";
 export * from "./schemas/spool.js";
 export * from "./schemas/printer.js";
 export * from "./schemas/printJob.js";

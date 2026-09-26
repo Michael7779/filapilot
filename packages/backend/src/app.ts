@@ -14,6 +14,7 @@ import { auditRouter } from "./routes/audit.js";
 import { materialsRouter } from "./routes/materials.js";
 import { manufacturersRouter } from "./routes/manufacturers.js";
 import { inventoriesRouter } from "./routes/inventories.js";
+import { bambuImportRouter } from "./routes/bambuImport.js";
 import { spoolsRouter } from "./routes/spools.js";
 import { spoolPhotosRouter } from "./routes/spoolPhotos.js";
 import { printersRouter } from "./routes/printers.js";
@@ -43,6 +44,7 @@ export function createApp() {
   app.use("/api/settings", settingsRouter);
   app.use("/api/materials", materialsRouter);
   app.use("/api/manufacturers", manufacturersRouter);
+  app.use("/api/inventories/:id/bambu-import", bambuImportRouter);
   app.use("/api/inventories", inventoriesRouter);
   app.use("/api/spools", spoolPhotosRouter);
   app.use("/api/spools", spoolsRouter);
