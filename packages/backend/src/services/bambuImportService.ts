@@ -33,24 +33,35 @@ export interface MappedSpool {
 }
 
 // Uebersetzt Fehler der Cloud in verstaendliche Meldungen - nie mit Text aus der Antwort der Cloud.
+function withDetail(message: string, err: BambuCloudError): string {
+  if (!err.detail) {
+    return message;
+  }
+  const status = err.detail.status ? `, HTTP ${err.detail.status}` : "";
+  return `${message} (Schritt: ${err.detail.step}${status})`;
+}
+
 export function toAppError(err: unknown): AppError {
   if (!(err instanceof BambuCloudError)) {
     throw err;
   }
   switch (err.kind) {
     case "credentials":
-      return new AppError("VALIDATION_ERROR", "Die Anmeldung bei Bambu ist fehlgeschlagen. Bitte E-Mail und Passwort prüfen.");
+      return new AppError("VALIDATION_ERROR", withDetail("Die Anmeldung bei Bambu ist fehlgeschlagen. Bitte E-Mail, Passwort bzw. Code prüfen.", err));
     case "unauthorized":
-      return new AppError("VALIDATION_ERROR", "Bambu hat den Zugang abgelehnt (abgelaufen?). Bitte neu anmelden.");
+      return new AppError("VALIDATION_ERROR", withDetail("Bambu hat den Zugang abgelehnt (abgelaufen?). Bitte neu anmelden.", err));
     case "blocked":
       return new AppError(
         "UPSTREAM_ERROR",
-        "Bambu blockiert den automatischen Zugriff (Bot-Schutz). Nutze stattdessen den Weg über die JSON-Datei."
+        withDetail("Bambu blockiert den automatischen Zugriff (Bot-Schutz). Nutze stattdessen den Weg über die JSON-Datei.", err)
       );
     case "network":
-      return new AppError("UPSTREAM_ERROR", "Bambu ist gerade nicht erreichbar. Bitte später erneut versuchen.");
+      return new AppError("UPSTREAM_ERROR", withDetail("Bambu ist gerade nicht erreichbar. Bitte später erneut versuchen.", err));
     default:
-      return new AppError("UPSTREAM_ERROR", "Bambu hat unerwartet geantwortet. Die inoffizielle Schnittstelle hat sich evtl. geändert.");
+      return new AppError(
+        "UPSTREAM_ERROR",
+        withDetail("Bambu hat unerwartet geantwortet. Die inoffizielle Schnittstelle hat sich evtl. geändert.", err)
+      );
   }
 }
 

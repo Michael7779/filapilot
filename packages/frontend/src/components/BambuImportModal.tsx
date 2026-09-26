@@ -47,6 +47,7 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
   const [summary, setSummary] = useState<BambuImportSummary | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const sessionRef = useRef<string | null>(null);
   sessionRef.current = sessionId;
@@ -72,6 +73,7 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
   async function run(action: () => Promise<void>): Promise<void> {
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       await action();
     } catch (err) {
@@ -117,6 +119,16 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
     await run(async () => {
       await apiRequest<BambuLoginResult>(`${base}/verify`, { method: "POST", body: JSON.stringify({ sessionId, code: code.trim() }) });
       await loadPreview(sessionId);
+    });
+  }
+
+  async function handleResend(): Promise<void> {
+    if (!sessionId) {
+      return;
+    }
+    await run(async () => {
+      await apiRequest(`${base}/resend`, { method: "POST", body: JSON.stringify({ sessionId }) });
+      setNotice(t("bambu.resent"));
     });
   }
 
@@ -236,7 +248,17 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
               {t("bambu.code")}
               <input type="text" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value)} className={inputClass} />
             </label>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleResend()}
+                className="text-xs font-medium disabled:opacity-60"
+                style={{ color: "var(--accent)" }}
+              >
+                {t("bambu.resend")}
+              </button>
+              <div className="flex gap-2">
               <button type="button" onClick={close} className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium">
                 {t("common.cancel")}
               </button>
@@ -248,6 +270,7 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
               >
                 {t("bambu.continue")}
               </button>
+              </div>
             </div>
           </form>
         )}
@@ -332,6 +355,7 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
           </div>
         )}
 
+        {notice && <p className="text-sm text-[var(--color-text-secondary)]">{notice}</p>}
         {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
       </div>
     </div>

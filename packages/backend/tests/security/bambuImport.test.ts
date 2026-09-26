@@ -8,7 +8,12 @@ import {
   setBambuCloudClientForTests,
   type BambuCloudClient
 } from "../../src/services/bambuCloudClient.js";
-import { clearSessionsForTests, setSessionClockForTests, SESSION_TTL_MS } from "../../src/services/bambuImportSessions.js";
+import {
+  clearSessionsForTests,
+  RESEND_COOLDOWN_MS,
+  setSessionClockForTests,
+  SESSION_TTL_MS
+} from "../../src/services/bambuImportSessions.js";
 import { createInventoryWithMembers, createLoggedInUser, resetInventoryData, type TestUser } from "../helpers/fixtures.js";
 
 const SECRET_TOKEN = "GEHEIMES-TOKEN-123";
@@ -24,6 +29,8 @@ const HITS = [
   { id: 103, filamentVendor: "Bambu Lab", filamentType: "PLA", filamentName: "PLA Basic", color: "#D14343FF", netWeight: 700, totalNetWeight: 1000, status: 1 },
   { filamentName: "kaputt ohne id" }
 ];
+
+let sendCodeCalls = 0;
 
 function mockClient(): BambuCloudClient {
   return {
@@ -41,7 +48,10 @@ function mockClient(): BambuCloudClient {
           return Promise.resolve({ kind: "ok" as const, token: SECRET_TOKEN });
       }
     },
-    sendCode: () => Promise.resolve(),
+    sendCode: () => {
+      sendCodeCalls += 1;
+      return Promise.resolve();
+    },
     loginWithCode: (_region, _account, code) =>
       code === "123456" ? Promise.resolve(SECRET_TOKEN) : Promise.reject(new BambuCloudError("credentials")),
     listFilaments: (_region, token) => (token === SECRET_TOKEN ? Promise.resolve(HITS) : Promise.reject(new BambuCloudError("unauthorized")))
@@ -79,6 +89,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
   });
 
   beforeEach(() => {
+    sendCodeCalls = 0;
     setBambuCloudClientForTests(mockClient());
     clearSessionsForTests();
     setSessionClockForTests(null);
@@ -121,6 +132,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
       assert.equal((await login(user)).status, status, user.username);
       assert.equal((await post(`${base()}/file`, user, { hits: HITS })).status, status);
       assert.equal((await post(`${base()}/verify`, user, { sessionId: "x".repeat(20), code: "123456" })).status, status);
+      assert.equal((await post(`${base()}/resend`, user, { sessionId: "x".repeat(20) })).status, status);
       assert.equal((await get(`${base()}/${"x".repeat(20)}/preview`, user)).status, status);
       assert.equal((await post(`${base()}/${"x".repeat(20)}/import`, user, { cloudIds: ["101"] })).status, status);
     }
@@ -157,12 +169,31 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     const started = await login(editor, "code");
     assert.equal(started.body.data.status, "code_required");
     const sessionId = started.body.data.sessionId as string;
+    // Der Code wird nicht automatisch nochmal angefordert (Bambu schickt beim Anmelden selbst einen), sondern nur auf Wunsch
+    assert.equal(sendCodeCalls, 0);
     assert.equal((await get(`${base()}/${sessionId}/preview`, editor)).status, 400);
     assert.equal((await post(`${base()}/verify`, editor, { sessionId, code: "000000" })).status, 400);
     assert.equal((await post(`${base()}/verify`, editor, { sessionId, code: "123456" })).status, 200);
     assert.equal((await get(`${base()}/${sessionId}/preview`, editor)).status, 200);
     // Ohne wartenden Code ist der Schritt nicht moeglich
     assert.equal((await post(`${base()}/verify`, editor, { sessionId, code: "123456" })).status, 400);
+    assert.equal((await post(`${base()}/resend`, editor, { sessionId })).status, 400);
+  });
+
+  it("fordert einen Code nur auf Wunsch an, hoechstens einmal pro Minute, und nur fuer die eigene Sitzung", async () => {
+    const started = await login(editor, "code");
+    const sessionId = started.body.data.sessionId as string;
+    assert.equal((await post(`${base()}/resend`, colleague, { sessionId })).status, 404);
+    assert.equal((await post(`${base()}/resend`, editor, { sessionId })).status, 200);
+    assert.equal(sendCodeCalls, 1);
+    const tooSoon = await post(`${base()}/resend`, editor, { sessionId });
+    assert.equal(tooSoon.status, 400);
+    assert.match(tooSoon.body.error.message, /Minute/);
+    assert.equal(sendCodeCalls, 1);
+    const later = Date.now() + RESEND_COOLDOWN_MS + 1000;
+    setSessionClockForTests(() => later);
+    assert.equal((await post(`${base()}/resend`, editor, { sessionId })).status, 200);
+    assert.equal(sendCodeCalls, 2);
   });
 
   it("zeigt eine Vorschau mit Zaehlung ungueltiger Eintraege und nutzt fremde Sitzungen nicht (404), auch abgelaufene nicht", async () => {

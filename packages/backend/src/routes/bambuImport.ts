@@ -4,6 +4,7 @@ import {
   bambuFileInputSchema,
   bambuImportInputSchema,
   bambuLoginInputSchema,
+  bambuResendInputSchema,
   bambuVerifyInputSchema,
   type BambuLoginResult
 } from "@filapilot/shared";
@@ -14,7 +15,7 @@ import { bambuRateLimiter } from "../middleware/rateLimit.js";
 import { actorFromRequest, recordAudit } from "../services/auditService.js";
 import { getBambuCloudClient, logBambuFailure } from "../services/bambuCloudClient.js";
 import { buildPreview, importSelected, parseBambuHits, toAppError } from "../services/bambuImportService.js";
-import { createSession, deleteSession, getSession } from "../services/bambuImportSessions.js";
+import { RESEND_COOLDOWN_MS, createSession, deleteSession, getSession, sessionNow } from "../services/bambuImportSessions.js";
 import { requireInventoryRole } from "../services/inventoryAccess.js";
 import { getInventoryRow } from "../services/inventoryService.js";
 
@@ -54,7 +55,8 @@ bambuImportRouter.post(
       if (outcome.kind === "ok") {
         result = { status: "ok", sessionId: createSession({ userId: user.id, inventoryId: id, region: input.region, token: outcome.token }).id };
       } else if (outcome.kind === "code_required") {
-        await client.sendCode(input.region, input.account);
+        // Bambu verschickt bei diesem Schritt nach eigenen Regeln bereits einen Code; ein weiterer wird nur auf Wunsch
+        // angefordert (/resend), um den Posteingang nicht zu fluten.
         result = {
           status: "code_required",
           sessionId: createSession({ userId: user.id, inventoryId: id, region: input.region, pendingAccount: input.account }).id
@@ -92,6 +94,35 @@ bambuImportRouter.post(
     }
     session.pendingAccount = null;
     sendData(res, { status: "ok", sessionId: session.id } satisfies BambuLoginResult);
+  })
+);
+
+// Code (erneut) per E-Mail anfordern - hoechstens einmal pro Minute je Sitzung.
+// SCOPE: user
+bambuImportRouter.post(
+  "/resend",
+  bambuRateLimiter,
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const { id } = inventoryParamSchema.parse(req.params);
+    const input = bambuResendInputSchema.parse(req.body);
+    const user = getAuthenticatedUser(req);
+    await requireInventoryRole(user, id, "EDITOR");
+    const session = getSession(input.sessionId, user.id, id);
+    if (!session.pendingAccount) {
+      throw new AppError("VALIDATION_ERROR", "Für diese Sitzung wird kein Code erwartet.");
+    }
+    if (session.codeSentAt !== null && sessionNow() - session.codeSentAt < RESEND_COOLDOWN_MS) {
+      throw new AppError("VALIDATION_ERROR", "Bitte etwa eine Minute warten, bevor du den Code erneut anforderst.");
+    }
+    try {
+      await getBambuCloudClient().sendCode(session.region, session.pendingAccount);
+    } catch (err) {
+      logBambuFailure(err);
+      throw toAppError(err);
+    }
+    session.codeSentAt = sessionNow();
+    sendData(res, { sent: true });
   })
 );
 

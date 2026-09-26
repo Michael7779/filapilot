@@ -15,9 +15,19 @@ const USER_AGENT = "bambu_network_agent/01.09.05.01";
 
 export type BambuErrorKind = "credentials" | "unauthorized" | "blocked" | "network" | "invalid_response";
 
-// Bewusst ohne Antwort-Text: nur die Art des Fehlers.
+// Diagnose-Angaben zu einem Fehler: in welchem Schritt, mit welchem HTTP-Status und welche Feldnamen (nie Werte) die Antwort hatte.
+export interface BambuErrorDetail {
+  step: string;
+  status?: number;
+  keys?: string[];
+}
+
+// Bewusst ohne Antwort-Text: nur die Art des Fehlers und die Diagnose-Angaben.
 export class BambuCloudError extends Error {
-  constructor(public readonly kind: BambuErrorKind) {
+  constructor(
+    public readonly kind: BambuErrorKind,
+    public readonly detail?: BambuErrorDetail
+  ) {
     super(`Bambu-Cloud: ${kind}`);
     this.name = "BambuCloudError";
   }
@@ -42,7 +52,15 @@ function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
-async function request(method: "GET" | "POST", url: string, options: { body?: unknown; token?: string } = {}): Promise<RawResponse> {
+interface RequestOptions {
+  step: string;
+  body?: unknown;
+  token?: string;
+  // Antworten ohne (oder mit nicht lesbarem) JSON-Inhalt gelten dann als leer, statt als Fehler
+  lenient?: boolean;
+}
+
+async function request(method: "GET" | "POST", url: string, options: RequestOptions): Promise<RawResponse> {
   let response: Response;
   try {
     response = await fetch(url, {
@@ -57,21 +75,27 @@ async function request(method: "GET" | "POST", url: string, options: { body?: un
       signal: AbortSignal.timeout(TIMEOUT_MS)
     });
   } catch {
-    throw new BambuCloudError("network");
+    throw new BambuCloudError("network", { step: options.step });
   }
   const text = await response.text();
   const contentType = response.headers.get("content-type") ?? "";
   // Cloudflare (Bot-Schutz) antwortet mit einer HTML-Seite oder 403 statt mit JSON.
   if (response.status === 403 || contentType.includes("text/html")) {
-    throw new BambuCloudError("blocked");
+    throw new BambuCloudError("blocked", { step: options.step, status: response.status });
   }
-  let parsed: unknown;
+  let parsed: unknown = {};
   try {
-    parsed = JSON.parse(text);
+    parsed = text.trim() === "" && options.lenient ? {} : JSON.parse(text);
   } catch {
-    throw new BambuCloudError("invalid_response");
+    if (!options.lenient) {
+      throw new BambuCloudError("invalid_response", { step: options.step, status: response.status });
+    }
   }
   return { status: response.status, json: asRecord(parsed) };
+}
+
+function invalid(step: string, status: number, json: Record<string, unknown>): BambuCloudError {
+  return new BambuCloudError("invalid_response", { step, status, keys: Object.keys(json).slice(0, 12) });
 }
 
 function tokenFrom(json: Record<string, unknown>): string | null {
@@ -80,7 +104,10 @@ function tokenFrom(json: Record<string, unknown>): string | null {
 
 export const httpBambuCloudClient: BambuCloudClient = {
   async login(region, account, password) {
-    const { json } = await request("POST", `${BASE_URL[region]}/v1/user-service/user/login`, { body: { account, password } });
+    const { status, json } = await request("POST", `${BASE_URL[region]}/v1/user-service/user/login`, {
+      step: "Anmeldung",
+      body: { account, password }
+    });
     const token = tokenFrom(json);
     if (token) {
       return { kind: "ok", token };
@@ -91,23 +118,29 @@ export const httpBambuCloudClient: BambuCloudClient = {
     if (json.loginType === "tfa") {
       return { kind: "tfa_required" };
     }
-    throw new BambuCloudError("credentials");
+    throw new BambuCloudError("credentials", { step: "Anmeldung", status, keys: Object.keys(json).slice(0, 12) });
   },
 
   async sendCode(region, account) {
+    // Erfolg heisst HTTP 2xx - der Inhalt der Antwort ist leer oder uneinheitlich (die Schnittstelle ist nicht dokumentiert).
     const { status, json } = await request("POST", `${BASE_URL[region]}/v1/user-service/user/sendemail/code`, {
-      body: { email: account, type: "codeLogin" }
+      step: "E-Mail-Code senden",
+      body: { email: account, type: "codeLogin" },
+      lenient: true
     });
     if (status >= 400 || json.success === false) {
-      throw new BambuCloudError("invalid_response");
+      throw invalid("E-Mail-Code senden", status, json);
     }
   },
 
   async loginWithCode(region, account, code) {
-    const { json } = await request("POST", `${BASE_URL[region]}/v1/user-service/user/login`, { body: { account, code } });
+    const { status, json } = await request("POST", `${BASE_URL[region]}/v1/user-service/user/login`, {
+      step: "Anmeldung mit Code",
+      body: { account, code }
+    });
     const token = tokenFrom(json);
     if (!token) {
-      throw new BambuCloudError("credentials");
+      throw new BambuCloudError("credentials", { step: "Anmeldung mit Code", status, keys: Object.keys(json).slice(0, 12) });
     }
     return token;
   },
@@ -118,13 +151,13 @@ export const httpBambuCloudClient: BambuCloudClient = {
       const { status, json } = await request(
         "GET",
         `${BASE_URL[region]}/v1/design-user-service/my/filament/v2?offset=${offset}&limit=${PAGE_SIZE}`,
-        { token }
+        { step: "Spulenliste", token }
       );
       if (status === 401) {
-        throw new BambuCloudError("unauthorized");
+        throw new BambuCloudError("unauthorized", { step: "Spulenliste", status });
       }
       if (status >= 400 || !Array.isArray(json.hits)) {
-        throw new BambuCloudError("invalid_response");
+        throw invalid("Spulenliste", status, json);
       }
       collected.push(...json.hits);
       const total = typeof json.total === "number" ? json.total : collected.length;
@@ -147,6 +180,12 @@ export function setBambuCloudClientForTests(client: BambuCloudClient | null): vo
   activeClient = client ?? httpBambuCloudClient;
 }
 
+// Nur Art, Schritt, HTTP-Status und Feldnamen - nie Inhalte der Antwort, Passwort oder Token.
 export function logBambuFailure(err: unknown): void {
-  logger.warn("Bambu-Cloud-Anfrage fehlgeschlagen", { kind: err instanceof BambuCloudError ? err.kind : "unbekannt" });
+  logger.warn("Bambu-Cloud-Anfrage fehlgeschlagen", {
+    kind: err instanceof BambuCloudError ? err.kind : "unbekannt",
+    step: err instanceof BambuCloudError ? err.detail?.step : undefined,
+    status: err instanceof BambuCloudError ? err.detail?.status : undefined,
+    keys: err instanceof BambuCloudError ? err.detail?.keys : undefined
+  });
 }

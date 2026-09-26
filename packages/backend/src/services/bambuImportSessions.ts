@@ -14,6 +14,8 @@ export interface ImportSession {
   region: BambuRegion;
   // Nur fuer den E-Mail-Code-Schritt (das Passwort wird nie gespeichert)
   pendingAccount: string | null;
+  // Wann zuletzt ein Code angefordert wurde (Schutz vor Mail-Flut)
+  codeSentAt: number | null;
   token: string | null;
   spools: BambuSpool[] | null;
   skipped: number;
@@ -22,6 +24,12 @@ export interface ImportSession {
 
 const sessions = new Map<string, ImportSession>();
 let clock: () => number = () => Date.now();
+
+export const RESEND_COOLDOWN_MS = 60 * 1000;
+
+export function sessionNow(): number {
+  return clock();
+}
 
 export function setSessionClockForTests(fn: (() => number) | null): void {
   clock = fn ?? (() => Date.now());
@@ -63,6 +71,7 @@ export function createSession(input: {
     inventoryId: input.inventoryId,
     region: input.region,
     pendingAccount: input.pendingAccount ?? null,
+    codeSentAt: null,
     token: input.token ?? null,
     spools: input.spools ?? null,
     skipped: input.skipped ?? 0,

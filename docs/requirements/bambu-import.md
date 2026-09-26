@@ -18,8 +18,13 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
 - Neuer Fehlercode `UPSTREAM_ERROR` (502) fuer "Bambu nicht erreichbar / blockiert / unerwartete Antwort".
 
 ## 1.1 Offene Punkte
-- OP-B1: **Die echte Schnittstelle ist nicht mit einem Bambu-Konto geprueft.** Die Tests laufen mit einem Mock nach der dokumentierten
-  Antwort; ob Anmeldung, Bot-Schutz (Cloudflare) und Feldnamen so funktionieren, zeigt erst ein Test mit einem echten Konto.
+- OP-B1: **Die echte Schnittstelle ist nur teilweise geprueft.** Erster Praxistest (2026-09-26, Konto des Nutzers): Die Anmeldung erreicht die
+  Cloud (Bot-Schutz kein Problem, es kam ein E-Mail-Code); der Schritt "Code anfordern" antwortet mit HTTP 200 ohne lesbares JSON und wurde
+  zunaechst faelschlich als Fehler gewertet (behoben in 0.14.2, Test mit gefaelschten Antworten). Offen: Anmeldung mit Code, Spulenliste
+  und Feldnamen mit echten Daten.
+- OP-B6: Ob Bambu beim Anmelden selbst einen Code verschickt oder erst auf "Code anfordern": Im Praxistest kamen bei wenigen Versuchen mehrere
+  E-Mails an. Seit 0.14.2 wird kein Code automatisch angefordert, sondern nur auf Wunsch (max. 1x pro Minute); im Protokoll des Servers
+  stehen bei Fehlern Schritt, Status und Feldnamen (nie Inhalte).
 - OP-B2: Anmeldung per Authenticator-App (TFA) ist nicht unterstuetzt (eigener Pfad mit CSRF-Cookie, nicht verifiziert); die App meldet das
   und verweist auf die JSON-Datei.
 - OP-B3: Kein Dauerabgleich und kein Schreiben in die Bambu-Cloud; der Verbrauch wird nicht zurueckgemeldet.
@@ -37,5 +42,8 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   gleiche Bambu-IDs in verschiedenen Lagern sind getrennt. Test: `tests/security/bambuImport.test.ts`
 - **R5** ✅ Zuordnung von Spulen (Gewicht begrenzt, Ersatzwerte, Farbnamen, kaputte Eintraege gezaehlt). Test: `tests/unit/bambuMapping.test.ts`
 - **R6** ✅ Anmeldeversuche sind begrenzt (429 ueber dem Limit). Test: `tests/unit/bambuRateLimit.test.ts`
+- **R8** ✅ Code-Schritt: kein automatisches Anfordern, "Code senden" nur auf Wunsch, hoechstens einmal pro Minute und nur fuer die eigene Sitzung;
+  der Client wertet HTTP 200 mit leerer Antwort als Erfolg und meldet Fehler mit Schritt/Status. Tests: `tests/security/bambuImport.test.ts`,
+  `tests/unit/bambuCloudClient.test.ts`
 - **R7** ✅ Oberflaeche (Assistent, Datei-Weg, Vorschau, Ergebnis): manuell per Browser mit dem Datei-Weg geprueft (2026-09-26); der Weg ueber
   die echte Cloud ist nicht geprueft (OP-B1).

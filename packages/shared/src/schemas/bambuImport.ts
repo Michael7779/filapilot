@@ -19,6 +19,9 @@ export const bambuVerifyInputSchema = z.object({
 });
 export type BambuVerifyInput = z.infer<typeof bambuVerifyInputSchema>;
 
+export const bambuResendInputSchema = z.object({ sessionId: z.string().min(10).max(100) });
+export type BambuResendInput = z.infer<typeof bambuResendInputSchema>;
+
 // Ausweichweg: die Filamentliste (Antwort von .../my/filament/v2 oder nur das "hits"-Feld) als JSON.
 export const bambuFileInputSchema = z.object({ hits: z.array(z.unknown()).max(BAMBU_MAX_SPOOLS) });
 export type BambuFileInput = z.infer<typeof bambuFileInputSchema>;

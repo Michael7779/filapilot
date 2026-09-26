@@ -8,6 +8,15 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.14.2] - 2026-09-26
+
+### Behoben
+- Import aus der Bambu-Cloud: Nach der Anmeldung mit Passwort erschien die Eingabe des Bestätigungscodes nicht, sondern eine Fehlermeldung,
+  obwohl Bambu den Code per E-Mail geschickt hatte. Der Code-Schritt funktioniert jetzt, und es werden keine überflüssigen
+  E-Mails mehr ausgelöst: Ein neuer Code wird nur noch auf Wunsch angefordert ("Code senden", höchstens einmal pro Minute).
+- Fehlermeldungen beim Import nennen jetzt den Schritt und den HTTP-Status (zum Beispiel "Schritt: Spulenliste, HTTP 400"), damit sich
+  Probleme besser eingrenzen lassen.
+
 ## [0.14.1] - 2026-09-26
 
 ### Behoben

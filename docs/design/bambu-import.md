@@ -66,6 +66,7 @@ Alle unter `/api/inventories/:id/bambu-import`, Rolle `EDITOR` im Lager, sonst w
 |---|---|
 | `POST /login` | Anmelden (`account`, `password`, `region`) → `{ status: "ok" \| "code_required" \| "tfa_unsupported", sessionId }` |
 | `POST /verify` | E-Mail-Code einlösen (`sessionId`, `code`) |
+| `POST /resend` | Code auf Wunsch (erneut) anfordern, höchstens einmal pro Minute je Sitzung |
 | `POST /file` | Ausweichweg: Filamentliste als JSON (`{ hits: [...] }`), erzeugt eine Sitzung ohne Anmeldung |
 | `GET /:sessionId/preview` | Zeilen der Vorschau (lädt die Liste bei Bedarf aus der Cloud und hält sie in der Sitzung) |
 | `POST /:sessionId/import` | Auswahl importieren (`cloudIds`, `updateExisting`), beendet die Sitzung |
