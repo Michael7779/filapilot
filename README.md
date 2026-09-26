@@ -23,22 +23,25 @@ nutzen will, installiert es auf seiner eigenen Hardware.
 
 ## Installation (Synology / Docker)
 
+**Eine ausführliche Schritt-für-Schritt-Anleitung für Einsteiger** (Paketzentrum, Aufgabenplaner, Container
+Manager, Updates, Reverse-Proxy) steht in [docs/installation/synology.md](docs/installation/synology.md). Die
+Kurzfassung für Leute mit Docker-Erfahrung:
+
 Voraussetzung: Docker + Docker Compose auf dem Zielsystem, `git` verfügbar (z.B. Synology-Paket
 "Git Server").
 
 ```bash
 git clone https://github.com/Michael7779/filapilot.git
 cd filapilot
-cp .env.example .env
-openssl rand -hex 32   # -> POSTGRES_PASSWORD
-openssl rand -hex 32   # -> SESSION_SECRET
+bash scripts/init-env.sh   # erzeugt .env mit Zufalls-Schlüsseln, freiem Port und Adresse (siehe Skript-Kopf)
 ```
 
-Beide Werte in `.env` eintragen, außerdem `FRONTEND_ORIGIN` und `FRONTEND_PORT`.
-**Wichtig:** `openssl rand -hex ...` verwenden, nicht `-base64` — Base64 kann `/` oder `+`
-erzeugen, was die Postgres-Verbindungs-URL kaputt macht (die Passwörter landen direkt darin).
-`FRONTEND_ORIGIN` muss die tatsächlich erreichbare Adresse sein, nicht `localhost`, z.B.
-`http://<synology-ip>:8090`.
+`scripts/init-env.sh` legt die `.env` an (Passwort und Sitzungs-Schlüssel zufällig, freier Port ab 8090, Adresse
+`http://<NAS-IP>:<Port>`) und überschreibt nie eine vorhandene Datei. Später ändern lassen sich Adresse und Port
+mit `bash scripts/set-env.sh FRONTEND_ORIGIN <adresse>`. Wer die Datei von Hand aus `.env.example` erstellt:
+`openssl rand -hex 32` verwenden, nicht `-base64` — Base64 kann `/` oder `+` erzeugen, was die
+Postgres-Verbindungs-URL kaputt macht. `FRONTEND_ORIGIN` muss die tatsächlich erreichbare Adresse sein, nicht
+`localhost`.
 
 ```bash
 docker compose up -d --build

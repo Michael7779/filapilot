@@ -8,6 +8,18 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.12.1] - 2026-09-26
+
+### Behoben
+- Die Anmeldung funktionierte nicht, wenn FilaPilot im Heimnetz über eine normale `http://`-Adresse aufgerufen
+  wurde (z. B. `http://192.168.1.50:8090`), weil der Browser das Anmelde-Cookie dort nicht speicherte. Über
+  `https://` (z. B. mit Reverse-Proxy) hat es schon vorher funktioniert und bleibt unverändert.
+
+### Hinweis zum Update
+- Neue Skripte `scripts/init-env.sh` (erzeugt die `.env` mit Zufalls-Schlüsseln und freiem Port) und
+  `scripts/set-env.sh` (ändert Adresse oder Port). Neu ist außerdem die Installationsanleitung
+  `docs/installation/synology.md`. Für bestehende Installationen ändert sich nichts.
+
 ## [0.12.0] - 2026-09-26
 
 ### Hinzugefuegt

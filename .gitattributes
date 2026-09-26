@@ -1,0 +1,2 @@
+# Shell-Skripte muessen auf der NAS (Linux) mit LF-Zeilenenden ankommen, auch wenn sie unter Windows bearbeitet werden.
+*.sh text eol=lf
