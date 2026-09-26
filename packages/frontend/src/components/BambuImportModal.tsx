@@ -221,6 +221,11 @@ export function BambuImportModal({
     });
   }
 
+  // Bei "Restgewicht aktualisieren" gehoeren die bereits importierten Spulen automatisch dazu
+  const actionIds = [
+    ...new Set([...selected, ...(updateExisting ? (preview?.rows ?? []).filter((row) => row.alreadyImported).map((row) => row.cloudId) : [])])
+  ];
+
   async function handleImport(): Promise<void> {
     if (!sessionId) {
       return;
@@ -229,7 +234,7 @@ export function BambuImportModal({
       setSummary(
         await apiRequest<BambuImportSummary>(`${base}/${sessionId}/import`, {
           method: "POST",
-          body: JSON.stringify({ cloudIds: [...selected], updateExisting })
+          body: JSON.stringify({ cloudIds: actionIds, updateExisting })
         })
       );
       setStep("result");
@@ -420,12 +425,12 @@ export function BambuImportModal({
               </button>
               <button
                 type="button"
-                disabled={busy || selected.size === 0}
+                disabled={busy || actionIds.length === 0}
                 onClick={() => void handleImport()}
                 className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                 style={{ backgroundColor: "var(--accent)" }}
               >
-                {t("bambu.importCount", { count: selected.size })}
+                {t("bambu.importCount", { count: actionIds.length })}
               </button>
             </div>
           </div>

@@ -233,7 +233,7 @@
     "alreadyImported": "bereits importiert",
     "updateExisting": "Restgewicht bereits importierter Spulen aktualisieren",
     "mappingHint": "Fehlende Hersteller und Materialien werden angelegt (Temperaturen geschätzt, später unter Einstellungen → Filamente änderbar). Farbnamen sind Vorschläge.",
-    "importCount": "{{count}} importieren",
+    "importCount": "{{count}} importieren / aktualisieren",
     "result": "{{created}} neu angelegt, {{updated}} aktualisiert, {{skipped}} übersprungen.",
     "createdCatalog": "Neu angelegt: {{manufacturers}} Hersteller, {{materials}} Materialien.",
     "remember": "Verbindung für dieses Lager merken",

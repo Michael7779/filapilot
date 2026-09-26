@@ -233,7 +233,7 @@
     "alreadyImported": "already imported",
     "updateExisting": "Update remaining weight of already imported spools",
     "mappingHint": "Missing manufacturers and materials are created (temperatures estimated, editable later under Settings → Filaments). Color names are suggestions.",
-    "importCount": "Import {{count}}",
+    "importCount": "Import / update {{count}}",
     "result": "{{created}} created, {{updated}} updated, {{skipped}} skipped.",
     "createdCatalog": "Newly created: {{manufacturers}} manufacturers, {{materials}} materials.",
     "remember": "Remember the connection for this inventory",

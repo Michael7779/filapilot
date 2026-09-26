@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.14.6] - 2026-09-26
+
+### Behoben
+- Bambu-Import: Ist "Restgewicht bereits importierter Spulen aktualisieren" angehakt, werden alle bereits importierten Spulen aktualisiert, auch wenn keine neue Spule ausgewählt ist. Vorher blieb der Button bei "0 importieren" gesperrt.
+
 ## [0.14.5] - 2026-09-26
 
 ### Hinzugefuegt
