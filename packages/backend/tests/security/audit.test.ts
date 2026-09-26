@@ -12,6 +12,7 @@ interface Item {
   action: string;
   area: string;
   description: string;
+  inventoryName: string | null;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
 }
@@ -23,8 +24,9 @@ describe("Aenderungsprotokoll - Negativ-Tests und Aufzeichnung", () => {
   let userCookie: string[] = [];
   let materialId = "";
   let manufacturerId = "";
+  let inventoryId = "";
 
-  async function list(query = ""): Promise<{ items: Item[]; total: number; usernames: string[] }> {
+  async function list(query = ""): Promise<{ items: Item[]; total: number; usernames: string[]; inventories: { id: string; name: string }[] }> {
     const res = await request(app).get(`/api/audit-log${query}`).set("Cookie", adminCookie);
     assert.equal(res.status, 200);
     return res.body.data;
@@ -34,13 +36,17 @@ describe("Aenderungsprotokoll - Negativ-Tests und Aufzeichnung", () => {
     await prisma.auditLog.deleteMany();
     await prisma.spool.deleteMany();
     await prisma.printer.deleteMany();
+    await prisma.inventory.deleteMany();
     await prisma.user.deleteMany();
     await prisma.user.create({
       data: { username: "auditadmin", email: "auditadmin@example.test", passwordHash: await hashPassword(pw), role: "ADMIN", mustChangePassword: false }
     });
-    await prisma.user.create({
+    const auditUser = await prisma.user.create({
       data: { username: "audituser", email: "audituser@example.test", passwordHash: await hashPassword(pw), role: "USER", mustChangePassword: false }
     });
+    inventoryId = (
+      await prisma.inventory.create({ data: { name: "Audit-Lager", members: { create: { userId: auditUser.id, role: "EDITOR" } } } })
+    ).id;
     adminCookie = (await request(app).post("/api/auth/login").send({ username: "auditadmin", password: pw })).headers["set-cookie"];
     userCookie = (await request(app).post("/api/auth/login").send({ username: "audituser", password: pw })).headers["set-cookie"];
 
@@ -56,6 +62,7 @@ describe("Aenderungsprotokoll - Negativ-Tests und Aufzeichnung", () => {
     await prisma.auditLog.deleteMany();
     await prisma.spool.deleteMany();
     await prisma.printer.deleteMany();
+    await prisma.inventory.deleteMany();
     await prisma.material.deleteMany({ where: { id: materialId } });
     await prisma.manufacturer.deleteMany({ where: { id: manufacturerId } });
     await prisma.user.deleteMany();
@@ -85,7 +92,7 @@ describe("Aenderungsprotokoll - Negativ-Tests und Aufzeichnung", () => {
       colorHex: "#D14343",
       initialWeightG: 1000,
       remainingWeightG: 1000,
-      photoUrl: null,
+      inventoryId,
       purchasePriceCents: null,
       purchasedAt: null,
       location: null
@@ -105,11 +112,18 @@ describe("Aenderungsprotokoll - Negativ-Tests und Aufzeichnung", () => {
     assert.equal(items[1]?.before?.remainingWeightG, 1000);
     assert.equal(items[1]?.after?.remainingWeightG, 900);
     assert.equal(items[2]?.after?.materialName, "Audit PLA");
+    // Jeder Eintrag kennt sein Lager, und der Filter danach funktioniert
+    assert.ok(items.every((i) => i.inventoryName === "Audit-Lager"));
+    const filtered = await list(`?inventoryId=${inventoryId}`);
+    assert.equal(filtered.items.length, items.length);
+    assert.ok(filtered.inventories.some((entry) => entry.id === inventoryId && entry.name === "Audit-Lager"));
+    assert.equal((await list("?inventoryId=11111111-1111-4111-8111-111111111111")).items.length, 0);
+    assert.equal((await request(app).get("/api/audit-log?inventoryId=kein-uuid").set("Cookie", adminCookie)).status, 400);
   });
 
   it("schreibt nie Geheimnisse ins Protokoll (Zugangscode, SMTP-Passwort, Passwort-Hash, Start-Passwort)", async () => {
     const printer = await request(app).post("/api/printers").set("Cookie", adminCookie).send({
-      name: "Audit-Drucker", ipAddress: "192.168.1.77", serialNumber: "AUDIT-SN-1", accessCode: "GEHEIMER-ZUGANGSCODE", syncMode: "LIVE", syncIntervalSeconds: 60
+      name: "Audit-Drucker", ipAddress: "192.168.1.77", serialNumber: "AUDIT-SN-1", accessCode: "GEHEIMER-ZUGANGSCODE", syncMode: "LIVE", syncIntervalSeconds: 60, inventoryId
     });
     assert.equal(printer.status, 201);
     await request(app).patch(`/api/printers/${printer.body.data.id}`).set("Cookie", adminCookie).send({ accessCode: "NOCH-GEHEIMER-CODE" });

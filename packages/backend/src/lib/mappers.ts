@@ -3,6 +3,7 @@ import type {
   Spool as PrismaSpool,
   Material as PrismaMaterial,
   Manufacturer as PrismaManufacturer,
+  Inventory as PrismaInventory,
   Printer as PrismaPrinter
 } from "@prisma/client";
 import type {
@@ -53,6 +54,7 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
     id: spool.id,
     materialId: spool.materialId,
     manufacturerId: spool.manufacturerId,
+    inventoryId: spool.inventoryId,
     colorName: spool.colorName,
     colorHex: spool.colorHex,
     initialWeightG: spool.initialWeightG,
@@ -74,16 +76,18 @@ export function toPublicPrinter(printer: PrismaPrinter): PrinterPublic {
     serialNumber: printer.serialNumber,
     syncMode: printer.syncMode,
     syncIntervalSeconds: printer.syncIntervalSeconds,
+    inventoryId: printer.inventoryId,
     createdAt: printer.createdAt
   };
 }
 
 export function toPublicSpoolWithRelations(
-  spool: PrismaSpool & { material: PrismaMaterial; manufacturer: PrismaManufacturer }
+  spool: PrismaSpool & { material: PrismaMaterial; manufacturer: PrismaManufacturer; inventory: PrismaInventory | null }
 ): SpoolWithRelations {
   return {
     ...toPublicSpool(spool),
     materialName: spool.material.name,
-    manufacturerName: spool.manufacturer.name
+    manufacturerName: spool.manufacturer.name,
+    inventoryName: spool.inventory?.name ?? null
   };
 }

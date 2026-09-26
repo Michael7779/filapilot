@@ -4,18 +4,24 @@ import { createSpoolInputSchema, updateSpoolInputSchema } from "@filapilot/share
 import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendData, AppError } from "../lib/apiResult.js";
-import { requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
+import { getAuthenticatedUser, requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
 import { toPublicSpool, toPublicSpoolWithRelations } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
 import { describeSpool, spoolSnapshot } from "../lib/auditSnapshots.js";
 import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 import { deletePhoto } from "../services/spoolPhotoService.js";
+import {
+  accessibleInventoryIds,
+  requireAccessToObjectInventory,
+  requireInventoryRole
+} from "../services/inventoryAccess.js";
 
 export const spoolsRouter = Router();
 
 const requireActiveUser = [requireAuth, requirePasswordAlreadyChanged] as const;
 const idParamSchema = z.string().uuid();
-const SPOOL_INCLUDE = { material: true, manufacturer: true } as const;
+const listQuerySchema = z.object({ inventoryId: z.union([z.literal("all"), z.string().uuid()]) });
+const SPOOL_INCLUDE = { material: true, manufacturer: true, inventory: true } as const;
 
 async function assertMaterialExists(materialId: string): Promise<void> {
   const material = await prisma.material.findUnique({ where: { id: materialId } });
@@ -43,20 +49,39 @@ async function assertManufacturerExists(manufacturerId: string): Promise<void> {
   }
 }
 
-// Threat-Model: Ein anonymer Request koennte versuchen, den Filament-Bestand einzusehen oder zu
-// aendern. Serverseitig erzwungen: requireAuth + requirePasswordAlreadyChanged auf jeder Route.
-// Spulen gehoeren keinem einzelnen Nutzer (geteilter Bestand, 2-5 Personen), daher kein
-// Ownership-Check noetig - jeder eingeloggte Nutzer darf lesen/anlegen/aendern/loeschen.
-// Negativ-Tests: kein Cookie -> 401, mustChangePassword=true -> 403.
+function inventoryOf(spool: { inventory: { id: string; name: string } | null }): { id: string; name: string } | null {
+  return spool.inventory ? { id: spool.inventory.id, name: spool.inventory.name } : null;
+}
+
+async function findSpoolOrThrow(id: string) {
+  const spool = await prisma.spool.findUnique({ where: { id }, include: SPOOL_INCLUDE });
+  if (!spool) {
+    throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
+  }
+  return spool;
+}
+
+// Threat-Model: Ein anonymer Request koennte den Filament-Bestand einsehen oder aendern; ein angemeldeter Benutzer ohne
+// Mitgliedschaft koennte Spulen eines fremden Lagers lesen, aendern, loeschen oder in ein fremdes Lager schieben.
+// Serverseitig erzwungen: requireAuth + requirePasswordAlreadyChanged auf jeder Route; die Rolle im Lager wird aus der
+// Datenbank berechnet (bei Einzel-Spulen aus dem Lager der Spule, nie aus dem Client): lesen VIEWER, schreiben EDITOR,
+// Verschieben EDITOR im Quell- UND Ziel-Lager; ohne Zugriff 404. "inventoryId=all" liefert nur Lager mit Mitgliedschaft.
+// Negativ-Tests: kein Cookie -> 401, mustChangePassword -> 403, Fremder -> 404, Betrachter beim Schreiben -> 403.
 // SCOPE: user
 spoolsRouter.get(
   "/",
   ...requireActiveUser,
-  asyncHandler(async (_req, res) => {
-    const spools = await prisma.spool.findMany({
-      include: SPOOL_INCLUDE,
-      orderBy: { createdAt: "desc" }
-    });
+  asyncHandler(async (req, res) => {
+    const { inventoryId } = listQuerySchema.parse(req.query);
+    const user = getAuthenticatedUser(req);
+    let where: { inventoryId: string } | { inventoryId: { in: string[] } };
+    if (inventoryId === "all") {
+      where = { inventoryId: { in: await accessibleInventoryIds(user) } };
+    } else {
+      await requireInventoryRole(user, inventoryId, "VIEWER");
+      where = { inventoryId };
+    }
+    const spools = await prisma.spool.findMany({ where, include: SPOOL_INCLUDE, orderBy: { createdAt: "desc" } });
     sendData(
       res,
       spools.map((spool) => toPublicSpoolWithRelations(spool))
@@ -65,23 +90,23 @@ spoolsRouter.get(
 );
 
 // SCOPE: user
-spoolsRouter.get("/:id", ...requireActiveUser, async (req, res, next) => {
-  try {
-    const id = idParamSchema.parse(req.params.id);
-    const spool = await prisma.spool.findUnique({ where: { id }, include: SPOOL_INCLUDE });
-    if (!spool) {
-      throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
-    }
+spoolsRouter.get(
+  "/:id",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const spool = await findSpoolOrThrow(idParamSchema.parse(req.params.id));
+    await requireAccessToObjectInventory(getAuthenticatedUser(req), spool.inventoryId, "VIEWER");
     sendData(res, toPublicSpoolWithRelations(spool));
-  } catch (err) {
-    next(err);
-  }
-});
+  })
+);
 
 // SCOPE: user
-spoolsRouter.post("/", ...requireActiveUser, async (req, res, next) => {
-  try {
+spoolsRouter.post(
+  "/",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
     const input = createSpoolInputSchema.parse(req.body);
+    await requireInventoryRole(getAuthenticatedUser(req), input.inventoryId, "EDITOR");
     await assertMaterialExists(input.materialId);
     await assertManufacturerExists(input.manufacturerId);
     await assertMaterialMatchesManufacturer(input.materialId, input.manufacturerId);
@@ -91,30 +116,34 @@ spoolsRouter.post("/", ...requireActiveUser, async (req, res, next) => {
       action: "CREATE",
       area: "SPOOL",
       entityId: created.id,
+      inventory: inventoryOf(created),
       description: describeSpool(created),
       after: spoolSnapshot(created)
     });
     sendData(res, toPublicSpool(created), 201);
-  } catch (err) {
-    next(err);
-  }
-});
+  })
+);
 
 // SCOPE: user
-spoolsRouter.patch("/:id", ...requireActiveUser, async (req, res, next) => {
-  try {
+spoolsRouter.patch(
+  "/:id",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
     const id = idParamSchema.parse(req.params.id);
     const input = updateSpoolInputSchema.parse(req.body);
+    const user = getAuthenticatedUser(req);
 
+    const before = await findSpoolOrThrow(id);
+    await requireAccessToObjectInventory(user, before.inventoryId, "EDITOR");
+    // Verschieben: auch im Ziel-Lager muss der Benutzer bearbeiten duerfen.
+    if (input.inventoryId && input.inventoryId !== before.inventoryId) {
+      await requireInventoryRole(user, input.inventoryId, "EDITOR");
+    }
     if (input.materialId) {
       await assertMaterialExists(input.materialId);
     }
     if (input.manufacturerId) {
       await assertManufacturerExists(input.manufacturerId);
-    }
-    const before = await prisma.spool.findUnique({ where: { id }, include: SPOOL_INCLUDE });
-    if (!before) {
-      throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
     }
     if (input.materialId || input.manufacturerId) {
       await assertMaterialMatchesManufacturer(
@@ -135,24 +164,23 @@ spoolsRouter.patch("/:id", ...requireActiveUser, async (req, res, next) => {
       actor: actorFromRequest(req),
       area: "SPOOL",
       entityId: id,
+      inventory: inventoryOf(updated),
       description: describeSpool(updated),
       before: spoolSnapshot(before),
       after: spoolSnapshot(updated)
     });
     sendData(res, toPublicSpool(updated));
-  } catch (err) {
-    next(err);
-  }
-});
+  })
+);
 
 // SCOPE: user
-spoolsRouter.delete("/:id", ...requireActiveUser, async (req, res, next) => {
-  try {
+spoolsRouter.delete(
+  "/:id",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
     const id = idParamSchema.parse(req.params.id);
-    const before = await prisma.spool.findUnique({ where: { id }, include: SPOOL_INCLUDE });
-    if (!before) {
-      throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
-    }
+    const before = await findSpoolOrThrow(id);
+    await requireAccessToObjectInventory(getAuthenticatedUser(req), before.inventoryId, "EDITOR");
     await prisma.spool.delete({ where: { id } }).catch((err: unknown) => {
       if (err instanceof Error && err.message.includes("Record to delete does not exist")) {
         throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
@@ -165,11 +193,10 @@ spoolsRouter.delete("/:id", ...requireActiveUser, async (req, res, next) => {
       action: "DELETE",
       area: "SPOOL",
       entityId: id,
+      inventory: inventoryOf(before),
       description: describeSpool(before),
       before: spoolSnapshot(before)
     });
     sendData(res, { deleted: true });
-  } catch (err) {
-    next(err);
-  }
-});
+  })
+);

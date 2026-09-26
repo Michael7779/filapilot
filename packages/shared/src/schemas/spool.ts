@@ -4,6 +4,8 @@ export const spoolSchema = z.object({
   id: z.string().uuid(),
   materialId: z.string().uuid(),
   manufacturerId: z.string().uuid(),
+  // Lager der Spule (in der Datenbank nur wegen der Datenuebernahme optional).
+  inventoryId: z.string().uuid().nullable(),
   colorName: z.string().min(1).max(60),
   colorHex: z
     .string()
@@ -20,7 +22,10 @@ export const spoolSchema = z.object({
 });
 export type Spool = z.infer<typeof spoolSchema>;
 
-export const createSpoolInputSchema = spoolSchema.omit({ id: true, createdAt: true, photoUrl: true });
+// Beim Anlegen ist das Lager Pflicht; beim Aendern optional (Angabe = in dieses Lager verschieben).
+export const createSpoolInputSchema = spoolSchema
+  .omit({ id: true, createdAt: true, photoUrl: true, inventoryId: true })
+  .extend({ inventoryId: z.string().uuid() });
 export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;
 
 export const updateSpoolInputSchema = createSpoolInputSchema.partial();
@@ -28,7 +33,8 @@ export type UpdateSpoolInput = z.infer<typeof updateSpoolInputSchema>;
 
 export const spoolWithRelationsSchema = spoolSchema.extend({
   materialName: z.string(),
-  manufacturerName: z.string()
+  manufacturerName: z.string(),
+  inventoryName: z.string().nullable()
 });
 export type SpoolWithRelations = z.infer<typeof spoolWithRelationsSchema>;
 

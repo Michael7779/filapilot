@@ -1,4 +1,5 @@
 import type {
+  Inventory as PrismaInventory,
   Manufacturer as PrismaManufacturer,
   Material as PrismaMaterial,
   Printer as PrismaPrinter,
@@ -12,9 +13,10 @@ import type { Snapshot } from "../services/auditService.js";
 // (Namen statt IDs): niemals passwordHash, resetToken, Drucker-Zugangscode oder SMTP-Passwort.
 
 export function spoolSnapshot(
-  spool: PrismaSpool & { material: PrismaMaterial; manufacturer: PrismaManufacturer }
+  spool: PrismaSpool & { material: PrismaMaterial; manufacturer: PrismaManufacturer; inventory?: PrismaInventory | null }
 ): Snapshot {
   return {
+    inventoryName: spool.inventory?.name ?? null,
     manufacturerName: spool.manufacturer.name,
     materialName: spool.material.name,
     colorName: spool.colorName,

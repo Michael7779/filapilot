@@ -65,6 +65,7 @@ export async function listAudit(query: AuditQuery): Promise<AuditListResult> {
     ...(query.area ? { area: query.area } : {}),
     ...(query.action ? { action: query.action } : {}),
     ...(query.username ? { username: query.username } : {}),
+    ...(query.inventoryId ? { inventoryId: query.inventoryId } : {}),
     ...(query.from || query.to
       ? { createdAt: { ...(query.from ? { gte: new Date(query.from) } : {}), ...(query.to ? { lte: new Date(query.to) } : {}) } }
       : {}),
@@ -79,7 +80,7 @@ export async function listAudit(query: AuditQuery): Promise<AuditListResult> {
       : {})
   };
 
-  const [total, rows, names] = await Promise.all([
+  const [total, rows, names, inventoryRows] = await Promise.all([
     prisma.auditLog.count({ where }),
     prisma.auditLog.findMany({
       where,
@@ -87,7 +88,13 @@ export async function listAudit(query: AuditQuery): Promise<AuditListResult> {
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize
     }),
-    prisma.auditLog.findMany({ distinct: ["username"], select: { username: true } })
+    prisma.auditLog.findMany({ distinct: ["username"], select: { username: true } }),
+    prisma.auditLog.findMany({
+      where: { inventoryId: { not: null } },
+      distinct: ["inventoryId"],
+      orderBy: { createdAt: "desc" },
+      select: { inventoryId: true, inventoryName: true }
+    })
   ]);
 
   return {
@@ -98,6 +105,8 @@ export async function listAudit(query: AuditQuery): Promise<AuditListResult> {
       action: row.action,
       area: row.area,
       entityId: row.entityId,
+      inventoryId: row.inventoryId,
+      inventoryName: row.inventoryName,
       description: row.description,
       before: (row.before as Snapshot | null) ?? null,
       after: (row.after as Snapshot | null) ?? null
@@ -105,7 +114,10 @@ export async function listAudit(query: AuditQuery): Promise<AuditListResult> {
     total,
     page: query.page,
     pageSize: query.pageSize,
-    usernames: names.map((entry) => entry.username).sort((a, b) => a.localeCompare(b, "de"))
+    usernames: names.map((entry) => entry.username).sort((a, b) => a.localeCompare(b, "de")),
+    inventories: inventoryRows
+      .flatMap((row) => (row.inventoryId ? [{ id: row.inventoryId, name: row.inventoryName ?? "" }] : []))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"))
   };
 }
 

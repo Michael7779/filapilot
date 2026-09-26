@@ -12,6 +12,7 @@ import { AppError, sendData } from "../lib/apiResult.js";
 import { getAuthenticatedUser, requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
 import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 import { requireInventoryRole } from "../services/inventoryAccess.js";
+import { refreshSocketAccess } from "../socket.js";
 import {
   addMember,
   changeMemberRole,
@@ -67,6 +68,7 @@ inventoriesRouter.post(
       description: created.name,
       after: { name: created.name, color: created.color }
     });
+    void refreshSocketAccess();
     sendData(res, created, 201);
   })
 );
@@ -116,6 +118,7 @@ inventoriesRouter.delete(
       description: `${before.name} (${summary.spools} Spulen, ${summary.printers} Drucker mit gelöscht)`,
       before: { name: before.name, color: before.color, ...summary }
     });
+    void refreshSocketAccess();
     sendData(res, { deleted: true, ...summary });
   })
 );
@@ -160,6 +163,7 @@ inventoriesRouter.post(
       inventory,
       description: `${inventory.name}: Mitglied hinzugefügt: ${member.username} (${member.role})`
     });
+    void refreshSocketAccess();
     sendData(res, member, 201);
   })
 );
@@ -182,6 +186,7 @@ inventoriesRouter.patch(
       inventory,
       description: `${inventory.name}: Rolle geändert: ${member.username} → ${member.role}`
     });
+    void refreshSocketAccess();
     sendData(res, member);
   })
 );
@@ -205,6 +210,7 @@ inventoriesRouter.delete(
       inventory,
       description: `${inventory.name}: Mitglied entfernt: ${removed.username}`
     });
+    void refreshSocketAccess();
     sendData(res, { removed: true });
   })
 );

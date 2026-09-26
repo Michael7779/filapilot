@@ -42,7 +42,7 @@ export function connectPrinter(printer: Printer): void {
     (status) => {
       latestStatus.set(printer.id, status);
       if (printer.syncMode === "LIVE") {
-        broadcastPrinterStatus(status);
+        broadcastPrinterStatus(status, printer.inventoryId);
       }
     }
   );
@@ -50,7 +50,7 @@ export function connectPrinter(printer: Printer): void {
 
   if (printer.syncMode === "PERIODIC") {
     const timer = setInterval(
-      () => broadcastPrinterStatus(getLatestStatus(printer.id)),
+      () => broadcastPrinterStatus(getLatestStatus(printer.id), printer.inventoryId),
       printer.syncIntervalSeconds * 1000
     );
     periodicTimers.set(printer.id, timer);

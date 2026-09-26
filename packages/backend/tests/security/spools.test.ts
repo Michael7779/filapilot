@@ -10,9 +10,12 @@ describe("Spools - Negativ-Tests", () => {
   let materialId = "";
   let manufacturerId = "";
   let activeUserCookie: string[] = [];
+  let inventoryId = "";
 
   before(async () => {
     await prisma.spool.deleteMany();
+    await prisma.printer.deleteMany();
+    await prisma.inventory.deleteMany();
     await prisma.material.deleteMany();
     await prisma.manufacturer.deleteMany();
     await prisma.user.deleteMany();
@@ -25,7 +28,7 @@ describe("Spools - Negativ-Tests", () => {
     const manufacturer = await prisma.manufacturer.create({ data: { name: "Bambu Lab Test" } });
     manufacturerId = manufacturer.id;
 
-    await prisma.user.create({
+    const spoolUser = await prisma.user.create({
       data: {
         username: "spooluser",
         email: "spooluser@example.test",
@@ -34,6 +37,10 @@ describe("Spools - Negativ-Tests", () => {
         mustChangePassword: false
       }
     });
+    const inventory = await prisma.inventory.create({
+      data: { name: "Spulen-Testlager", members: { create: { userId: spoolUser.id, role: "EDITOR" } } }
+    });
+    inventoryId = inventory.id;
     const login = await request(app)
       .post("/api/auth/login")
       .send({ username: "spooluser", password: "correct-horse-battery-staple" });
@@ -42,6 +49,7 @@ describe("Spools - Negativ-Tests", () => {
 
   after(async () => {
     await prisma.spool.deleteMany();
+    await prisma.inventory.deleteMany();
     await prisma.material.deleteMany();
     await prisma.manufacturer.deleteMany();
     await prisma.user.deleteMany();
@@ -88,7 +96,7 @@ describe("Spools - Negativ-Tests", () => {
         colorHex: "#1A1A1A",
         initialWeightG: 1000,
         remainingWeightG: -5,
-        photoUrl: null,
+        inventoryId,
         purchasePriceCents: null,
         purchasedAt: null,
         location: null
@@ -112,7 +120,7 @@ describe("Spools - Negativ-Tests", () => {
         colorHex: null,
         initialWeightG: 1000,
         remainingWeightG: 1000,
-        photoUrl: null,
+        inventoryId,
         purchasePriceCents: null,
         purchasedAt: null,
         location: null
@@ -132,7 +140,7 @@ describe("Spools - Negativ-Tests", () => {
         colorHex: "#1A1A1A",
         initialWeightG: 1000,
         remainingWeightG: 1000,
-        photoUrl: null,
+        inventoryId,
         purchasePriceCents: null,
         purchasedAt: null,
         location: null
@@ -151,7 +159,7 @@ describe("Spools - Negativ-Tests", () => {
         colorHex: "#1A1A1A",
         initialWeightG: 1000,
         remainingWeightG: 1000,
-        photoUrl: null,
+        inventoryId,
         purchasePriceCents: null,
         purchasedAt: null,
         location: null
@@ -170,7 +178,7 @@ describe("Spools - Negativ-Tests", () => {
         colorHex: "#1A1A1A",
         initialWeightG: 1000,
         remainingWeightG: 1000,
-        photoUrl: null,
+        inventoryId,
         purchasePriceCents: 2490,
         purchasedAt: null,
         location: "Regal A1"
@@ -178,7 +186,7 @@ describe("Spools - Negativ-Tests", () => {
     assert.equal(createRes.status, 201);
     const spoolId: string = createRes.body.data.id;
 
-    const listRes = await request(app).get("/api/spools").set("Cookie", activeUserCookie);
+    const listRes = await request(app).get(`/api/spools?inventoryId=${inventoryId}`).set("Cookie", activeUserCookie);
     assert.equal(listRes.status, 200);
     assert.ok(listRes.body.data.some((s: { id: string }) => s.id === spoolId));
     const listed = listRes.body.data.find((s: { id: string }) => s.id === spoolId);

@@ -19,19 +19,24 @@ describe("Spulen-Fotos - Negativ-Tests", () => {
 
   before(async () => {
     await prisma.spool.deleteMany();
+    await prisma.printer.deleteMany();
+    await prisma.inventory.deleteMany();
     await prisma.material.deleteMany();
     await prisma.manufacturer.deleteMany();
     await prisma.user.deleteMany();
     await prisma.settings.upsert({ where: { id: 1 }, update: { photoUploadEnabled: true }, create: { id: 1 } });
     const material = await prisma.material.create({ data: { name: "Foto PLA", printTempMinC: 190, printTempMaxC: 220 } });
     const manufacturer = await prisma.manufacturer.create({ data: { name: "Foto Hersteller" } });
-    const spool = await prisma.spool.create({
-      data: { materialId: material.id, manufacturerId: manufacturer.id, colorName: "Rot", initialWeightG: 1000, remainingWeightG: 800 }
-    });
-    spoolId = spool.id;
-    await prisma.user.create({
+    const photoUser = await prisma.user.create({
       data: { username: "photouser", email: "photo@example.test", passwordHash: await hashPassword("correct-horse-battery-staple"), role: "USER", mustChangePassword: false }
     });
+    const inventory = await prisma.inventory.create({
+      data: { name: "Foto-Testlager", members: { create: { userId: photoUser.id, role: "EDITOR" } } }
+    });
+    const spool = await prisma.spool.create({
+      data: { materialId: material.id, manufacturerId: manufacturer.id, inventoryId: inventory.id, colorName: "Rot", initialWeightG: 1000, remainingWeightG: 800 }
+    });
+    spoolId = spool.id;
     const login = await request(app).post("/api/auth/login").send({ username: "photouser", password: "correct-horse-battery-staple" });
     cookie = login.headers["set-cookie"];
   });
@@ -39,6 +44,7 @@ describe("Spulen-Fotos - Negativ-Tests", () => {
   after(async () => {
     await prisma.settings.update({ where: { id: 1 }, data: { photoUploadEnabled: true } });
     await prisma.spool.deleteMany();
+    await prisma.inventory.deleteMany();
     await prisma.material.deleteMany();
     await prisma.manufacturer.deleteMany();
     await prisma.user.deleteMany();
@@ -95,7 +101,8 @@ describe("Spulen-Fotos - Negativ-Tests", () => {
     assert.equal(res.status, 200);
     assert.ok((res.body.data.photoUrl as string).startsWith(`/api/spools/${spoolId}/photo?v=`));
 
-    const list = await request(app).get("/api/spools").set("Cookie", cookie);
+    const listed = await prisma.spool.findUnique({ where: { id: spoolId }, select: { inventoryId: true } });
+    const list = await request(app).get(`/api/spools?inventoryId=${listed?.inventoryId ?? ""}`).set("Cookie", cookie);
     assert.equal(list.body.data[0].photoUrl, res.body.data.photoUrl);
 
     const image = await request(app).get(`/api/spools/${spoolId}/photo`).set("Cookie", cookie).buffer(true).parse((r, cb) => {

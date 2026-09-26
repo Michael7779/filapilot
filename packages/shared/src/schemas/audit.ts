@@ -24,6 +24,8 @@ export const auditEntrySchema = z.object({
   action: auditActionSchema,
   area: auditAreaSchema,
   entityId: z.string().nullable(),
+  inventoryId: z.string().nullable(),
+  inventoryName: z.string().nullable(),
   description: z.string(),
   before: snapshotSchema,
   after: snapshotSchema
@@ -47,6 +49,7 @@ export const auditQuerySchema = z.object({
   area: auditAreaSchema.optional(),
   action: auditActionSchema.optional(),
   username: optionalText,
+  inventoryId: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce
     .number()
@@ -62,4 +65,6 @@ export interface AuditListResult {
   page: number;
   pageSize: number;
   usernames: string[];
+  // Lager, zu denen es Eintraege gibt (fuer die Filter-Auswahl; Name als Momentaufnahme)
+  inventories: { id: string; name: string }[];
 }

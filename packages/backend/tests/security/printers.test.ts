@@ -3,133 +3,132 @@ import assert from "node:assert/strict";
 import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/prisma.js";
-import { hashPassword } from "../../src/services/authService.js";
-import { disconnectPrinter } from "../../src/services/printerRuntime.js";
+import { disconnectAllPrinters } from "../../src/services/printerRuntime.js";
+import {
+  createInventoryWithMembers,
+  createLoggedInUser,
+  createPrinterIn,
+  resetInventoryData,
+  type TestUser
+} from "../helpers/fixtures.js";
 
-/* eslint-disable sonarjs/no-hardcoded-ip -- Test-Fixture-Adressen im privaten 192.168.0.0/16-Bereich,
-   nie erreicht (Verbindungsversuch schlaegt bewusst fehl), kein echtes Ziel. */
+/* eslint-disable sonarjs/no-hardcoded-ip -- Test-Fixture-Adressen im Testnetz-Bereich, nie erreicht
+   (Verbindungsversuch schlaegt bewusst fehl), kein echtes Ziel. */
 
-describe("Printers - Negativ-Tests", () => {
+describe("Printers - Negativ-Tests (Rechte im Lager)", () => {
   const app = createApp();
-  let activeUserCookie: string[] = [];
-  let adminCookie: string[] = [];
+  let admin: TestUser;
+  let owner: TestUser;
+  let editor: TestUser;
+  let viewer: TestUser;
+  let outsider: TestUser;
+  let lagerId = "";
+  let otherLagerId = "";
+  let serialCounter = 0;
+
+  const printerBody = (inventoryId: string) => {
+    serialCounter += 1;
+    return {
+      name: "Werkstatt",
+      ipAddress: "192.0.2.50",
+      serialNumber: `TEST-SN-${Date.now()}-${serialCounter}`,
+      accessCode: "12345678",
+      syncMode: "LIVE",
+      syncIntervalSeconds: 60,
+      inventoryId
+    };
+  };
 
   before(async () => {
-    await prisma.printer.deleteMany();
-    await prisma.user.deleteMany();
-
-    await prisma.user.create({
-      data: {
-        username: "printeruser",
-        email: "printeruser@example.test",
-        passwordHash: await hashPassword("correct-horse-battery-staple"),
-        role: "USER",
-        mustChangePassword: false
-      }
-    });
-    await prisma.user.create({
-      data: {
-        username: "printeradmin",
-        email: "printeradmin@example.test",
-        passwordHash: await hashPassword("correct-horse-battery-staple"),
-        role: "ADMIN",
-        mustChangePassword: false
-      }
-    });
-
-    const userLogin = await request(app)
-      .post("/api/auth/login")
-      .send({ username: "printeruser", password: "correct-horse-battery-staple" });
-    activeUserCookie = userLogin.headers["set-cookie"];
-
-    const adminLogin = await request(app)
-      .post("/api/auth/login")
-      .send({ username: "printeradmin", password: "correct-horse-battery-staple" });
-    adminCookie = adminLogin.headers["set-cookie"];
+    await resetInventoryData();
+    admin = await createLoggedInUser(app, "printadmin", "ADMIN");
+    owner = await createLoggedInUser(app, "printowner");
+    editor = await createLoggedInUser(app, "printeditor");
+    viewer = await createLoggedInUser(app, "printviewer");
+    outsider = await createLoggedInUser(app, "printoutsider");
+    lagerId = (
+      await createInventoryWithMembers("Druck-Lager", [
+        { userId: owner.id, role: "OWNER" },
+        { userId: editor.id, role: "EDITOR" },
+        { userId: viewer.id, role: "VIEWER" }
+      ])
+    ).id;
+    otherLagerId = (await createInventoryWithMembers("Anderes Lager", [{ userId: outsider.id, role: "OWNER" }])).id;
   });
 
   after(async () => {
-    // POST /api/printers baut sofort eine (Hintergrund-)MQTT-Verbindung auf, damit der Testlauf
-    // nicht wegen offener Reconnect-Timer haengen bleibt, muss jede in diesem Testfile angelegte
-    // Verbindung wieder sauber getrennt werden - unabhaengig davon, ob der echte Drucker
-    // erreichbar war.
-    const remainingPrinters = await prisma.printer.findMany();
-    for (const printer of remainingPrinters) {
-      disconnectPrinter(printer.id);
-    }
-    await prisma.printer.deleteMany();
-    await prisma.user.deleteMany();
+    // POST /api/printers baut sofort eine (Hintergrund-)MQTT-Verbindung auf - jede Verbindung muss wieder getrennt
+    // werden, sonst haengt der Testlauf an offenen Reconnect-Timern.
+    disconnectAllPrinters();
+    await resetInventoryData();
     await prisma.$disconnect();
   });
 
-  it("lehnt anonymen Zugriff auf die Drucker-Liste ab (401)", async () => {
-    const res = await request(app).get("/api/printers");
-    assert.equal(res.status, 401);
+  it("lehnt anonymen Zugriff ab (401) und verlangt ein Lager beim Auflisten (400)", async () => {
+    assert.equal((await request(app).get(`/api/printers?inventoryId=${lagerId}`)).status, 401);
+    assert.equal((await request(app).post("/api/printers").send(printerBody(lagerId))).status, 401);
+    assert.equal((await request(app).get("/api/printers").set("Cookie", owner.cookie)).status, 400);
   });
 
-  it("lehnt Anlegen eines Druckers durch nicht-Admin ab (403)", async () => {
-    const res = await request(app)
-      .post("/api/printers")
-      .set("Cookie", activeUserCookie)
-      .send({
-        name: "Werkstatt",
-        ipAddress: "192.168.1.50",
-        serialNumber: "TEST-SN-1",
-        accessCode: "12345678",
-        syncMode: "LIVE",
-        syncIntervalSeconds: 60
-      });
-    assert.equal(res.status, 403);
+  it("lehnt Anlegen ab: Betrachter/Bearbeiter 403, Fremder 404 (Lager bleibt unsichtbar)", async () => {
+    for (const user of [viewer, editor]) {
+      assert.equal((await request(app).post("/api/printers").set("Cookie", user.cookie).send(printerBody(lagerId))).status, 403, user.username);
+    }
+    assert.equal((await request(app).post("/api/printers").set("Cookie", outsider.cookie).send(printerBody(lagerId))).status, 404);
+    assert.equal(await prisma.printer.count(), 0);
   });
 
-  it("Admin kann einen Drucker anlegen; accessCode taucht nie in der Antwort auf", async () => {
-    const createRes = await request(app)
-      .post("/api/printers")
-      .set("Cookie", adminCookie)
-      .send({
-        name: "Werkstatt",
-        ipAddress: "192.168.1.50",
-        serialNumber: "TEST-SN-2",
-        accessCode: "12345678",
-        syncMode: "LIVE",
-        syncIntervalSeconds: 60
-      });
-    assert.equal(createRes.status, 201);
-    assert.equal("accessCode" in createRes.body.data, false);
-    const printerId: string = createRes.body.data.id;
+  it("erlaubt Besitzern und Admins das Anlegen; der accessCode taucht nie in einer Antwort auf; doppelte Seriennummer 409", async () => {
+    const body = printerBody(lagerId);
+    const created = await request(app).post("/api/printers").set("Cookie", owner.cookie).send(body);
+    assert.equal(created.status, 201);
+    assert.equal("accessCode" in created.body.data, false);
+    assert.equal(created.body.data.inventoryId, lagerId);
+    assert.equal((await request(app).post("/api/printers").set("Cookie", owner.cookie).send(body)).status, 409);
 
-    const listRes = await request(app).get("/api/printers").set("Cookie", activeUserCookie);
-    assert.equal(listRes.status, 200);
-    assert.ok(listRes.body.data.every((p: object) => !("accessCode" in p)));
+    const byAdmin = await request(app).post("/api/printers").set("Cookie", admin.cookie).send(printerBody(otherLagerId));
+    assert.equal(byAdmin.status, 201);
 
-    const statusRes = await request(app)
-      .get(`/api/printers/${printerId}/status`)
-      .set("Cookie", activeUserCookie);
-    assert.equal(statusRes.status, 200);
-    assert.equal(statusRes.body.data.printerId, printerId);
+    const list = await request(app).get(`/api/printers?inventoryId=${lagerId}`).set("Cookie", viewer.cookie);
+    assert.equal(list.status, 200);
+    assert.equal(list.body.data.length, 1);
+    assert.ok(list.body.data.every((printer: object) => !("accessCode" in printer)));
+    assert.ok(!JSON.stringify(created.body).includes("12345678"));
+
+    const status = await request(app).get(`/api/printers/${created.body.data.id}/status`).set("Cookie", viewer.cookie);
+    assert.equal(status.status, 200);
+    assert.equal(status.body.data.printerId, created.body.data.id);
   });
 
-  it("lehnt Aendern und Loeschen eines Druckers durch nicht-Admin ab (403)", async () => {
-    const created = await prisma.printer.create({
-      data: {
-        name: "Nur fuer Test",
-        ipAddress: "192.168.1.51",
-        serialNumber: "TEST-SN-3",
-        accessCode: "12345678",
-        syncMode: "LIVE",
-        syncIntervalSeconds: 60
-      }
-    });
+  it("zeigt Fremden weder Liste noch Status: 404, und 'all' enthaelt nur eigene Lager", async () => {
+    const printer = await createPrinterIn(lagerId, "Nur Druck-Lager");
+    assert.equal((await request(app).get(`/api/printers?inventoryId=${lagerId}`).set("Cookie", outsider.cookie)).status, 404);
+    assert.equal((await request(app).get(`/api/printers/${printer.id}/status`).set("Cookie", outsider.cookie)).status, 404);
 
-    const patchRes = await request(app)
-      .patch(`/api/printers/${created.id}`)
-      .set("Cookie", activeUserCookie)
-      .send({ name: "Umbenannt" });
-    assert.equal(patchRes.status, 403);
+    const all = await request(app).get("/api/printers?inventoryId=all").set("Cookie", outsider.cookie);
+    assert.equal(all.status, 200);
+    assert.ok(all.body.data.every((entry: { inventoryId: string }) => entry.inventoryId === otherLagerId));
+    assert.ok(!all.body.data.some((entry: { id: string }) => entry.id === printer.id));
+  });
 
-    const deleteRes = await request(app)
-      .delete(`/api/printers/${created.id}`)
-      .set("Cookie", activeUserCookie);
-    assert.equal(deleteRes.status, 403);
+  it("lehnt Aendern und Loeschen ab: Betrachter/Bearbeiter 403, Fremder 404; Besitzer darf, aber das Lager laesst sich nicht wechseln", async () => {
+    const printer = await createPrinterIn(lagerId, "Aenderbar");
+    for (const user of [viewer, editor]) {
+      assert.equal((await request(app).patch(`/api/printers/${printer.id}`).set("Cookie", user.cookie).send({ name: "X" })).status, 403);
+      assert.equal((await request(app).delete(`/api/printers/${printer.id}`).set("Cookie", user.cookie)).status, 403);
+    }
+    assert.equal((await request(app).patch(`/api/printers/${printer.id}`).set("Cookie", outsider.cookie).send({ name: "X" })).status, 404);
+    assert.equal((await request(app).delete(`/api/printers/${printer.id}`).set("Cookie", outsider.cookie)).status, 404);
+
+    const renamed = await request(app)
+      .patch(`/api/printers/${printer.id}`)
+      .set("Cookie", owner.cookie)
+      .send({ name: "Umbenannt", inventoryId: otherLagerId });
+    assert.equal(renamed.status, 200);
+    assert.equal(renamed.body.data.name, "Umbenannt");
+    assert.equal(renamed.body.data.inventoryId, lagerId);
+
+    assert.equal((await request(app).delete(`/api/printers/${printer.id}`).set("Cookie", owner.cookie)).status, 200);
+    assert.equal(await prisma.printer.count({ where: { id: printer.id } }), 0);
   });
 });

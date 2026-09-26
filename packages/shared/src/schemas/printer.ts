@@ -11,6 +11,7 @@ export const printerSchema = z.object({
   accessCode: z.string().min(1).max(60),
   syncMode: printerSyncModeSchema,
   syncIntervalSeconds: z.number().int().min(10).max(3600),
+  inventoryId: z.string().uuid().nullable(),
   createdAt: z.coerce.date()
 });
 export type Printer = z.infer<typeof printerSchema>;
@@ -21,10 +22,13 @@ export type Printer = z.infer<typeof printerSchema>;
 export const printerPublicSchema = printerSchema.omit({ accessCode: true });
 export type PrinterPublic = z.infer<typeof printerPublicSchema>;
 
-export const createPrinterInputSchema = printerSchema.omit({ id: true, createdAt: true });
+// Beim Anlegen ist das Lager Pflicht; ein Drucker gehoert fest zu genau einem Lager und wird nicht verschoben.
+export const createPrinterInputSchema = printerSchema
+  .omit({ id: true, createdAt: true, inventoryId: true })
+  .extend({ inventoryId: z.string().uuid() });
 export type CreatePrinterInput = z.infer<typeof createPrinterInputSchema>;
 
-export const updatePrinterInputSchema = createPrinterInputSchema.partial();
+export const updatePrinterInputSchema = createPrinterInputSchema.omit({ inventoryId: true }).partial();
 export type UpdatePrinterInput = z.infer<typeof updatePrinterInputSchema>;
 
 export const amsSlotStatusSchema = z.object({
