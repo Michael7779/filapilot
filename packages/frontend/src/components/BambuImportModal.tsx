@@ -1,15 +1,27 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import type { BambuImportSummary, BambuLoginResult, BambuPreview, BambuRegion } from "@filapilot/shared";
+import type {
+  BambuConnectionInfo,
+  BambuImportSummary,
+  BambuLoginResult,
+  BambuPreview,
+  BambuRegion,
+  BambuSyncSummary
+} from "@filapilot/shared";
+import { BambuConnectionPanel } from "./BambuConnectionPanel.js";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 
-type Step = "login" | "code" | "preview" | "result";
+type Step = "loading" | "connected" | "login" | "code" | "preview" | "result";
 
 interface BambuImportModalProps {
   inventoryId: string;
   inventoryName: string;
+  // Nur Besitzer duerfen die Verbindung merken oder trennen
+  isOwner: boolean;
   onClose: () => void;
+  // Nach Verbinden/Trennen, damit die Spulen-Seite ihren Knopf aktualisiert
+  onConnectionChanged: () => void;
   // Nach einem Import, damit die Spulenliste neu geladen wird
   onImported: () => void;
 }
@@ -32,10 +44,20 @@ function hitsFromJson(text: string): unknown[] | null {
   return null;
 }
 
-export function BambuImportModal({ inventoryId, inventoryName, onClose, onImported }: BambuImportModalProps): React.JSX.Element {
+export function BambuImportModal({
+  inventoryId,
+  inventoryName,
+  isOwner,
+  onClose,
+  onConnectionChanged,
+  onImported
+}: BambuImportModalProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const base = `/inventories/${inventoryId}/bambu-import`;
-  const [step, setStep] = useState<Step>("login");
+  const [step, setStep] = useState<Step>("loading");
+  const [connection, setConnection] = useState<BambuConnectionInfo | null>(null);
+  const [remember, setRemember] = useState(false);
+  const [syncSummary, setSyncSummary] = useState<BambuSyncSummary | null>(null);
   const [region, setRegion] = useState<BambuRegion>("global");
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
@@ -59,6 +81,16 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
     }
     onClose();
   }
+
+  // Beim Oeffnen: ist das Lager schon verbunden (gemerktes Token), gibt es den Abgleich ohne erneutes Anmelden.
+  useEffect(() => {
+    apiRequest<BambuConnectionInfo>(`${base}/connection`)
+      .then((info) => {
+        setConnection(info);
+        setStep(info.connected ? "connected" : "login");
+      })
+      .catch(() => setStep("login"));
+  }, [base]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -96,7 +128,7 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
     await run(async () => {
       const result = await apiRequest<BambuLoginResult>(`${base}/login`, {
         method: "POST",
-        body: JSON.stringify({ account: account.trim(), password, region })
+        body: JSON.stringify({ account: account.trim(), password, region, remember: isOwner && remember })
       });
       // Das Passwort wird sofort verworfen - der Server speichert es nie.
       setPassword("");
@@ -107,7 +139,40 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
         setStep("code");
       } else if (result.sessionId) {
         await loadPreview(result.sessionId);
+        if (isOwner && remember) {
+          onConnectionChanged();
+        }
       }
+    });
+  }
+
+  async function handleSync(): Promise<void> {
+    await run(async () => {
+      setSyncSummary(await apiRequest<BambuSyncSummary>(`${base}/sync`, { method: "POST" }));
+      setStep("result");
+      onImported();
+      onConnectionChanged();
+    });
+  }
+
+  async function handlePickFromConnection(): Promise<void> {
+    await run(async () => {
+      const result = await apiRequest<BambuLoginResult>(`${base}/from-connection`, { method: "POST" });
+      if (result.sessionId) {
+        await loadPreview(result.sessionId);
+      }
+    });
+  }
+
+  async function handleDisconnect(): Promise<void> {
+    if (!window.confirm(t("bambu.disconnectConfirm"))) {
+      return;
+    }
+    await run(async () => {
+      await apiRequest(`${base}/connection`, { method: "DELETE" });
+      setConnection(null);
+      setStep("login");
+      onConnectionChanged();
     });
   }
 
@@ -119,6 +184,9 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
     await run(async () => {
       await apiRequest<BambuLoginResult>(`${base}/verify`, { method: "POST", body: JSON.stringify({ sessionId, code: code.trim() }) });
       await loadPreview(sessionId);
+      if (isOwner && remember) {
+        onConnectionChanged();
+      }
     });
   }
 
@@ -188,6 +256,21 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
       <div className="flex max-h-[90dvh] w-full max-w-[640px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6">
         <h2 className="text-lg font-bold">{t("bambu.title", { name: inventoryName })}</h2>
 
+        {step === "loading" && <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>}
+
+        {step === "connected" && connection && (
+          <BambuConnectionPanel
+            info={connection}
+            isOwner={isOwner}
+            busy={busy}
+            onSync={() => void handleSync()}
+            onPick={() => void handlePickFromConnection()}
+            onReconnect={() => setStep("login")}
+            onDisconnect={() => void handleDisconnect()}
+            onClose={close}
+          />
+        )}
+
         {step === "login" && (
           <form onSubmit={(event) => void handleLogin(event)} className="flex flex-col gap-3">
             <p className="text-sm text-[var(--color-text-secondary)]">{t("bambu.intro")}</p>
@@ -210,6 +293,15 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
               </select>
             </label>
             <p className="text-xs text-[var(--color-text-muted)]">{t("bambu.privacy")}</p>
+            {isOwner && (
+              <label className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+                <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} className="mt-1" />
+                <span>
+                  {t("bambu.remember")}
+                  <span className="block text-xs text-[var(--color-text-muted)]">{t("bambu.rememberHint")}</span>
+                </span>
+              </label>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <button type="button" onClick={() => fileInput.current?.click()} className="text-xs font-medium" style={{ color: "var(--accent)" }}>
                 {t("bambu.useFile")}
@@ -334,6 +426,25 @@ export function BambuImportModal({ inventoryId, inventoryName, onClose, onImport
                 style={{ backgroundColor: "var(--accent)" }}
               >
                 {t("bambu.importCount", { count: selected.size })}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "result" && syncSummary && (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm">
+              {t("bambu.syncResult", {
+                created: syncSummary.created,
+                updated: syncSummary.updated,
+                archived: syncSummary.archived,
+                restored: syncSummary.restored
+              })}
+            </p>
+            {syncSummary.archiveBlocked && <p className="text-xs text-[var(--color-danger)]">{t("bambu.syncBlocked")}</p>}
+            <div className="flex justify-end">
+              <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: "var(--accent)" }}>
+                {t("common.close")}
               </button>
             </div>
           </div>

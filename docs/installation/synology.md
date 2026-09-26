@@ -395,7 +395,9 @@ Ein **Lager** ist ein eigener Filament-Bestand mit eigenen Spulen, Druckern, Das
 
 Auf der Spulen-Seite eines Lagers (als Bearbeiter oder Besitzer) startet **Aus Bambu-Cloud importieren** einen kleinen Assistenten:
 Mit deinem Bambu-Konto anmelden (bei Bedarf den Code aus der E-Mail eingeben), die Vorschau ansehen, Spulen auswählen und importieren.
-Der Import ist einmalig, Passwort und Zugang werden nicht gespeichert. Er nutzt die inoffizielle Schnittstelle von Bambu und kann
+Der Import ist einmalig, das Passwort wird nie gespeichert. Ein Besitzer kann beim Anmelden "Verbindung für dieses Lager merken" wählen: Dann wird nur der
+Zugang verschlüsselt gemerkt (jedes Lager hat seine eigene Verbindung), und auf der Spulen-Seite gibt es den Knopf "Aus Cloud aktualisieren", der das Lager
+ohne Auswahl mit der Cloud abgleicht. Der Zugang gilt etwa 90 Tage, danach meldest du dich einmal neu an. Er nutzt die inoffizielle Schnittstelle von Bambu und kann
 jederzeit aufhören zu funktionieren. Klappt die Anmeldung nicht, gibt es unten im Dialog den Weg über eine JSON-Datei.
 
 ### Sicherungen

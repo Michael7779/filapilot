@@ -16,6 +16,8 @@ export interface ImportSession {
   pendingAccount: string | null;
   // Wann zuletzt ein Code angefordert wurde (Schutz vor Mail-Flut)
   codeSentAt: number | null;
+  // Nach erfolgreicher Anmeldung die Verbindung fuer das Lager merken (nur Besitzer, vorab geprueft)
+  remember: boolean;
   token: string | null;
   spools: BambuSpool[] | null;
   skipped: number;
@@ -53,6 +55,7 @@ export function createSession(input: {
   inventoryId: string;
   region: BambuRegion;
   pendingAccount?: string | null;
+  remember?: boolean;
   token?: string | null;
   spools?: BambuSpool[] | null;
   skipped?: number;
@@ -72,6 +75,7 @@ export function createSession(input: {
     region: input.region,
     pendingAccount: input.pendingAccount ?? null,
     codeSentAt: null,
+    remember: input.remember ?? false,
     token: input.token ?? null,
     spools: input.spools ?? null,
     skipped: input.skipped ?? 0,

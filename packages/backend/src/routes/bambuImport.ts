@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { z } from "zod";
 import {
   bambuFileInputSchema,
@@ -15,7 +15,15 @@ import { bambuRateLimiter } from "../middleware/rateLimit.js";
 import { actorFromRequest, recordAudit } from "../services/auditService.js";
 import { getBambuCloudClient, logBambuFailure } from "../services/bambuCloudClient.js";
 import { buildPreview, importSelected, parseBambuHits, toAppError } from "../services/bambuImportService.js";
-import { RESEND_COOLDOWN_MS, createSession, deleteSession, getSession, sessionNow } from "../services/bambuImportSessions.js";
+import {
+  RESEND_COOLDOWN_MS,
+  createSession,
+  deleteSession,
+  getSession,
+  sessionNow,
+  type ImportSession
+} from "../services/bambuImportSessions.js";
+import { saveConnection } from "../services/bambuConnectionService.js";
 import { requireInventoryRole } from "../services/inventoryAccess.js";
 import { getInventoryRow } from "../services/inventoryService.js";
 
@@ -38,6 +46,24 @@ const sessionParamSchema = z.object({ id: z.string().uuid(), sessionId: z.string
 // Negativ-Tests: kein Cookie -> 401, Fremder -> 404, Betrachter -> 403, fremde/abgelaufene Sitzung -> 404, ungueltige Region
 // -> 400, manipuliertes JSON -> 400, keine Geheimnisse im Protokoll/in Antworten.
 
+// Merkt die Verbindung fuer das Lager, wenn der Besitzer es beim Anmelden gewuenscht hat (Recht wurde vorab geprueft).
+async function storeConnectionIfWanted(session: ImportSession, req: Request): Promise<void> {
+  if (!session.remember || !session.token) {
+    return;
+  }
+  const user = getAuthenticatedUser(req);
+  await saveConnection({ inventoryId: session.inventoryId, region: session.region, token: session.token, connectedByName: user.username });
+  const inventory = await getInventoryRow(session.inventoryId);
+  await recordAudit({
+    actor: actorFromRequest(req),
+    action: "EVENT",
+    area: "INVENTORY",
+    entityId: session.inventoryId,
+    inventory,
+    description: `${inventory.name}: Bambu-Verbindung gemerkt`
+  });
+}
+
 // SCOPE: user
 bambuImportRouter.post(
   "/login",
@@ -47,19 +73,27 @@ bambuImportRouter.post(
     const { id } = inventoryParamSchema.parse(req.params);
     const input = bambuLoginInputSchema.parse(req.body);
     const user = getAuthenticatedUser(req);
-    await requireInventoryRole(user, id, "EDITOR");
+    await requireInventoryRole(user, id, input.remember ? "OWNER" : "EDITOR");
     const client = getBambuCloudClient();
     let result: BambuLoginResult;
+    let created: ImportSession | null = null;
     try {
       const outcome = await client.login(input.region, input.account, input.password);
       if (outcome.kind === "ok") {
-        result = { status: "ok", sessionId: createSession({ userId: user.id, inventoryId: id, region: input.region, token: outcome.token }).id };
+        created = createSession({ userId: user.id, inventoryId: id, region: input.region, token: outcome.token, remember: input.remember });
+        result = { status: "ok", sessionId: created.id };
       } else if (outcome.kind === "code_required") {
         // Bambu verschickt bei diesem Schritt nach eigenen Regeln bereits einen Code; ein weiterer wird nur auf Wunsch
         // angefordert (/resend), um den Posteingang nicht zu fluten.
         result = {
           status: "code_required",
-          sessionId: createSession({ userId: user.id, inventoryId: id, region: input.region, pendingAccount: input.account }).id
+          sessionId: createSession({
+            userId: user.id,
+            inventoryId: id,
+            region: input.region,
+            pendingAccount: input.account,
+            remember: input.remember
+          }).id
         };
       } else {
         result = { status: "tfa_unsupported", sessionId: null };
@@ -67,6 +101,9 @@ bambuImportRouter.post(
     } catch (err) {
       logBambuFailure(err);
       throw toAppError(err);
+    }
+    if (created) {
+      await storeConnectionIfWanted(created, req);
     }
     sendData(res, result);
   })
@@ -93,6 +130,7 @@ bambuImportRouter.post(
       throw toAppError(err);
     }
     session.pendingAccount = null;
+    await storeConnectionIfWanted(session, req);
     sendData(res, { status: "ok", sessionId: session.id } satisfies BambuLoginResult);
   })
 );

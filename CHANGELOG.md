@@ -8,6 +8,23 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.14.4] - 2026-09-26
+
+### Hinzugefuegt
+- Bambu-Verbindung pro Lager: Beim Anmelden im Import-Dialog kann ein Besitzer "Verbindung für dieses Lager merken" wählen. FilaPilot speichert
+  dann nur den Zugang (verschlüsselt, nie dein Passwort). Jedes Lager hat seine eigene Verbindung, du kannst also in einem Lager ein anderes
+  Bambu-Konto nutzen als im anderen. Ohne Passwort und ohne Code, bis der Zugang abläuft (etwa 90 Tage), danach meldest du dich einmal neu an.
+- Neuer Knopf "Aus Cloud aktualisieren" auf der Spulen-Seite (bei verbundenem Lager), ohne Auswahl: Bestehende Spulen bekommen das aktuelle
+  Restgewicht aus der Cloud, neue Spulen werden angelegt, und Spulen, die in der Cloud entfernt wurden, werden als erledigt archiviert.
+  Taucht eine Spule wieder auf, wird sie wiederhergestellt. Von Hand archivierte Spulen bleiben unberührt.
+- Schutz vor Fehlern: Ist die Liste aus der Cloud leer, unvollständig oder fehlen ungewöhnlich viele Spulen, wird nichts archiviert, und FilaPilot
+  weist darauf hin. Bei Spulen aus der Cloud gewinnt die Cloud: Ein von Hand geändertes Restgewicht wird beim nächsten Abgleich überschrieben.
+- Der Import mit Auswahl funktioniert bei verbundenem Lager ebenfalls ohne erneutes Anmelden ("Spulen auswählen …").
+
+### Hinweis zum Update
+- Neue Datenbank-Tabelle; das Update-Skript gleicht sie automatisch ab. Das gemerkte Zugangs-Token wird mit einem Schlüssel aus `SESSION_SECRET`
+  verschlüsselt. Nach einem Umzug mit anderem `SESSION_SECRET` gilt das Lager als nicht verbunden, und du meldest dich einmal neu an.
+
 ## [0.14.3] - 2026-09-26
 
 ### Hinzugefuegt

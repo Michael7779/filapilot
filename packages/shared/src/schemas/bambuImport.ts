@@ -9,7 +9,9 @@ export type BambuRegion = z.infer<typeof bambuRegionSchema>;
 export const bambuLoginInputSchema = z.object({
   account: z.string().trim().min(3).max(200),
   password: z.string().min(1).max(200),
-  region: bambuRegionSchema
+  region: bambuRegionSchema,
+  // Verbindung fuer dieses Lager merken (nur Besitzer)
+  remember: z.boolean().default(false)
 });
 export type BambuLoginInput = z.infer<typeof bambuLoginInputSchema>;
 
@@ -46,6 +48,29 @@ export const bambuSpoolSchema = z.object({
   deviceName: z.string().max(120).nullish()
 });
 export type BambuSpool = z.infer<typeof bambuSpoolSchema>;
+
+export interface BambuConnectionInfo {
+  connected: boolean;
+  region: BambuRegion | null;
+  connectedByName: string | null;
+  connectedAt: string | null;
+  tokenExpiresAt: string | null;
+  lastSyncAt: string | null;
+  lastSyncSummary: string | null;
+}
+
+export interface BambuSyncSummary {
+  created: number;
+  updated: number;
+  unchanged: number;
+  restored: number;
+  archived: number;
+  skipped: number;
+  // true = ungewoehnlich viele oder alle Spulen fehlten in der Cloud, es wurde bewusst nichts archiviert
+  archiveBlocked: boolean;
+  manufacturersCreated: number;
+  materialsCreated: number;
+}
 
 export interface BambuLoginResult {
   status: "ok" | "code_required" | "tfa_unsupported";

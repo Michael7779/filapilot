@@ -15,6 +15,8 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   Gewicht = `netWeight`/`totalNetWeight` (begrenzt), Lagerort = Druckername bei "im Drucker". `Spool.bambuCloudId` (nur Index, keine DB-Eindeutigkeit, siehe `install.md` R3) erkennt schon importierte Spulen je Lager; Doppelimport wird im Code verhindert.
 - Passwort und Token werden nie gespeichert, geloggt, protokolliert oder zurueckgegeben; das Token wird nach dem Import, beim Abbrechen,
   nach 15 Minuten und beim Neustart verworfen. Anmeldeversuche sind streng begrenzt (10 je 15 Minuten und IP).
+- Seit 0.14.4: gemerkte Verbindung je Lager (`routes/bambuConnection.ts`: `GET/DELETE /connection`, `POST /sync`, `POST /from-connection`), Abgleich
+  (`services/bambuSyncService.ts`), Token-Verwaltung (`services/bambuConnectionService.ts`); Design in `docs/design/archiv-sync-statistik.md`.
 - Neuer Fehlercode `UPSTREAM_ERROR` (502) fuer "Bambu nicht erreichbar / blockiert / unerwartete Antwort".
 
 ## 1.1 Offene Punkte
@@ -27,7 +29,7 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   stehen bei Fehlern Schritt, Status und Feldnamen (nie Inhalte).
 - OP-B2: Anmeldung per Authenticator-App (TFA) ist nicht unterstuetzt (eigener Pfad mit CSRF-Cookie, nicht verifiziert); die App meldet das
   und verweist auf die JSON-Datei.
-- OP-B3: Kein Dauerabgleich und kein Schreiben in die Bambu-Cloud; der Verbrauch wird nicht zurueckgemeldet.
+- OP-B3: Kein automatischer (zeitgesteuerter) Abgleich und kein Schreiben in die Bambu-Cloud; der Abgleich laeuft nur auf Knopfdruck (ab 0.14.4).
 - OP-B4: Notizen und Bambu-Farbcodes der Spulen werden nicht uebernommen (kein Feld in FilaPilot).
 - OP-B5: Die Bedeutung der Status-Werte ausser 0 ist nicht dokumentiert; solche Spulen sind in der Vorschau abgewaehlt, aber waehlbar.
 
@@ -45,5 +47,12 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
 - **R8** ✅ Code-Schritt: kein automatisches Anfordern, "Code senden" nur auf Wunsch, hoechstens einmal pro Minute und nur fuer die eigene Sitzung;
   der Client wertet HTTP 200 mit leerer Antwort als Erfolg und meldet Fehler mit Schritt/Status. Tests: `tests/security/bambuImport.test.ts`,
   `tests/unit/bambuCloudClient.test.ts`
+- **R9** ✅ Verbindung pro Lager (0.14.4): nur der Besitzer merkt/trennt sie (Bearbeiter beim Anmelden mit Merken 403, Bambu wird dann nicht angefragt), Status
+  sehen ab Betrachter, Abgleich und Auswahl-Import ab Bearbeiter (Fremde 404, anonym 401); je Lager ein eigenes Konto/Token; das Token liegt nur
+  verschluesselt in der Datenbank (`BambuConnection`), nie in Antworten, Protokoll oder Log; nicht entschluesselbar = nicht verbunden; ein abgelehntes
+  Token (401) loescht die Verbindung; das Lager loeschen loescht sie mit. Test: `tests/security/bambuConnection.test.ts`
+- **R10** ✅ Abgleich ohne Auswahl: neue Spulen (Status 0/ohne) anlegen, Restgewicht aus der Cloud uebernehmen (Verlauf `CLOUD_SYNC`), in der Cloud entfernte
+  archivieren (`CLOUD_REMOVED`), Zurueckgekehrte wiederherstellen, von Hand archivierte nie anfassen; bei leerer, unvollstaendiger oder ungewoehnlich
+  lueckenhafter Liste wird nichts archiviert. Tests: `tests/security/bambuConnection.test.ts`, `tests/unit/bambuCloudClient.test.ts`
 - **R7** ✅ Oberflaeche (Assistent, Datei-Weg, Vorschau, Ergebnis): manuell per Browser mit dem Datei-Weg geprueft (2026-09-26); der Weg ueber
   die echte Cloud ist nicht geprueft (OP-B1).

@@ -147,6 +147,7 @@ export const httpBambuCloudClient: BambuCloudClient = {
 
   async listFilaments(region, token) {
     const collected: unknown[] = [];
+    let total = 0;
     for (let offset = 0; offset < BAMBU_MAX_SPOOLS; offset += PAGE_SIZE) {
       const { status, json } = await request(
         "GET",
@@ -160,12 +161,16 @@ export const httpBambuCloudClient: BambuCloudClient = {
         throw invalid("Spulenliste", status, json);
       }
       collected.push(...json.hits);
-      const total = typeof json.total === "number" ? json.total : collected.length;
+      total = typeof json.total === "number" ? json.total : collected.length;
       if (json.hits.length < PAGE_SIZE || collected.length >= total) {
         break;
       }
     }
-    return collected.slice(0, BAMBU_MAX_SPOOLS);
+    // Eine unvollstaendige Liste darf nie als vollstaendig gelten (der Abgleich archiviert sonst zu Unrecht).
+    if (collected.length < total) {
+      throw new BambuCloudError("invalid_response", { step: "Spulenliste (unvollständig)" });
+    }
+    return collected;
   }
 };
 

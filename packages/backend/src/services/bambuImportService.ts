@@ -149,8 +149,8 @@ export async function buildPreview(inventoryId: string, session: ImportSession):
   return { rows, skipped: session.skipped };
 }
 
-type Tx = Prisma.TransactionClient;
-interface CatalogMaterial {
+export type Tx = Prisma.TransactionClient;
+export interface CatalogMaterial {
   id: string;
   name: string;
   manufacturerId: string | null;
@@ -158,7 +158,7 @@ interface CatalogMaterial {
   printTempMaxC: number;
   bedTempC: number | null;
 }
-interface ImportContext {
+export interface ImportContext {
   tx: Tx;
   inventoryId: string;
   input: BambuImportInput;
@@ -168,9 +168,9 @@ interface ImportContext {
   existing: Map<string | null, { id: string; initialWeightG: number; remainingWeightG: number }>;
 }
 
-const MATERIAL_SELECT = { id: true, name: true, manufacturerId: true, printTempMinC: true, printTempMaxC: true, bedTempC: true } as const;
+export const MATERIAL_SELECT = { id: true, name: true, manufacturerId: true, printTempMinC: true, printTempMaxC: true, bedTempC: true } as const;
 
-async function ensureManufacturer(context: ImportContext, spool: MappedSpool): Promise<string> {
+export async function ensureManufacturer(context: ImportContext, spool: MappedSpool): Promise<string> {
   const known = context.manufacturers.get(key(spool.vendor));
   if (known) {
     return known;
@@ -183,7 +183,7 @@ async function ensureManufacturer(context: ImportContext, spool: MappedSpool): P
 
 // Erst ein Produkt des Herstellers, dann ein allgemeines Material gleichen Namens, sonst neu anlegen (Temperaturen vom
 // allgemeinen Material gleichen Typs, sonst Standardwerte).
-async function ensureMaterial(context: ImportContext, spool: MappedSpool, manufacturerId: string): Promise<CatalogMaterial> {
+export async function ensureMaterial(context: ImportContext, spool: MappedSpool, manufacturerId: string): Promise<CatalogMaterial> {
   const wantedName = key(spool.materialName);
   const found =
     context.materials.find((entry) => key(entry.name) === wantedName && entry.manufacturerId === manufacturerId) ??
@@ -223,6 +223,12 @@ async function importOne(context: ImportContext, spool: MappedSpool): Promise<vo
     }
     return;
   }
+  await createSpoolFromCloud(context, spool);
+  context.summary.created += 1;
+}
+
+// Legt eine Spule aus den Daten der Cloud an (Hersteller und Material werden bei Bedarf angelegt).
+export async function createSpoolFromCloud(context: ImportContext, spool: MappedSpool): Promise<void> {
   const manufacturerId = await ensureManufacturer(context, spool);
   const material = await ensureMaterial(context, spool, manufacturerId);
   await context.tx.spool.create({
@@ -238,7 +244,19 @@ async function importOne(context: ImportContext, spool: MappedSpool): Promise<vo
       bambuCloudId: spool.cloudId
     }
   });
-  context.summary.created += 1;
+}
+
+// Laedt Hersteller und Materialien fuer einen Lauf (Import oder Abgleich).
+export async function buildImportContext(
+  tx: Tx,
+  base: Pick<ImportContext, "inventoryId" | "input" | "summary" | "existing">
+): Promise<ImportContext> {
+  return {
+    ...base,
+    tx,
+    manufacturers: new Map((await tx.manufacturer.findMany({ select: { id: true, name: true } })).map((m) => [key(m.name), m.id])),
+    materials: await tx.material.findMany({ select: MATERIAL_SELECT })
+  };
 }
 
 // Uebernimmt die gewaehlten Spulen in das Lager - alles in EINER Transaktion (bei einem Fehler bleibt alles unveraendert).
@@ -263,15 +281,12 @@ export async function importSelected(
         where: { inventoryId, bambuCloudId: { in: selected.map((spool) => spool.cloudId) } },
         select: { id: true, bambuCloudId: true, initialWeightG: true, remainingWeightG: true }
       });
-      const context: ImportContext = {
-        tx,
+      const context = await buildImportContext(tx, {
         inventoryId,
         input,
         summary,
-        manufacturers: new Map((await tx.manufacturer.findMany({ select: { id: true, name: true } })).map((m) => [key(m.name), m.id])),
-        materials: await tx.material.findMany({ select: MATERIAL_SELECT }),
         existing: new Map(existing.map((spool) => [spool.bambuCloudId, spool]))
-      };
+      });
       for (const spool of selected) {
         await importOne(context, spool);
       }

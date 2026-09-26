@@ -108,8 +108,27 @@ model Inventory {
   members   InventoryMember[]
   spools    Spool[]
   printers  Printer[]
+  bambuConnection BambuConnection?
 
   @@map("inventories")
+}
+
+// Gemerkte Verbindung eines Lagers zur Bambu-Cloud (Opt-in, hoechstens eine je Lager). Das Zugangs-Token ist mit einem Schluessel aus
+// SESSION_SECRET verschluesselt (wie das SMTP-Passwort) und verlaesst den Server nie. Wird mit dem Lager geloescht.
+model BambuConnection {
+  id              String    @id @default(uuid())
+  inventoryId     String    @unique
+  inventory       Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  region          String
+  tokenEncrypted  String
+  // Ablauf laut Token (nur zur Anzeige), sonst leer
+  tokenExpiresAt  DateTime?
+  connectedByName String
+  connectedAt     DateTime  @default(now())
+  lastSyncAt      DateTime?
+  lastSyncSummary String?
+
+  @@map("bambu_connections")
 }
 
 model InventoryMember {

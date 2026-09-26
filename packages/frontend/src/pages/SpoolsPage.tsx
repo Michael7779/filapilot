@@ -13,6 +13,7 @@ import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
 import { BambuImportModal } from "../components/BambuImportModal.js";
+import type { BambuConnectionInfo, BambuSyncSummary } from "@filapilot/shared";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 import {
@@ -35,7 +36,10 @@ export function SpoolsPage(): React.JSX.Element {
   const [notice, setNotice] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const { selectedId, isAll, canEdit, inventory } = useCurrentInventory();
+  const { selectedId, isAll, canEdit, isOwner, inventory } = useCurrentInventory();
+  const [connection, setConnection] = useState<BambuConnectionInfo | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const inventories = useInventoryStore((state) => state.inventories);
   const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
@@ -70,6 +74,44 @@ export function SpoolsPage(): React.JSX.Element {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const loadConnection = useCallback(async () => {
+    if (!selectedId || selectedId === "all") {
+      setConnection(null);
+      return;
+    }
+    try {
+      setConnection(await apiRequest<BambuConnectionInfo>(`/inventories/${selectedId}/bambu-import/connection`));
+    } catch {
+      setConnection(null);
+    }
+  }, [selectedId]);
+
+  useEffect(() => {
+    void loadConnection();
+  }, [loadConnection]);
+
+  async function handleSync(): Promise<void> {
+    if (!selectedId) {
+      return;
+    }
+    setSyncing(true);
+    setSyncNotice(null);
+    try {
+      const result = await apiRequest<BambuSyncSummary>(`/inventories/${selectedId}/bambu-import/sync`, { method: "POST" });
+      setSyncNotice(
+        t("bambu.syncResult", { created: result.created, updated: result.updated, archived: result.archived, restored: result.restored }) +
+          (result.archiveBlocked ? " " + t("bambu.syncBlocked") : "")
+      );
+      await load(true);
+      await loadConnection();
+    } catch (err) {
+      setSyncNotice(err instanceof Error ? err.message : t("bambu.failed"));
+      await loadConnection();
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   function openCreate(): void {
     setEditingSpool(null);
@@ -168,6 +210,16 @@ export function SpoolsPage(): React.JSX.Element {
         <h2 className="text-lg font-bold">{t("spools.title")}</h2>
         {canEdit && (
           <div className="flex flex-wrap items-center gap-2">
+            {connection?.connected && (
+              <button
+                type="button"
+                disabled={syncing}
+                onClick={() => void handleSync()}
+                className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium disabled:opacity-60"
+              >
+                {syncing ? t("bambu.syncing") : t("bambu.syncFromCloud")}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setImportOpen(true)}
@@ -187,6 +239,7 @@ export function SpoolsPage(): React.JSX.Element {
         )}
       </div>
       {isAll && <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.allHint")}</p>}
+      {syncNotice && <p className="text-sm text-[var(--color-text-secondary)]">{syncNotice}</p>}
       <label className="flex w-fit items-center gap-2 text-sm text-[var(--color-text-secondary)]">
         <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
         {t("spools.showArchived")}
@@ -305,6 +358,8 @@ export function SpoolsPage(): React.JSX.Element {
         <BambuImportModal
           inventoryId={selectedId}
           inventoryName={inventory.name}
+          isOwner={isOwner}
+          onConnectionChanged={() => void loadConnection()}
           onClose={() => setImportOpen(false)}
           onImported={() => void load(true)}
         />
