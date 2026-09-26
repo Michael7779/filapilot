@@ -257,6 +257,9 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     const updated = await post(`${base()}/${third}/import`, editor, { cloudIds: ["101"], updateExisting: true });
     assert.equal(updated.body.data.updated, 1);
     assert.equal((await prisma.spool.findFirst({ where: { bambuCloudId: "101" } }))?.remainingWeightG, 931);
+    // Das Aktualisieren haelt die Aenderung im Gewichtsverlauf fest (10 g -> 931 g, also -921 g Verbrauch)
+    const log = await prisma.spoolWeightLog.findFirst({ where: { spool: { bambuCloudId: "101", inventoryId: lagerId } }, orderBy: { at: "desc" } });
+    assert.deepEqual([log?.deltaG, log?.remainingG, log?.source], [-921, 931, "CLOUD_IMPORT"]);
   });
 
   it("importiert nichts in ein anderes Lager und trennt gleiche Bambu-IDs je Lager", async () => {

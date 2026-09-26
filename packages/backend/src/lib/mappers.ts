@@ -63,6 +63,8 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
     purchasePriceCents: spool.purchasePriceCents,
     purchasedAt: spool.purchasedAt,
     location: spool.location,
+    archivedAt: spool.archivedAt,
+    archiveReason: spool.archiveReason,
     createdAt: spool.createdAt
   };
 }

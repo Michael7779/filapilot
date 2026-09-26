@@ -18,13 +18,16 @@ export const spoolSchema = z.object({
   purchasePriceCents: z.number().int().min(0).nullable(),
   purchasedAt: z.coerce.date().nullable(),
   location: z.string().max(60).nullable(),
+  // Archiviert = nicht mehr im Bestand, aber im Verbrauch weiter gezaehlt. Nur ueber die Archiv-Routen aenderbar.
+  archivedAt: z.coerce.date().nullable(),
+  archiveReason: z.enum(["MANUAL", "CLOUD_REMOVED"]).nullable(),
   createdAt: z.coerce.date()
 });
 export type Spool = z.infer<typeof spoolSchema>;
 
 // Beim Anlegen ist das Lager Pflicht; beim Aendern optional (Angabe = in dieses Lager verschieben).
 export const createSpoolInputSchema = spoolSchema
-  .omit({ id: true, createdAt: true, photoUrl: true, inventoryId: true })
+  .omit({ id: true, createdAt: true, photoUrl: true, inventoryId: true, archivedAt: true, archiveReason: true })
   .extend({ inventoryId: z.string().uuid() });
 export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;
 
@@ -39,3 +42,7 @@ export const spoolWithRelationsSchema = spoolSchema.extend({
 export type SpoolWithRelations = z.infer<typeof spoolWithRelationsSchema>;
 
 export const LOW_STOCK_THRESHOLD_RATIO = 0.15;
+
+// Archivierte Spulen in Listen: ausblenden (Standard), mit anzeigen oder nur diese.
+export const spoolArchiveFilterSchema = z.enum(["exclude", "include", "only"]);
+export type SpoolArchiveFilter = z.infer<typeof spoolArchiveFilterSchema>;

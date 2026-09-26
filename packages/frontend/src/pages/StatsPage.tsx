@@ -93,7 +93,7 @@ export function StatsPage(): React.JSX.Element {
     }
     setSpools(null);
     setLoadError(null);
-    apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}`)
+    apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}&archived=include`)
       .then(setSpools)
       .catch((err: unknown) => {
         setLoadError(err instanceof ApiRequestError ? err.message : t("stats.loadFailed"));
@@ -108,12 +108,14 @@ export function StatsPage(): React.JSX.Element {
     return <div>{t("common.loading")}</div>;
   }
 
+  // Verbrauch zaehlt alle Spulen (auch archivierte), Bestand und "Fast leer" nur die aktiven.
+  const active = spools.filter((spool) => !spool.archivedAt);
   const totalConsumedG = spools.reduce(
     (sum, spool) => sum + Math.max(0, spool.initialWeightG - spool.remainingWeightG),
     0
   );
-  const totalRemainingG = spools.reduce((sum, spool) => sum + spool.remainingWeightG, 0);
-  const lowStockCount = spools.filter(
+  const totalRemainingG = active.reduce((sum, spool) => sum + spool.remainingWeightG, 0);
+  const lowStockCount = active.filter(
     (spool) => spool.remainingWeightG / spool.initialWeightG <= LOW_STOCK_THRESHOLD_RATIO
   ).length;
 
@@ -124,7 +126,7 @@ export function StatsPage(): React.JSX.Element {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-3.5">
-        <StatCard label={t("stats.totalSpools")} value={String(spools.length)} />
+        <StatCard label={t("stats.totalSpools")} value={String(active.length)} />
         <StatCard
           label={t("stats.totalConsumed")}
           value={`${(totalConsumedG / 1000).toFixed(1)} kg`}

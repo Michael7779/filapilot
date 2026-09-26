@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createSpoolInputSchema, updateSpoolInputSchema } from "@filapilot/shared";
+import {
+  createSpoolInputSchema,
+  spoolArchiveFilterSchema,
+  updateSpoolInputSchema,
+  type SpoolArchiveFilter
+} from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendData, AppError } from "../lib/apiResult.js";
@@ -10,6 +15,7 @@ import { omitUndefined } from "../lib/omitUndefined.js";
 import { describeSpool, spoolSnapshot } from "../lib/auditSnapshots.js";
 import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 import { deletePhoto } from "../services/spoolPhotoService.js";
+import { recordWeightChange } from "../services/spoolWeightLog.js";
 import {
   accessibleInventoryIds,
   requireAccessToObjectInventory,
@@ -20,7 +26,17 @@ export const spoolsRouter = Router();
 
 const requireActiveUser = [requireAuth, requirePasswordAlreadyChanged] as const;
 const idParamSchema = z.string().uuid();
-const listQuerySchema = z.object({ inventoryId: z.union([z.literal("all"), z.string().uuid()]) });
+const listQuerySchema = z.object({
+  inventoryId: z.union([z.literal("all"), z.string().uuid()]),
+  archived: spoolArchiveFilterSchema.default("exclude")
+});
+function archiveWhere(filter: SpoolArchiveFilter): { archivedAt?: null | { not: null } } {
+  if (filter === "exclude") {
+    return { archivedAt: null };
+  }
+  return filter === "only" ? { archivedAt: { not: null } } : {};
+}
+
 const SPOOL_INCLUDE = { material: true, manufacturer: true, inventory: true } as const;
 
 async function assertMaterialExists(materialId: string): Promise<void> {
@@ -67,12 +83,13 @@ async function findSpoolOrThrow(id: string) {
 // Datenbank berechnet (bei Einzel-Spulen aus dem Lager der Spule, nie aus dem Client): lesen VIEWER, schreiben EDITOR,
 // Verschieben EDITOR im Quell- UND Ziel-Lager; ohne Zugriff 404. "inventoryId=all" liefert nur Lager mit Mitgliedschaft.
 // Negativ-Tests: kein Cookie -> 401, mustChangePassword -> 403, Fremder -> 404, Betrachter beim Schreiben -> 403.
+// Archivieren/Wiederherstellen braucht Bearbeiten wie jede Aenderung; der Gewichtsverlauf wird nur hier im Server geschrieben.
 // SCOPE: user
 spoolsRouter.get(
   "/",
   ...requireActiveUser,
   asyncHandler(async (req, res) => {
-    const { inventoryId } = listQuerySchema.parse(req.query);
+    const { inventoryId, archived } = listQuerySchema.parse(req.query);
     const user = getAuthenticatedUser(req);
     let where: { inventoryId: string } | { inventoryId: { in: string[] } };
     if (inventoryId === "all") {
@@ -81,7 +98,11 @@ spoolsRouter.get(
       await requireInventoryRole(user, inventoryId, "VIEWER");
       where = { inventoryId };
     }
-    const spools = await prisma.spool.findMany({ where, include: SPOOL_INCLUDE, orderBy: { createdAt: "desc" } });
+    const spools = await prisma.spool.findMany({
+      where: { ...where, ...archiveWhere(archived) },
+      include: SPOOL_INCLUDE,
+      orderBy: { createdAt: "desc" }
+    });
     sendData(
       res,
       spools.map((spool) => toPublicSpoolWithRelations(spool))
@@ -160,6 +181,14 @@ spoolsRouter.patch(
         }
         throw err;
       });
+    // Aenderung des Restgewichts fuer die Zeit-Statistik festhalten (nur bei echter Aenderung)
+    await recordWeightChange({
+      spoolId: id,
+      inventoryId: updated.inventoryId,
+      before: before.remainingWeightG,
+      after: updated.remainingWeightG,
+      source: "MANUAL"
+    });
     await recordUpdate({
       actor: actorFromRequest(req),
       area: "SPOOL",
@@ -169,6 +198,59 @@ spoolsRouter.patch(
       before: spoolSnapshot(before),
       after: spoolSnapshot(updated)
     });
+    sendData(res, toPublicSpool(updated));
+  })
+);
+
+// Archivieren: die Spule verschwindet aus dem Bestand, ihr Verbrauch bleibt in der Statistik.
+// SCOPE: user
+spoolsRouter.post(
+  "/:id/archive",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const spool = await findSpoolOrThrow(idParamSchema.parse(req.params.id));
+    await requireAccessToObjectInventory(getAuthenticatedUser(req), spool.inventoryId, "EDITOR");
+    const updated = spool.archivedAt
+      ? spool
+      : await prisma.spool.update({
+          where: { id: spool.id },
+          data: { archivedAt: new Date(), archiveReason: "MANUAL" },
+          include: SPOOL_INCLUDE
+        });
+    if (!spool.archivedAt) {
+      await recordAudit({
+        actor: actorFromRequest(req),
+        action: "EVENT",
+        area: "SPOOL",
+        entityId: spool.id,
+        inventory: inventoryOf(updated),
+        description: `${describeSpool(updated)}: archiviert`
+      });
+    }
+    sendData(res, toPublicSpool(updated));
+  })
+);
+
+// SCOPE: user
+spoolsRouter.post(
+  "/:id/unarchive",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const spool = await findSpoolOrThrow(idParamSchema.parse(req.params.id));
+    await requireAccessToObjectInventory(getAuthenticatedUser(req), spool.inventoryId, "EDITOR");
+    const updated = spool.archivedAt
+      ? await prisma.spool.update({ where: { id: spool.id }, data: { archivedAt: null, archiveReason: null }, include: SPOOL_INCLUDE })
+      : spool;
+    if (spool.archivedAt) {
+      await recordAudit({
+        actor: actorFromRequest(req),
+        action: "EVENT",
+        area: "SPOOL",
+        entityId: spool.id,
+        inventory: inventoryOf(updated),
+        description: `${describeSpool(updated)}: wiederhergestellt`
+      });
+    }
     sendData(res, toPublicSpool(updated));
   })
 );

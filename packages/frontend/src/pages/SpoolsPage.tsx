@@ -34,6 +34,7 @@ export function SpoolsPage(): React.JSX.Element {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const { selectedId, isAll, canEdit, inventory } = useCurrentInventory();
   const inventories = useInventoryStore((state) => state.inventories);
   const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
@@ -50,7 +51,7 @@ export function SpoolsPage(): React.JSX.Element {
     setLoadError(null);
     try {
       const [spoolsData, materialsData, manufacturersData, photosEnabled] = await Promise.all([
-        apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}`),
+        apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}&archived=${showArchived ? "include" : "exclude"}`),
         apiRequest<Material[]>("/materials"),
         apiRequest<Manufacturer[]>("/manufacturers"),
         fetchPhotoUploadEnabled()
@@ -64,7 +65,7 @@ export function SpoolsPage(): React.JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [t, selectedId]);
+  }, [t, selectedId, showArchived]);
 
   useEffect(() => {
     void load();
@@ -129,6 +130,11 @@ export function SpoolsPage(): React.JSX.Element {
     await load();
   }
 
+  async function handleArchive(spool: SpoolWithRelations, archive: boolean): Promise<void> {
+    await apiRequest(`/spools/${spool.id}/${archive ? "archive" : "unarchive"}`, { method: "POST" });
+    await load(true);
+  }
+
   async function handleDelete(spool: SpoolWithRelations): Promise<void> {
     if (!window.confirm(t("spools.confirmDelete"))) {
       return;
@@ -181,6 +187,10 @@ export function SpoolsPage(): React.JSX.Element {
         )}
       </div>
       {isAll && <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.allHint")}</p>}
+      <label className="flex w-fit items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+        <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
+        {t("spools.showArchived")}
+      </label>
 
       {notice && <p className="text-sm text-[var(--color-danger)]">{notice}</p>}
 
@@ -195,7 +205,7 @@ export function SpoolsPage(): React.JSX.Element {
             return (
               <div
                 key={spool.id}
-                className="rounded-xl border border-[var(--color-border)] bg-white p-4"
+                className={`rounded-xl border border-[var(--color-border)] bg-white p-4 ${spool.archivedAt ? "opacity-70" : ""}`}
               >
                 {spool.photoUrl && (
                   <img
@@ -214,7 +224,12 @@ export function SpoolsPage(): React.JSX.Element {
                   <div className="text-sm font-semibold">
                     {spool.materialName} {spool.colorName}
                   </div>
-                  {lowStock && (
+                  {spool.archivedAt && (
+                    <span className="ml-auto shrink-0 rounded-full bg-[var(--color-bg)] px-2 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">
+                      {spool.archiveReason === "CLOUD_REMOVED" ? t("spools.archivedCloud") : t("spools.archived")}
+                    </span>
+                  )}
+                  {lowStock && !spool.archivedAt && (
                     <span className="ml-auto shrink-0 rounded-full bg-[var(--color-danger)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-danger)]">
                       {t("spools.lowStock")}
                     </span>
@@ -245,6 +260,11 @@ export function SpoolsPage(): React.JSX.Element {
                   {canEdit && (
                     <button type="button" onClick={() => openEdit(spool)} style={{ color: "var(--accent)" }}>
                       {t("common.edit")}
+                    </button>
+                  )}
+                  {canEdit && (
+                    <button type="button" onClick={() => void handleArchive(spool, !spool.archivedAt)} style={{ color: "var(--accent)" }}>
+                      {spool.archivedAt ? t("spools.unarchive") : t("spools.archive")}
                     </button>
                   )}
                   <button type="button" onClick={() => setLabelSpool(spool)} style={{ color: "var(--accent)" }}>

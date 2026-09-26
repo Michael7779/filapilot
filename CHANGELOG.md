@@ -8,6 +8,20 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.14.3] - 2026-09-26
+
+### Hinzugefuegt
+- Spulen archivieren: Statt eine leere Spule zu löschen, kannst du sie archivieren. Sie verschwindet aus dem Bestand (und aus "Fast leer"),
+  ihr Verbrauch bleibt aber in der Statistik. Mit "Archiv anzeigen" siehst du archivierte Spulen, mit "Wiederherstellen" holst du sie zurück.
+- FilaPilot hält jetzt jede Änderung des Restgewichts mit Datum fest. Das ist die Grundlage für die geplante Statistik nach Tag, Woche, Monat
+  und Jahr. Es zählt ab diesem Update, frühere Verbräuche haben kein Datum.
+
+### Geändert
+- Beim Löschen einer Spule weist FilaPilot darauf hin, dass ihr Verbrauch dann aus der Statistik verschwindet, und empfiehlt das Archivieren.
+
+### Hinweis zum Update
+- Neue Datenbank-Spalten und -Tabelle; das Update-Skript gleicht sie automatisch ab. Deine Spulen bleiben unverändert.
+
 ## [0.14.2] - 2026-09-26
 
 ### Behoben

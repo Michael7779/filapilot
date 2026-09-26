@@ -10,6 +10,7 @@ import {
 } from "@filapilot/shared";
 import type { Prisma } from "@prisma/client";
 import { AppError } from "../lib/apiResult.js";
+import { recordWeightChange } from "./spoolWeightLog.js";
 import { prisma } from "../prisma.js";
 import { BambuCloudError } from "./bambuCloudClient.js";
 import type { ImportSession } from "./bambuImportSessions.js";
@@ -164,7 +165,7 @@ interface ImportContext {
   summary: BambuImportSummary;
   manufacturers: Map<string, string>;
   materials: CatalogMaterial[];
-  existing: Map<string | null, { id: string; initialWeightG: number }>;
+  existing: Map<string | null, { id: string; initialWeightG: number; remainingWeightG: number }>;
 }
 
 const MATERIAL_SELECT = { id: true, name: true, manufacturerId: true, printTempMinC: true, printTempMaxC: true, bedTempC: true } as const;
@@ -210,10 +211,12 @@ async function importOne(context: ImportContext, spool: MappedSpool): Promise<vo
   const already = context.existing.get(spool.cloudId);
   if (already) {
     if (context.input.updateExisting) {
-      await context.tx.spool.update({
-        where: { id: already.id },
-        data: { remainingWeightG: Math.min(spool.remainingG, already.initialWeightG) }
-      });
+      const remaining = Math.min(spool.remainingG, already.initialWeightG);
+      await context.tx.spool.update({ where: { id: already.id }, data: { remainingWeightG: remaining } });
+      await recordWeightChange(
+        { spoolId: already.id, inventoryId: context.inventoryId, before: already.remainingWeightG, after: remaining, source: "CLOUD_IMPORT" },
+        context.tx
+      );
       context.summary.updated += 1;
     } else {
       context.summary.skipped += 1;
@@ -258,7 +261,7 @@ export async function importSelected(
     async (tx) => {
       const existing = await tx.spool.findMany({
         where: { inventoryId, bambuCloudId: { in: selected.map((spool) => spool.cloudId) } },
-        select: { id: true, bambuCloudId: true, initialWeightG: true }
+        select: { id: true, bambuCloudId: true, initialWeightG: true, remainingWeightG: true }
       });
       const context: ImportContext = {
         tx,

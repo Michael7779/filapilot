@@ -13,6 +13,17 @@ enum UserRole {
   USER
 }
 
+enum SpoolArchiveReason {
+  MANUAL
+  CLOUD_REMOVED
+}
+
+enum WeightLogSource {
+  MANUAL
+  CLOUD_IMPORT
+  CLOUD_SYNC
+}
+
 enum InventoryRole {
   OWNER
   EDITOR
@@ -176,16 +187,39 @@ model Spool {
   // gefuellten Tabelle eine Freigabe (--accept-data-loss), und das Update-Skript bricht dann ab. Die Eindeutigkeit stellt der
   // Import im Code sicher (Pruefung innerhalb der Transaktion).
   bambuCloudId        String?
+  // Archivierte Spulen zaehlen im Verbrauch weiter mit, nicht mehr im Restbestand.
+  archivedAt          DateTime?
+  archiveReason       SpoolArchiveReason?
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
   printJobs           PrintJob[]
   amsSlotAssignments  AmsSlotAssignment[]
+  weightLogs          SpoolWeightLog[]
 
   @@index([materialId])
   @@index([manufacturerId])
   @@index([inventoryId])
   @@index([inventoryId, bambuCloudId])
+  @@index([inventoryId, archivedAt])
   @@map("spools")
+}
+
+// Verlauf des Restgewichts: Grundlage der Statistik nach Tag/Woche/Monat/Jahr. Wird nur vom Server geschrieben.
+model SpoolWeightLog {
+  id          String          @id @default(uuid())
+  spoolId     String
+  spool       Spool           @relation(fields: [spoolId], references: [id], onDelete: Cascade)
+  // Lager zum Zeitpunkt der Aenderung (Momentaufnahme, ohne Fremdschluessel)
+  inventoryId String?
+  at          DateTime        @default(now())
+  // positiv = verbraucht, negativ = Gewicht erhoeht
+  deltaG      Int
+  remainingG  Int
+  source      WeightLogSource
+
+  @@index([inventoryId, at])
+  @@index([spoolId, at])
+  @@map("spool_weight_logs")
 }
 
 model Printer {

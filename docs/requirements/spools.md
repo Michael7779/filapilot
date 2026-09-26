@@ -58,4 +58,10 @@
 - **R8**: Das Kennzeichen "Fast leer" auf Spulenkarten ist rein clientseitig - manuell per Browser geprueft.
 - **R9**: Ab 0.13.0: Spulen und Fotos folgen den Rechten im Lager (Fremde 404, Betrachter 403 beim Schreiben, Verschieben nur mit
   Bearbeiten in beiden Lagern). Tests: `tests/security/spoolsInventories.test.ts`, `tests/security/spools.test.ts`
+- **R11**: Ab 0.14.3 lassen sich Spulen archivieren und wiederherstellen (Bearbeiter; Betrachter 403, Fremde 404, anonym 401); Listen blenden
+  Archivierte standardmaessig aus (`?archived=exclude|include|only`), Restbestand/"Fast leer" zaehlen nur aktive, der Verbrauch alle. Ein Client kann
+  `archivedAt`/`archiveReason` nicht selbst setzen. Test: `tests/security/spoolArchive.test.ts`
+- **R12**: Jede echte Aenderung von `remainingWeightG` (manuell, Import mit Aktualisieren, spaeter Cloud-Abgleich) schreibt einen Eintrag in
+  `SpoolWeightLog` (nie beim Anlegen, nie ohne Aenderung); Loeschen einer Spule entfernt ihren Verlauf, Archivieren behaelt ihn.
+  Tests: `tests/security/spoolArchive.test.ts`, `tests/security/bambuImport.test.ts`
 - **R10**: Ab 0.14.0 lassen sich Spulen aus der Bambu-Cloud importieren (siehe `bambu-import.md`); `Spool.bambuCloudId` markiert importierte Spulen.
