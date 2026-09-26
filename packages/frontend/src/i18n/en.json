@@ -22,6 +22,18 @@
     "totalConsumed": "Total consumed",
     "totalRemaining": "Total remaining",
     "lowStock": "Low stock",
+    "time": {
+      "title": "Consumption over time",
+      "period": { "day": "Day", "week": "Week", "month": "Month", "year": "Year" },
+      "consumed": "Consumption in period",
+      "cost": "Cost",
+      "byType": "By material type",
+      "byManufacturer": "By manufacturer",
+      "empty": "No consumption has been recorded in the selected period yet. Change a spool's remaining weight or sync with the Bambu Cloud and it will show up here.",
+      "since": "Consumption has been recorded since {{date}}. Earlier consumption has no date and only appears in the totals below. The day counts on which the weight was changed or synced.",
+      "notTracked": "No change of remaining weight has been recorded yet.",
+      "loadFailed": "Couldn't load the consumption."
+    },
     "byMaterialType": "Consumption by material type",
     "byMaterial": "Consumption by material",
     "byManufacturer": "Consumption by manufacturer",

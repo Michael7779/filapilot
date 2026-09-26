@@ -22,6 +22,18 @@
     "totalConsumed": "Verbraucht gesamt",
     "totalRemaining": "Restbestand gesamt",
     "lowStock": "Niedriger Bestand",
+    "time": {
+      "title": "Verbrauch über die Zeit",
+      "period": { "day": "Tag", "week": "Woche", "month": "Monat", "year": "Jahr" },
+      "consumed": "Verbrauch im Zeitraum",
+      "cost": "Kosten",
+      "byType": "Nach Material-Typ",
+      "byManufacturer": "Nach Hersteller",
+      "empty": "Im gewählten Zeitraum wurde noch kein Verbrauch erfasst. Ändere das Restgewicht einer Spule oder gleiche mit der Bambu-Cloud ab, dann erscheint er hier.",
+      "since": "Der Verbrauch wird seit {{date}} erfasst. Früherer Verbrauch hat kein Datum und steht nur in den Gesamtwerten unten. Der Tag zählt, an dem das Gewicht geändert oder abgeglichen wurde.",
+      "notTracked": "Es wurde noch keine Änderung des Restgewichts erfasst.",
+      "loadFailed": "Der Verbrauch konnte nicht geladen werden."
+    },
     "byMaterialType": "Verbrauch nach Material-Typ",
     "byMaterial": "Verbrauch nach Material",
     "byManufacturer": "Verbrauch nach Hersteller",

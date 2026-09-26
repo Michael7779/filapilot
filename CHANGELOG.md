@@ -8,6 +8,15 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.14.5] - 2026-09-26
+
+### Hinzugefuegt
+- Statistik nach Zeit: Auf der Statistik-Seite zeigt ein Diagramm den Verbrauch pro Tag, Woche, Monat oder Jahr (umschaltbar), dazu den Verbrauch
+  im Zeitraum, die Kosten (aus dem Kaufpreis der Spulen) und die Aufteilung nach Material-Typ und Hersteller. Es gilt für das gewählte Lager
+  oder für "Alle Lager". Archivierte Spulen zählen mit.
+- Der Verbrauch wird seit dem Update auf 0.14.3 mit Datum erfasst. Früherer Verbrauch hat kein Datum und steht weiter nur in den Gesamtwerten.
+  Als Tag zählt der Tag, an dem das Gewicht geändert oder mit der Cloud abgeglichen wurde, nicht der Tag des Drucks.
+
 ## [0.14.4] - 2026-09-26
 
 ### Hinzugefuegt

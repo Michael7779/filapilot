@@ -31,3 +31,22 @@
 - **R2**: Verbrauch wird nach Material und nach Hersteller aufgeschluesselt dargestellt, sortiert
   nach Menge absteigend. Test: manuell verifiziert (1 Spule mit 500g Verbrauch → korrekte 0.50 kg
   in beiden Aufschluesselungen).
+
+## 2.0 Verbrauch ueber die Zeit (ab 0.14.5)
+- `GET /api/stats/consumption?inventoryId=<uuid|all>&period=day|week|month|year[&from&to&timeZone]` (`routes/stats.ts`, `services/statsService.ts`) rechnet aus
+  `SpoolWeightLog` (siehe `spools.md` R12): Summe der positiven Aenderungen je Zeitabschnitt (Tag, Woche = Montag, Monat, Jahr) in der Zeitzone des Browsers,
+  aufgeteilt nach Material-Typ (`materialTypeOf`) und Hersteller, Kosten = Gewicht x Kaufpreis / Ursprungsgewicht. Archivierte Spulen zaehlen mit, geloeschte nicht.
+  Standard-Zeitraum: 30 Tage, 12 Wochen, 12 Monate, 5 Jahre; hoechstens 400 Abschnitte; `trackingSince` nennt den Beginn der Erfassung.
+- Die Zeitlogik (`packages/shared/src/statsPeriod.ts`) ist rein und getestet (Zeitzonen, Wochen-Montag, Jahreswechsel, Zeitumstellung).
+- Oberflaeche: `components/ConsumptionChart.tsx` auf der Statistik-Seite (Umschalter, Balken, Summen, Aufteilung, Hinweis "erfasst seit").
+
+## 2.1 Offene Punkte
+- OP-ST3: Frueherer Verbrauch (vor 0.14.3) hat kein Datum und erscheint nur in den Gesamtwerten, nicht im Zeitverlauf.
+- OP-ST4: Der Tag eines Verbrauchs ist der Tag der Aenderung/des Abgleichs, nicht des Drucks (bei seltenem Abgleich ungenau).
+- OP-ST5: Kein Export (CSV) und kein Vergleich mit dem Vorzeitraum.
+
+## 2.2 Anforderungen
+- **R3**: Die Verbrauchs-Statistik ist nur mit Lese-Recht im Lager abrufbar (anonym 401, Fremde 404), "all" nur ueber eigene Lager, Eingaben (Periode, Zeitraum,
+  Zeitzone, Lager) werden validiert (400), die Rechnung zaehlt nur positive Aenderungen, archivierte Spulen mit, Kosten aus dem Kaufpreis, und beachtet die Zeitzone.
+  Tests: `tests/security/stats.test.ts`, `tests/unit/statsPeriod.test.ts`
+
