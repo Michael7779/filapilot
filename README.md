@@ -10,6 +10,7 @@ nutzen will, installiert es auf seiner eigenen Hardware.
 
 ## Funktionsumfang
 
+- Import der Filamentliste aus der Bambu-Cloud (Bambu Studio), pro Lager, einmalig mit Vorschau
 - Mehrere Lager (getrennte Bestände mit eigenen Spulen, Druckern, Dashboard und Mitgliedern mit Rollen)
 - Filament-Spulen verwalten: Hersteller, Material, Farbe, Restgewicht, Lagerort, Foto (optional, Kennzeichen "Fast leer")
 - Automatischer Abgleich mit Bambu-Lab-AMS (live oder periodisch, einstellbar)

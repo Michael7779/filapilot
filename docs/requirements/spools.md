@@ -58,3 +58,4 @@
 - **R8**: Das Kennzeichen "Fast leer" auf Spulenkarten ist rein clientseitig - manuell per Browser geprueft.
 - **R9**: Ab 0.13.0: Spulen und Fotos folgen den Rechten im Lager (Fremde 404, Betrachter 403 beim Schreiben, Verschieben nur mit
   Bearbeiten in beiden Lagern). Tests: `tests/security/spoolsInventories.test.ts`, `tests/security/spools.test.ts`
+- **R10**: Ab 0.14.0 lassen sich Spulen aus der Bambu-Cloud importieren (siehe `bambu-import.md`); `Spool.bambuCloudId` markiert importierte Spulen.

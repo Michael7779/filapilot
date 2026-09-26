@@ -8,6 +8,22 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.14.0] - 2026-09-26
+
+### Hinzugefuegt
+- Import aus der Bambu-Cloud: Auf der Spulen-Seite eines Lagers gibt es den Knopf "Aus Bambu-Cloud importieren". Du meldest dich mit
+  deinem Bambu-Konto an (bei Bedarf mit dem Code, den Bambu dir per E-Mail schickt), siehst eine Vorschau deiner Spulen aus Bambu
+  Studio und wählst, welche du in dieses Lager übernehmen möchtest. Marke, Material, Farbe und Restgewicht werden übernommen.
+  Fehlende Hersteller und Materialien legt FilaPilot dabei selbst an.
+- Bereits importierte Spulen werden erkannt und nicht doppelt angelegt. Bei einem erneuten Import kannst du das Restgewicht der schon
+  importierten Spulen aktualisieren.
+- Wenn die automatische Anmeldung nicht klappt, kannst du stattdessen eine gespeicherte Filamentliste (JSON-Datei) verwenden.
+
+### Hinweis zum Update
+- Neue Datenbank-Spalte (Bambu-Nummer der Spule); das Update-Skript gleicht sie automatisch ab. Der Import nutzt die inoffizielle
+  Schnittstelle von Bambu und ist nicht mit einem echten Konto getestet worden. Passwort und Zugang werden nicht gespeichert und nach
+  dem Import verworfen. Die Anmeldung per Authenticator-App wird noch nicht unterstützt.
+
 ## [0.13.0] - 2026-09-26
 
 ### Hinzugefuegt

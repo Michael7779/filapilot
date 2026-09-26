@@ -17,6 +17,7 @@ Status-Legende: ⬜ nicht begonnen · 🔶 in Arbeit · ✅ fertig + getestet
 | Aenderungsverlauf in der App | `changelog.md` | 🔶 |
 | Installation (Synology) | `install.md` | 🔶 |
 | Mehrere Lager | `lager.md` | ✅ |
+| Import aus der Bambu-Cloud | `bambu-import.md` | 🔶 |
 
 Neue Funktion → erst hier eine ID eintragen + mit einem Test verknuepfen, dann committen
 (siehe `anforderung`-Skill und CLAUDE.md, Abschnitt „Vor jeder Implementierung — PFLICHT").

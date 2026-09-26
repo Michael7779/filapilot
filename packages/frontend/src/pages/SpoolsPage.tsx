@@ -39,11 +39,14 @@ export function SpoolsPage(): React.JSX.Element {
   const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
 
-  const load = useCallback(async () => {
+  // silent: im Hintergrund nachladen, ohne die Seite (und einen offenen Dialog) durch die Ladeanzeige zu ersetzen
+  const load = useCallback(async (silent = false) => {
     if (!selectedId) {
       return;
     }
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
     setLoadError(null);
     try {
       const [spoolsData, materialsData, manufacturersData, photosEnabled] = await Promise.all([
@@ -283,7 +286,7 @@ export function SpoolsPage(): React.JSX.Element {
           inventoryId={selectedId}
           inventoryName={inventory.name}
           onClose={() => setImportOpen(false)}
-          onImported={() => void load()}
+          onImported={() => void load(true)}
         />
       )}
 

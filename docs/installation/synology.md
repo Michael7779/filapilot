@@ -391,6 +391,13 @@ Ein **Lager** ist ein eigener Filament-Bestand mit eigenen Spulen, Druckern, Das
 - **Lager löschen:** Löscht auch alle Spulen und Drucker darin. Zur Bestätigung tippst du den Namen ein. Erstelle vorher eine
   Sicherung, wenn du dir nicht sicher bist.
 
+### Filamentliste aus Bambu Studio übernehmen
+
+Auf der Spulen-Seite eines Lagers (als Bearbeiter oder Besitzer) startet **Aus Bambu-Cloud importieren** einen kleinen Assistenten:
+Mit deinem Bambu-Konto anmelden (bei Bedarf den Code aus der E-Mail eingeben), die Vorschau ansehen, Spulen auswählen und importieren.
+Der Import ist einmalig, Passwort und Zugang werden nicht gespeichert. Er nutzt die inoffizielle Schnittstelle von Bambu und kann
+jederzeit aufhören zu funktionieren. Klappt die Anmeldung nicht, gibt es unten im Dialog den Weg über eine JSON-Datei.
+
 ### Sicherungen
 
 FilaPilot legt jede Nacht automatisch eine Sicherung an (Datenbank und Fotos) und behält die letzten 14 (einstellbar
