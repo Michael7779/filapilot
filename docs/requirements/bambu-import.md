@@ -12,7 +12,7 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   `services/bambuImportService.ts` (Zuordnung, Vorschau, Import in einer Transaktion).
 - Zuordnung: Hersteller nach Name (ohne Gross-/Kleinschreibung, sonst angelegt), Material nach Name beim Hersteller oder allgemein (sonst
   angelegt, Temperaturen vom allgemeinen Material gleichen Typs, sonst 190-230/60), Farbname = naechster deutscher Name zum Hex-Wert,
-  Gewicht = `netWeight`/`totalNetWeight` (begrenzt), Lagerort = Druckername bei "im Drucker". `Spool.bambuCloudId` verhindert Doppelimport je Lager.
+  Gewicht = `netWeight`/`totalNetWeight` (begrenzt), Lagerort = Druckername bei "im Drucker". `Spool.bambuCloudId` (nur Index, keine DB-Eindeutigkeit, siehe `install.md` R3) erkennt schon importierte Spulen je Lager; Doppelimport wird im Code verhindert.
 - Passwort und Token werden nie gespeichert, geloggt, protokolliert oder zurueckgegeben; das Token wird nach dem Import, beim Abbrechen,
   nach 15 Minuten und beim Neustart verworfen. Anmeldeversuche sind streng begrenzt (10 je 15 Minuten und IP).
 - Neuer Fehlercode `UPSTREAM_ERROR` (502) fuer "Bambu nicht erreichbar / blockiert / unerwartete Antwort".

@@ -171,7 +171,10 @@ model Spool {
   // Optional nur wegen der Datenuebernahme per "db push"; ensureDefaultInventory() fuellt es, der Code schreibt nie ohne Lager.
   inventoryId         String?
   inventory           Inventory? @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
-  // Spulen-ID der Bambu-Cloud beim Import (verhindert Doppelimport im selben Lager, erlaubt Aktualisieren des Restgewichts).
+  // Spulen-ID der Bambu-Cloud beim Import (der Import erkennt damit schon importierte Spulen und aktualisiert deren Restgewicht).
+  // Bewusst KEINE Datenbank-Eindeutigkeit (@@unique): "prisma db push" verlangt fuer eine neue Eindeutigkeitsregel auf einer
+  // gefuellten Tabelle eine Freigabe (--accept-data-loss), und das Update-Skript bricht dann ab. Die Eindeutigkeit stellt der
+  // Import im Code sicher (Pruefung innerhalb der Transaktion).
   bambuCloudId        String?
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
@@ -181,7 +184,7 @@ model Spool {
   @@index([materialId])
   @@index([manufacturerId])
   @@index([inventoryId])
-  @@unique([inventoryId, bambuCloudId])
+  @@index([inventoryId, bambuCloudId])
   @@map("spools")
 }
 

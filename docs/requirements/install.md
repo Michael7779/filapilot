@@ -23,3 +23,8 @@
 - **R1**: `init-env.sh` erzeugt eine gueltige `.env` mit Zufallswerten, ueberschreibt nie eine vorhandene, weist
   ungueltige Ports/Adressen ab; `set-env.sh` aendert nur erlaubte Werte. Test: `tests/unit/installScripts.test.ts`
 - **R2**: Das `secure`-Flag des Sitzungs-Cookies folgt https (Adresse oder Request). Test: `tests/unit/sessionCookie.test.ts`
+- **R3** (Release-Gate): Vor jedem Release mit Schema-Aenderung `bash scripts/check-schema-upgrade.sh <alter-Stand>` ausfuehren: Es
+  simuliert das Update (altes Schema mit Daten, neues Schema per `prisma db push` OHNE `--accept-data-loss`) und bricht ab, wenn
+  Prisma eine Freigabe verlangt (neue Eindeutigkeitsregel, Pflichtspalte auf gefuellter Tabelle). Anlass: 0.14.0 scheiterte auf der
+  Synology an `@@unique([inventoryId, bambuCloudId])`, weil die Tests mit `--accept-data-loss` liefen und das verdeckten.
+  Neue Eindeutigkeit daher im Code sicherstellen, nicht per `@@unique` auf bestehenden Tabellen.

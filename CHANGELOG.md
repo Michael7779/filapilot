@@ -8,6 +8,16 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.14.1] - 2026-09-26
+
+### Behoben
+- Nach dem Update auf 0.14.0 konnte die Spulen-Seite mit "Es ist ein unerwarteter Fehler aufgetreten" stehen bleiben, weil der
+  Datenbank-Abgleich beim Update nicht durchlief. Mit dieser Version läuft das Update wieder ohne Handarbeit durch.
+
+### Hinweis zum Update
+- Wenn du 0.14.0 schon installiert hast: Führe das Update einfach noch einmal aus (Aufgabenplaner → "FilaPilot aktualisieren").
+  Der Datenbank-Abgleich holt dabei die fehlende Spalte nach, deine Daten bleiben unverändert.
+
 ## [0.14.0] - 2026-09-26
 
 ### Hinzugefuegt
