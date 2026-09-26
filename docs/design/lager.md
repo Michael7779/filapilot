@@ -1,6 +1,6 @@
 # Design: Mehrere Lager (Multi-Filamentverwaltung)
 
-Stand: abgestimmt am 2026-09-26 (Annahmen 1-5 entschieden, siehe Abschnitt 11). Ziel-Version: 0.13.0. Der Import aus der Bambu-Cloud (0.14.0) ist ein eigenes Design
+Stand: abgestimmt am 2026-09-26 (Annahmen 1-5 entschieden, siehe Abschnitt 11) und umgesetzt in Version 0.13.0. Ziel-Version: 0.13.0. Der Import aus der Bambu-Cloud (0.14.0) ist ein eigenes Design
 und baut auf diesem auf.
 
 ## 1. Ziel

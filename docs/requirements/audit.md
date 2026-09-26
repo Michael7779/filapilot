@@ -50,3 +50,6 @@
   Tests: `tests/security/settings.test.ts`, `tests/integration/auditRetention.test.ts`
 - **R6**: Erfolgreiche An- und Abmeldung werden protokolliert, eine fehlgeschlagene Anmeldung nicht.
   Test: `tests/security/auditLogins.test.ts`
+- **R7**: Ab 0.13.0 hat jeder Eintrag ein optionales Lager (`inventoryId`, Name als Momentaufnahme); `GET /api/audit-log?inventoryId=` filtert,
+  Lager-Vorgaenge (anlegen, umbenennen, Mitglieder, loeschen) stehen im Bereich "Lager". Tests: `tests/security/audit.test.ts`,
+  `tests/security/inventories.test.ts`

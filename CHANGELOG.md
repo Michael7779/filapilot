@@ -8,6 +8,30 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.13.0] - 2026-09-26
+
+### Hinzugefuegt
+- Mehrere Lager: Du kannst mehrere getrennte Filament-Bestände führen, zum Beispiel "Werkstatt" oder "Büro". Jedes Lager
+  hat eigene Spulen, eigene Drucker, ein eigenes Dashboard und eine eigene Statistik. Zwischen den Lagern wechselst du oben in
+  der Seitenleiste (am Handy in der Kopfzeile). "Alle Lager" zeigt eine Übersicht mit den Zahlen aller Lager im Vergleich.
+- Jedes Lager hat Mitglieder mit Rollen: Besitzer verwalten das Lager, die Mitglieder und die Drucker, Bearbeiter pflegen die
+  Spulen, Betrachter dürfen nur ansehen. Wer nicht Mitglied ist, sieht das Lager gar nicht.
+- Jeder kann unter Einstellungen → Lager ein neues Lager anlegen und frei benennen, es umbenennen und eine Farbe wählen.
+- Eine Spule lässt sich in ein anderes Lager verschieben (im Dialog "Spule bearbeiten").
+- Ein Lager kann samt Spulen und Druckern gelöscht werden. Zur Bestätigung musst du den Namen des Lagers eintippen.
+- Das Änderungsprotokoll zeigt zu jedem Eintrag das Lager und lässt sich danach filtern.
+
+### Geändert
+- Drucker gehören jetzt fest zu einem Lager. Sie können von den Besitzern des Lagers angelegt und geändert werden, nicht mehr
+  nur von Admins. Der Live-Status eines Druckers geht nur noch an die Mitglieder seines Lagers.
+- Neu angelegte Benutzer sehen zunächst kein Lager: Ein Besitzer oder Admin muss sie als Mitglied hinzufügen oder sie legen
+  selbst ein Lager an.
+
+### Hinweis zum Update
+- Neue Datenbank-Tabellen und -Spalten; das Update-Skript gleicht sie automatisch ab. Beim ersten Start entsteht ein Lager
+  "Hauptlager" mit allen bisherigen Spulen und Druckern. Alle bisherigen Benutzer werden dort Mitglied (Admins als Besitzer, alle
+  anderen als Bearbeiter), sodass sich zunächst nichts ändert. Ältere Sicherungen lassen sich weiter wiederherstellen.
+
 ## [0.12.1] - 2026-09-26
 
 ### Behoben

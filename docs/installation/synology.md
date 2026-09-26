@@ -376,6 +376,21 @@ Fehler zeigt FilaPilot die genaue Meldung des Mailservers.
 Ohne E-Mail-Versand funktioniert FilaPilot trotzdem: Beim Anlegen eines Benutzers siehst du das Startpasswort direkt
 auf dem Bildschirm.
 
+### Mehrere Lager (getrennte Bestände)
+
+Ein **Lager** ist ein eigener Filament-Bestand mit eigenen Spulen, Druckern, Dashboard und Statistik, zum Beispiel "Werkstatt" und
+"Büro". Nach dem Update auf 0.13.0 gibt es automatisch ein Lager "Hauptlager" mit allen bisherigen Spulen und Druckern.
+
+- **Neues Lager anlegen:** Einstellungen → Lager → **Neues Lager**. Der Name ist frei wählbar.
+- **Wechseln:** Oben links (am Handy in der Kopfzeile) steht das aktuelle Lager. Ein Klick darauf zeigt alle deine Lager und
+  **Alle Lager** (eine Übersicht mit den Zahlen im Vergleich).
+- **Mitglieder:** Unter Einstellungen → Lager → **Mitglieder** legt ein Besitzer fest, wer das Lager sieht und was er darf:
+  *Besitzer* verwaltet Lager, Mitglieder und Drucker, *Bearbeiter* pflegt die Spulen, *Betrachter* darf nur ansehen.
+- **Neue Benutzer** sehen zuerst kein Lager. Füge sie als Mitglied hinzu oder lass sie selbst ein Lager anlegen.
+- **Spule verschieben:** Im Dialog "Spule bearbeiten" das Lager ändern.
+- **Lager löschen:** Löscht auch alle Spulen und Drucker darin. Zur Bestätigung tippst du den Namen ein. Erstelle vorher eine
+  Sicherung, wenn du dir nicht sicher bist.
+
 ### Sicherungen
 
 FilaPilot legt jede Nacht automatisch eine Sicherung an (Datenbank und Fotos) und behält die letzten 14 (einstellbar
@@ -457,6 +472,11 @@ Prüfe unter **Einstellungen → System → E-Mail (SMTP)** die Angaben mit **Te
 E-Mail an, aber der Link führt zu einer falschen Adresse, stimmt `FRONTEND_ORIGIN` nicht — siehe Teil F, Schritt 6.
 Ohne E-Mail-Server steht der Passwort-Reset-Link im **Protokoll des Backend-Containers** (Container Manager →
 Container → `backend` → Protokoll).
+
+### Ein neuer Benutzer sieht keine Spulen und keine Drucker.
+
+Neue Benutzer sind zuerst in keinem Lager. Ein Besitzer des Lagers (oder ein Admin) fügt sie unter **Einstellungen → Lager →
+Mitglieder** hinzu, oder der Benutzer legt selbst ein Lager an.
 
 ### Ich habe mein Administrator-Passwort vergessen.
 

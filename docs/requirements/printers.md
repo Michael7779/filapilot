@@ -4,6 +4,9 @@
 - `Printer` (Name, IP, Seriennummer, Access-Code, Sync-Modus LIVE/PERIODIC, Sync-Intervall) -
   CRUD ueber `packages/backend/src/routes/printers.ts`.
   Quelle: `packages/backend/prisma/schema.prisma`
+- **Seit 0.13.0 gehoert jeder Drucker fest zu einem Lager**: Lesen (Liste, Status) braucht `VIEWER`, Anlegen/Aendern/Loeschen `OWNER`
+  des Lagers oder Admin (nicht mehr nur Admin); der Live-Status geht nur an Mitglieder des Lagers. Der Absatz zum SCOPE unten
+  beschreibt den Stand davor.
 - **SCOPE bewusst gemischt**: Lesen (Liste + Live-Status) ist `SCOPE: user` (jeder eingeloggte
   Nutzer soll den AMS-/Druck-Status sehen), Anlegen/Aendern/Loeschen ist `SCOPE: global`
   (ADMIN-only), weil der Access-Code faktisch das Passwort des Druckers ist.
@@ -49,3 +52,5 @@
   Test: `packages/backend/tests/security/printers.test.ts`
 - **R4**: Der Socket.IO-Endpunkt nimmt nur Verbindungen mit gueltiger Sitzung an (kein Cookie, unbekanntes Token,
   offener Passwortwechsel -> abgelehnt). Test: `tests/realtime/socketAuth.test.ts`
+- **R5**: Ab 0.13.0: Drucker-Rechte im Lager (Fremde 404, Betrachter/Bearbeiter 403 beim Schreiben, Besitzer und Admin duerfen),
+  der accessCode verlaesst den Server nie, das Lager eines Druckers laesst sich nicht aendern. Test: `tests/security/printers.test.ts`

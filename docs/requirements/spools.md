@@ -5,6 +5,8 @@
   Kaufpreis/-datum, Lagerort) - CRUD ueber `packages/backend/src/routes/spools.ts`.
   `manufacturerId` verweist auf `Manufacturer` (siehe `manufacturers.md`), kein freier Text mehr.
   Quelle: `packages/backend/prisma/schema.prisma`
+- **Seit 0.13.0 gehoert jede Spule zu einem Lager** (siehe `lager.md`): Lesen braucht `VIEWER`, Schreiben `EDITOR` im Lager der
+  Spule; Auflisten verlangt `?inventoryId=<id>` (oder `all`). Der Absatz zum SCOPE-Modell unten beschreibt den Stand davor.
 - **SCOPE-Modell bewusst `user`, nicht `self`**: Spulen gehoeren nicht einem einzelnen Nutzer,
   sondern dem geteilten Filament-Bestand der Instanz (2-5 Nutzer, siehe CLAUDE.md). Jeder
   eingeloggte Nutzer darf lesen/anlegen/aendern/loeschen - keine Owner-Pruefung noetig, weil es
@@ -54,3 +56,5 @@
   ist; ein Client kann `photoUrl` nicht selbst setzen; Loeschen der Spule raeumt die Datei auf.
   Test: `tests/security/spoolPhotos.test.ts`
 - **R8**: Das Kennzeichen "Fast leer" auf Spulenkarten ist rein clientseitig - manuell per Browser geprueft.
+- **R9**: Ab 0.13.0: Spulen und Fotos folgen den Rechten im Lager (Fremde 404, Betrachter 403 beim Schreiben, Verschieben nur mit
+  Bearbeiten in beiden Lagern). Tests: `tests/security/spoolsInventories.test.ts`, `tests/security/spools.test.ts`
