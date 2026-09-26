@@ -14,6 +14,7 @@ Status-Legende: ⬜ nicht begonnen · 🔶 in Arbeit · ✅ fertig + getestet
 | Theming pro Konto | `theming.md` | ✅ |
 | Mobile Ansicht / PWA | `mobile.md` | 🔶 |
 | Aenderungsprotokoll | `audit.md` | ✅ |
+| Aenderungsverlauf in der App | `changelog.md` | 🔶 |
 
 Neue Funktion → erst hier eine ID eintragen + mit einem Test verknuepfen, dann committen
 (siehe `anforderung`-Skill und CLAUDE.md, Abschnitt „Vor jeder Implementierung — PFLICHT").

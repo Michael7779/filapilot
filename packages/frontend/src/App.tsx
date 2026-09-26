@@ -7,6 +7,7 @@ import {
   useLocation,
   type Location
 } from "react-router-dom";
+import { ChangelogButton } from "./components/ChangelogButton.js";
 import { useTranslation } from "react-i18next";
 import type { UserPublic } from "@filapilot/shared";
 import { Sidebar } from "./components/Sidebar.js";
@@ -42,7 +43,10 @@ function TopBar(): React.JSX.Element {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] px-4 pt-[env(safe-area-inset-top)] md:h-[68px] md:px-7">
       <h1 className="text-[17px] font-bold md:text-[19px]">{t(titleKey)}</h1>
-      <span className="text-xs text-[var(--color-text-muted)]">v{__APP_VERSION__}</span>
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-[var(--color-text-muted)]">v{__APP_VERSION__}</span>
+        <ChangelogButton />
+      </div>
     </header>
   );
 }

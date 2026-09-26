@@ -3,206 +3,205 @@
 Alle nennenswerten Aenderungen an FilaPilot werden hier festgehalten.
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/), Versionierung nach SemVer.
 
+Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Sicherheit" erscheinen in der App
+(Änderungsverlauf) und sind in einfacher Sprache aus Sicht der Benutzer geschrieben - ohne Fachbegriffe.
+Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
+erscheint nicht in der App.
+
+## [0.12.0] - 2026-09-26
+
+### Hinzugefuegt
+- Oben rechts gibt es jetzt ein "i"-Symbol. Dort siehst du, was sich in welcher Version geändert hat. Gibt es
+  etwas Neues, blinkt das Symbol rot, bis du es einmal angeklickt hast.
+
 ## [0.11.0] - 2026-09-25
 
 ### Hinzugefuegt
-- Spulen-Fotos: Foto hinzufügen, ersetzen und entfernen im Spulen-Dialog (Handyfotos werden vor dem Upload
-  verkleinert); das Foto erscheint auf der Spulenkarte. Nur JPEG/PNG/WebP, max. 5 MB, nur mit Login sichtbar,
-  Teil der Sicherung. Funktioniert nur, wenn "Foto-Upload für Spulen erlauben" aktiv ist.
-- Spulenkarten zeigen "Fast leer" ab 15 % Restbestand.
-- Statistik: zusätzliche Auswertung nach Material-Typ (z. B. alle PLA-Varianten zusammen).
-- Sicherungen: "Sicherung hochladen" (Einstellungen → System) für den Umzug - eine per "Herunterladen"
-  gespeicherte .tar-Datei wird geprüft und abgelegt, danach kann sie wiederhergestellt werden.
-- Änderungsprotokoll: An- und Abmeldungen sowie Vorgänge des Systems (automatische Sicherung, Aufräumen,
-  Einspielen der Material-Vorlagen) werden vermerkt.
+- Zu jeder Spule kannst du jetzt ein Foto speichern, zum Beispiel direkt mit dem Handy aufgenommen. Es wird auf
+  der Spulenkarte angezeigt. Das geht nur, wenn ein Admin "Foto-Upload für Spulen erlauben" eingeschaltet hat.
+- Spulen, die fast leer sind (weniger als 15 % Rest), sind jetzt mit "Fast leer" gekennzeichnet.
+- In der Statistik siehst du den Verbrauch zusätzlich nach Material-Art, zum Beispiel alle PLA-Sorten zusammen.
+- Admins können eine heruntergeladene Sicherung wieder hochladen, zum Beispiel beim Umzug auf ein neues Gerät.
+- Im Änderungsprotokoll stehen jetzt auch An- und Abmeldungen sowie automatische Vorgänge wie die nächtliche
+  Sicherung.
 
 ### Sicherheit
-- Der Live-Status der Drucker (Socket.IO) ist jetzt nur noch mit gültiger Anmeldung erreichbar; Abmelden
-  beendet auch die laufende Verbindung.
+- Der Live-Status der Drucker ist jetzt nur noch für angemeldete Benutzer sichtbar.
 
-### Geändert
-- Das Foto einer Spule lässt sich nicht mehr als freie Web-Adresse setzen, sondern nur über den Upload.
+### Hinweis zum Update
+- Die Konfiguration des Frontend-Servers (`nginx.conf`) wurde angepasst, damit Fotos und Sicherungen
+  hochgeladen werden können. Steht ein eigener Reverse-Proxy davor, muss dort ebenfalls eine größere
+  Upload-Grenze erlaubt sein (Fotos bis 6 MB, Sicherungen bis 2 GB).
 
 ## [0.10.0] - 2026-09-24
 
 ### Hinzugefuegt
-- Änderungsprotokoll: Aufbewahrung in Monaten einstellbar (Einstellungen → System → Allgemein, Standard
-  12 Monate, 0 = unbegrenzt). Ältere Einträge werden täglich automatisch gelöscht; das Aufräumen selbst
-  wird im Protokoll vermerkt.
+- Admins können einstellen, wie lange das Änderungsprotokoll aufbewahrt wird (Einstellungen → System → Allgemein,
+  Standard 12 Monate, 0 = für immer). Ältere Einträge werden nachts automatisch gelöscht.
 
 ### Hinweis zum Update
-- Neue Datenbank-Spalte (Aufbewahrung Protokoll); das Update-Skript gleicht sie automatisch ab.
-  Bestehende Installationen bekommen den Standard von 12 Monaten - ältere Einträge werden also nach dem
-  nächsten nächtlichen Lauf entfernt, wenn du den Wert nicht erhöhst oder auf 0 setzt.
+- Neue Datenbank-Spalte; das Update-Skript gleicht sie automatisch ab. Bestehende Installationen bekommen den
+  Standard von 12 Monaten - ältere Einträge werden nach dem nächsten nächtlichen Lauf entfernt, wenn du den Wert
+  nicht erhöhst oder auf 0 setzt.
 
 ## [0.9.0] - 2026-09-24
 
 ### Hinzugefuegt
-- Änderungsprotokoll (Einstellungen → Protokoll, nur Admins): wer hat wann was angelegt, geändert oder gelöscht -
-  mit Vorher-/Nachher-Werten, Suche und Filtern nach Zeitraum, Bereich, Aktion und Benutzer, Seiteneinteilung.
-  Passwörter, Zugangscodes und das SMTP-Passwort werden nie protokolliert.
-- Benutzerliste: neue Spalte "Zuletzt aktiv".
+- Neues Änderungsprotokoll (Einstellungen → Protokoll, nur für Admins): Wer hat wann was angelegt, geändert
+  oder gelöscht? Mit Suche und Filtern nach Zeitraum, Bereich, Aktion und Benutzer. Passwörter und
+  Zugangscodes werden nie protokolliert.
+- Die Benutzerliste zeigt jetzt auch, wann jemand zuletzt aktiv war.
 
 ### Hinweis zum Update
-- Neue Datenbank-Tabelle und -Spalte (Protokoll, zuletzt aktiv); das Update-Skript gleicht sie automatisch ab.
-  Das Protokoll beginnt beim Update, frühere Änderungen sind nicht nachträglich erfasst.
+- Neue Datenbank-Tabelle und -Spalte; das Update-Skript gleicht sie automatisch ab. Das Protokoll beginnt beim
+  Update, frühere Änderungen sind nicht nachträglich erfasst.
 
 ## [0.8.0] - 2026-09-24
 
 ### Hinzugefuegt
-- Sicherungen: Aufbewahrung (Einstellung "Anzahl aufzubewahrender Sicherungen", Standard 14) - ältere werden
-  nach jeder regulären Sicherung automatisch gelöscht.
-- Sicherungen: "Herunterladen" speichert eine Sicherung als tar-Datei.
-- Benutzerliste: Spalten "Erstellt am" und "Letzter Login".
+- Alte Sicherungen werden automatisch gelöscht. Wie viele behalten werden (Standard 14), stellen Admins unter
+  Einstellungen → System ein.
+- Eine Sicherung lässt sich auf den eigenen Rechner herunterladen.
+- Die Benutzerliste zeigt, wann ein Konto erstellt wurde und wann sich der Benutzer zuletzt angemeldet hat.
 
 ### Hinweis zum Update
-- Zwei neue Datenbank-Spalten (letzter Login, Anzahl Sicherungen); das Update-Skript gleicht sie automatisch ab.
+- Zwei neue Datenbank-Spalten; das Update-Skript gleicht sie automatisch ab.
 
 ## [0.7.0] - 2026-09-24
 
 ### Hinzugefuegt
-- Sicherungen: Übersicht aller vorhandenen Sicherungen (Datum, Inhalt, Größe) unter Einstellungen → System.
-- Backup wiederherstellen (nur Admin, mit Bestätigungswort): sichert vorher automatisch den aktuellen Stand,
-  spielt in einer Transaktion ein (bei Fehler bleibt alles unverändert), zeigt den Fortschritt an und setzt
-  auch hochgeladene Dateien zurück. Damit ist der Umzug auf eine neue Synology möglich (siehe README).
+- Übersicht aller vorhandenen Sicherungen mit Datum, Inhalt und Größe (Einstellungen → System).
+- Eine Sicherung kann wiederhergestellt werden (nur Admins, mit Bestätigungswort). Vorher wird der aktuelle
+  Stand automatisch gesichert, und bei einem Fehler bleibt alles unverändert. Auch Fotos werden zurückgesetzt.
+  So ist der Umzug auf ein neues Gerät möglich.
 
 ### Behoben
-- Ein SMTP-Passwort, das mit einem anderen `SESSION_SECRET` verschlüsselt wurde (z. B. nach einem Umzug),
-  führt nicht mehr zu Fehlern beim Anlegen von Benutzern.
+- Nach einem Umzug führte das gespeicherte E-Mail-Passwort zu Fehlern beim Anlegen von Benutzern. Jetzt gibt es
+  keinen Fehler mehr, du gibst das E-Mail-Passwort einfach einmal neu ein.
 
 ## [0.6.0] - 2026-09-24
 
 ### Hinzugefuegt
-- Mobile Ansicht für das Smartphone (auch als installierte PWA): Navigation als Leiste unten mit
-  Symbolen, Karten und Kennzahlen passen sich der Breite an, Dialoge und Tabellen sind auf kleinen
-  Bildschirmen bedienbar, Abmelden unter Einstellungen → Mein Konto.
+- Ansicht für das Smartphone, auch als installierte App: Die Navigation ist unten am Bildschirm, Karten und
+  Dialoge passen sich der Größe an, und Abmelden findest du unter Einstellungen → Mein Konto.
 
 ## [0.5.0] - 2026-09-23
 
 ### Hinzugefuegt
-- Einrichtungsbildschirm: Auf einer frischen Installation legst du den ersten Administrator direkt im
-  Browser an (eigenes Passwort, danach dauerhaft gesperrt). Das Skript `seedAdmin` bleibt als Alternative.
+- Einrichtungsbildschirm: Beim ersten Start legst du den ersten Administrator direkt im Browser an, mit
+  eigenem Passwort.
 
 ## [0.4.0] - 2026-09-23
 
 ### Hinzugefuegt
-- Benutzer bearbeiten (Name, E-Mail, Rolle), löschen und Passwort zurücksetzen (Einstellungen →
-  Benutzer). Der letzte Admin und das eigene Konto sind geschützt.
-- SMTP: Button "Test-E-Mail an mich senden" zeigt bei Problemen die genaue Fehlermeldung des
-  Mailservers.
+- Admins können Benutzer bearbeiten, löschen und ihr Passwort zurücksetzen. Der letzte Admin und das eigene
+  Konto sind dabei geschützt.
+- Ein Knopf sendet eine Test-E-Mail und zeigt bei Problemen die genaue Fehlermeldung des Mailservers.
 
 ## [0.3.2] - 2026-09-23
 
 ### Geändert
-- Einstellungen sind in Reiter aufgeteilt: Mein Konto, Benutzer, Filamente, System (jeweils mit
-  eigener Adresse, z. B. `/settings/filamente`). Normale Benutzer sehen nur "Mein Konto".
-- Begriff "Nutzer" heißt überall "Benutzer".
+- Die Einstellungen sind in Reiter aufgeteilt: Mein Konto, Benutzer, Filamente und System. Normale Benutzer
+  sehen nur "Mein Konto".
+- Überall heißt es jetzt "Benutzer" statt "Nutzer".
 
 ### Behoben
-- Update-Hinweis: Der Button "Aktualisieren" lädt jetzt zuverlässig die neue Version (verwirft
-  Service-Worker und Cache und lädt neu). Der Hinweis erscheint als Karte unten rechts und
-  verdeckt die Kopfzeile nicht mehr.
+- Der Knopf "Aktualisieren" im Update-Hinweis lädt jetzt zuverlässig die neue Version. Der Hinweis erscheint
+  unten rechts und verdeckt die Kopfzeile nicht mehr.
 
 ## [0.3.1] - 2026-09-23
 
 ### Behoben
-- Ein fehlgeschlagener Datenbankzugriff in der Spulen-, Drucker-, Nutzer- und Einstellungs-Liste
-  beendete das ganze Backend (Absturzschleife). Fehler werden jetzt abgefangen und als Fehlermeldung
-  zurückgegeben.
-- Hinter dem Reverse-Proxy wird die echte Client-Adresse für die Login-Begrenzung genutzt
-  (Warnung "X-Forwarded-For" im Log behoben, `TRUST_PROXY_HOPS`, Standard 2).
+- Wenn die Datenbank kurz nicht antwortete, fiel die ganze App aus. Jetzt erscheint stattdessen eine
+  Fehlermeldung, und die App läuft weiter.
+
+### Hinweis zum Update
+- Hinter dem Reverse-Proxy wird die echte Adresse des Besuchers für die Begrenzung der Anmeldeversuche
+  verwendet (Einstellung `TRUST_PROXY_HOPS`, Standard 2).
 
 ## [0.3.0] - 2026-09-23
 
 ### Hinzugefuegt
-- Hersteller zuerst, dann Material: Das Material-Feld zeigt nur Produkte des gewählten Herstellers
-  plus allgemeine Materialien. Rund 70 Materialien mit Richttemperaturen sind vorbefüllt.
-- Temperaturen (Düse, Bett) werden im Spulen-Formular und auf den Spulenkarten angezeigt.
-- Einstellungen: Hersteller und Materialien anlegen, ändern und löschen (nur Admin). Löschen ist
-  gesperrt, solange Spulen den Eintrag nutzen.
-- SMTP: Verschlüsselung als Auswahl (STARTTLS Port 587 / SSL Port 465) statt missverständlichem Haken.
+- Du wählst zuerst den Hersteller und dann das Material. Zur Auswahl stehen nur passende Materialien. Rund
+  70 Materialien mit Richttemperaturen sind schon vorbefüllt.
+- Die Temperaturen (Düse und Bett) werden im Spulen-Dialog und auf den Spulenkarten angezeigt.
+- Admins können Hersteller und Materialien in den Einstellungen anlegen, ändern und löschen. Löschen geht
+  nicht, solange Spulen den Eintrag noch nutzen.
+- Bei den E-Mail-Einstellungen wählst du die Verschlüsselung jetzt aus einer Liste (STARTTLS Port 587 oder SSL
+  Port 465).
 
 ### Behoben
-- Schlägt der Mailversand fehl, wird der Nutzer trotzdem angelegt und das Startpasswort angezeigt.
+- Wenn der E-Mail-Versand fehlschlägt, wird der Benutzer trotzdem angelegt, und das Startpasswort wird
+  angezeigt.
 
 ### Hinweis zum Update
-- Das Datenbank-Schema ändert sich (Material bekommt einen optionalen Hersteller); das Update-Skript
+- Das Datenbank-Schema ändert sich (ein Material bekommt einen optionalen Hersteller); das Update-Skript
   gleicht es automatisch ab.
 
 ## [0.2.3] - 2026-09-23
 
 ### Hinzugefuegt
-- Update-Hinweis: Liegt eine neue Version auf dem Server, erscheint oben ein Banner mit Button
-  "Aktualisieren" (Strg+F5 ist nicht mehr nötig). Es wird beim Öffnen, beim Zurückkehren zum Tab
-  und alle 15 Minuten geprüft.
+- Steht eine neue Version bereit, erscheint ein Hinweis mit dem Knopf "Aktualisieren". Strg+F5 ist nicht mehr
+  nötig. Geprüft wird beim Öffnen, beim Zurückkehren zum Tab und alle 15 Minuten.
 
 ## [0.2.2] - 2026-09-23
 
 ### Geändert
 - Alle Auswahllisten sind jetzt alphabetisch sortiert.
-- Login und Passwort-Reset ignorieren Groß-/Kleinschreibung bei Benutzername und E-Mail; doppelte
-  Nutzer in anderer Schreibweise werden beim Anlegen abgelehnt.
+- Beim Anmelden und beim Zurücksetzen des Passworts spielt die Groß- und Kleinschreibung von Benutzername und
+  E-Mail-Adresse keine Rolle mehr. Doppelte Benutzer in anderer Schreibweise werden abgelehnt.
 
 ## [0.2.1] - 2026-09-23
 
 ### Behoben
-- Klickbare Elemente (Buttons, Auswahlfelder, Checkboxen) zeigen jetzt den Hand-Mauszeiger.
-- Update-Skript: `git safe.directory` wird automatisch gesetzt, das Datenbank-Schema wird bei
-  Updates automatisch abgeglichen (`prisma db push`).
+- Knöpfe und Auswahlfelder zeigen jetzt die Hand als Mauszeiger.
+
+### Hinweis zum Update
+- Das Update-Skript setzt `git safe.directory` automatisch und gleicht das Datenbank-Schema bei Updates
+  automatisch ab (`prisma db push`).
 
 ## [0.2.0] - 2026-09-22
 
 ### Hinzugefuegt
-- QR-Label-Druck pro Spule: druckbares Label mit QR-Code (Spulen-ID) + Material/Farbe/Hersteller,
-  ueber die "QR-Label"-Aktion auf der Spulen-Seite.
-- Statistik-Seite: Spulen gesamt, verbrauchtes Filament, Restbestand, Anzahl Spulen mit
-  niedrigem Bestand sowie Verbrauch aufgeschluesselt nach Material und Hersteller - berechnet
-  clientseitig aus den vorhandenen Spulen-Daten (siehe `docs/requirements/stats.md` fuer die
-  bewusste Abgrenzung zum noch nicht gebauten `PrintJob`-Tracking).
+- Zu jeder Spule gibt es ein druckbares QR-Label mit Material, Farbe und Hersteller (Aktion "QR-Label" auf der
+  Spulen-Seite).
+- Neue Statistik-Seite: Spulen gesamt, verbrauchtes Filament, Restbestand und Spulen mit niedrigem Bestand,
+  dazu der Verbrauch nach Material und nach Hersteller.
 
 ## [0.1.0] - 2026-09-22
 
 ### Hinzugefuegt
-- Passwort-Reset per E-Mail-Link (zeitlich begrenzter Token, kein User-Enumeration-Leak).
-  Ohne konfiguriertes SMTP wird der Reset-Link stattdessen ins Server-Log geschrieben.
-- Theming pro Konto: Akzentfarbe ueber Voreinstellungs-Swatches + Farbwaehler in den
-  Konto-Einstellungen, `null`/Reset setzt den Standardwert `#2F6FED` zurueck.
-- Einstellungen-Seite fuer Admins: Allgemein (Foto-Upload, Standard-Sync-Intervall,
-  Backup an/aus + Ordner), SMTP-Konfiguration (Passwort AES-256-GCM verschluesselt, nie an den
-  Client zurueckgegeben), manueller "Jetzt sichern"-Button, Nutzerverwaltung (Liste + Anlegen).
-- Taeglicher automatischer Backup-Job (DB-Dump via `pg_dump`, Settings-Export als JSON,
-  Uploads-Ordner als `.tar.gz`).
-- Drucker-Verwaltung mit Bambu-Lab-MQTT-Anbindung: CRUD (nur Admin), Live-/periodischer
-  Verbindungsstatus per Socket.IO, ausklappbare Einrichtungsanleitung, `accessCode` verlaesst nie
-  den Server.
+- Passwort vergessen: Per E-Mail kommt ein Link, der nur kurze Zeit gültig ist.
+- Jeder Benutzer kann in Mein Konto seine eigene Akzentfarbe wählen und wieder zurücksetzen.
+- Einstellungen für Admins: Foto-Upload, Abfrage-Intervall der Drucker, Sicherung, E-Mail-Server und
+  Benutzerverwaltung.
+- Jede Nacht wird automatisch eine Sicherung angelegt.
+- Drucker-Verwaltung für Bambu Lab: Live-Status, Einrichtungsanleitung zum Aufklappen. Der Zugangscode des
+  Druckers wird nie angezeigt.
 
 ### Behoben
-- `pg_dump` fehlte im Backend-Produktiv-Image, wodurch jeder Backup-Versuch mit 500 fehlschlug -
-  `postgresql-client-17` wird jetzt ueber das PGDG-Repo passend zur Postgres-Server-Version
-  installiert.
-- Passwort-Reset-Link wurde im Server-Log nur angekuendigt, aber nie tatsaechlich mit ausgegeben,
-  wenn kein SMTP konfiguriert ist - dadurch war ein Reset ohne SMTP praktisch nicht abschliessbar.
-- Bambu-MQTT-Verbindungsversuche hatten kein `connectTimeout`, wodurch unerreichbare Drucker den
-  Verbindungsaufbau am OS-TCP-Timeout haengen liessen statt nach wenigen Sekunden fehlzuschlagen.
-- Spulen-Seite blieb bei einem fehlgeschlagenen Laden dauerhaft bei "Lädt..." haengen statt einen
-  Fehler mit Retry-Button anzuzeigen.
+- Sicherungen schlugen mit einer Fehlermeldung fehl. Jetzt funktionieren sie.
+- Das Zurücksetzen des Passworts ließ sich ohne E-Mail-Server nicht abschließen. Jetzt steht der Link dann im
+  Protokoll des Servers.
+- Nicht erreichbare Drucker blockierten den Verbindungsaufbau lange. Jetzt kommt schnell eine Fehlermeldung.
+- Die Spulen-Seite blieb bei einem Ladefehler bei "Lädt…" hängen. Jetzt erscheint eine Fehlermeldung mit dem
+  Knopf "Wiederholen".
 
 ## [0.0.2] - 2026-09-21
 
 ### Hinzugefuegt
-- Manufacturer-Stammdaten (vorbefuellt mit bekannten Herstellern, in den Einstellungen pflegbar)
-  statt freiem Textfeld bei Spulen.
-- Sichtbare Versionsnummer oben rechts in der App.
-- Echtes Favicon + PWA-Icons (zweifarbiges Spulen-Symbol).
+- Hersteller wählst du jetzt aus einer Liste bekannter Hersteller statt sie einzutippen. Die Liste lässt sich
+  in den Einstellungen pflegen.
+- Die Versionsnummer steht oben rechts in der App.
+- Die App hat jetzt ein eigenes Symbol (Spule) im Browser und auf dem Startbildschirm.
 
-### Behoben
-- Produktions-Docker-Build (fehlendes `.dockerignore`, ungebautes `shared`-Package).
-- Empfehlung `openssl rand -hex` statt `-base64` fuer generierte Secrets (Base64 kann `/`
-  erzeugen, das die Datenbank-Verbindungs-URL ungueltig macht).
+### Hinweis zum Update
+- Behoben: Der Produktions-Docker-Build (fehlendes `.dockerignore`, ungebautes `shared`-Paket). Für generierte
+  Secrets `openssl rand -hex` statt `-base64` verwenden (Base64 kann `/` enthalten und die Datenbank-Adresse
+  ungültig machen).
 
 ## [0.0.1] - 2026-09-20
 
 ### Hinzugefuegt
-- Projekt-Grundgeruest (pnpm-Monorepo, Docker Compose, Prisma-Schema).
-- Login-Flow mit erzwungenem Passwortwechsel und Admin-Bootstrap.
-- Spulen-CRUD (Material + Spule).
+- Erste Version: Anmeldung mit erzwungenem Passwortwechsel beim ersten Login sowie Spulen anlegen, ändern und
+  löschen.

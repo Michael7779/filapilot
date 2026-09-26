@@ -4,6 +4,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { parseChangelog } from "@filapilot/shared";
 
 // Fester, relativer Pfad zur Root-package.json - kein User-Input, kein Path-Traversal-Risiko.
 const rootPackageJsonPath = fileURLToPath(new URL("../../package.json", import.meta.url));
@@ -11,9 +12,15 @@ const rootPackageJsonPath = fileURLToPath(new URL("../../package.json", import.m
 const appVersion = (JSON.parse(readFileSync(rootPackageJsonPath, "utf8")) as { version: string })
   .version;
 
+// Aenderungsverlauf der App: wird beim Bauen aus dem CHANGELOG.md im Projektstamm erzeugt (fester relativer Pfad).
+const changelogPath = fileURLToPath(new URL("../../CHANGELOG.md", import.meta.url));
+// eslint-disable-next-line security/detect-non-literal-fs-filename
+const changelog = parseChangelog(readFileSync(changelogPath, "utf8"));
+
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(appVersion)
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __CHANGELOG__: JSON.stringify(changelog)
   },
   plugins: [
     react(),

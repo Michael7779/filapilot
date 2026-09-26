@@ -1,6 +1,19 @@
 @import "tailwindcss";
 
 @theme {
+  --animate-blink-red: blink-red 1.2s ease-in-out infinite;
+  @keyframes blink-red {
+    0%,
+    100% {
+      background-color: transparent;
+      box-shadow: 0 0 0 0 rgb(179 38 30 / 0);
+    }
+    50% {
+      background-color: rgb(179 38 30 / 0.14);
+      box-shadow: 0 0 0 4px rgb(179 38 30 / 0.25);
+    }
+  }
+
   --color-bg: #fafaf8;
   --color-sidebar: #ffffff;
   --color-border: #ececE7;
@@ -19,6 +32,13 @@
 
 :root {
   --accent: var(--color-accent);
+}
+
+/* Wer reduzierte Bewegung eingestellt hat, sieht den Hinweis statisch (roter Rand) statt blinkend. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink-red {
+    animation: none;
+  }
 }
 
 body {

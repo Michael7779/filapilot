@@ -183,6 +183,12 @@
     "available": "Eine neue Version ist bereit. Bitte aktualisieren, damit die aktuelle Version genutzt wird.",
     "refresh": "Aktualisieren"
   },
+  "changelog": {
+    "title": "Änderungsverlauf",
+    "version": "Version {{version}}",
+    "open": "Änderungsverlauf anzeigen",
+    "openNew": "Neu: Änderungsverlauf anzeigen"
+  },
   "common": {
     "loading": "Lädt…",
     "logout": "Abmelden",

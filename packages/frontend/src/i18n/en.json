@@ -183,6 +183,12 @@
     "available": "A new version is ready. Please update to use the latest version.",
     "refresh": "Update"
   },
+  "changelog": {
+    "title": "Change history",
+    "version": "Version {{version}}",
+    "open": "Show change history",
+    "openNew": "New: show change history"
+  },
   "common": {
     "loading": "Loading…",
     "logout": "Sign out",

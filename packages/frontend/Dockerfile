@@ -9,7 +9,7 @@ COPY packages/frontend/package.json packages/frontend/package.json
 RUN pnpm install --frozen-lockfile --filter @filapilot/frontend...
 
 FROM deps AS build
-COPY tsconfig.base.json ./
+COPY tsconfig.base.json CHANGELOG.md ./
 COPY packages/shared packages/shared
 COPY packages/frontend packages/frontend
 RUN pnpm --filter @filapilot/shared build
