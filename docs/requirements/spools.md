@@ -31,9 +31,8 @@
   machbar; `qrcode` ist aktiv gepflegt und hat >5 Mio. Downloads/Woche.
 
 ## 1.1 Offene Punkte
-- OP-SP3: Loeschen einer Spule, die noch in `AmsSlotAssignment` oder `PrintJob` referenziert wird -
-  aktuell durch die DB-FK einfach verhindert (Fehler 500 statt sauberer Fehlermeldung). Sollte
-  spaeter ein eigener Fehlercode werden (`CONFLICT`), sobald Drucker-Zuordnung gebaut ist.
+- OP-SP3 ✅ (0.21.2): `AmsSlotAssignment.spoolId` hat jetzt `onDelete: SetNull` - Loeschen einer zugeordneten
+  Spule leert das AMS-Fach, statt das Loeschen zu verhindern (`PrintJob` cascadiert schon seit 0.17.0).
 
 ## 1.2 Anforderungen
 - **R1**: Jeder eingeloggte Nutzer kann alle Spulen auflisten (inkl. Material-Name).
@@ -102,3 +101,16 @@
   (`components/SpoolActions.tsx`), das per React-Portal an `<body>` gerendert wird, damit es nie von einem
   scrollenden Vorfahren (z.B. der seitlich scrollenden Tabelle der Listenansicht) abgeschnitten wird. Oberflaeche
   manuell auf Mobil- und Desktop-Breite geprueft.
+- **R20**: Ab 0.21.2: Eine Spule hat ein optionales Leergewicht (`tareWeightG`, g). `POST /api/spools/:id/weigh`
+  (EDITOR im Lager, Zod: 0-10000 g) zieht das Leergewicht vom eingegebenen Gesamtgewicht ab und setzt so das
+  Restgewicht (auf 0 begrenzt, nie negativ); ohne hinterlegtes Leergewicht wird abgelehnt (400). Schreibt den
+  Gewichtsverlauf (Quelle `WEIGHED`) und einen Verlauf-Eintrag wie eine manuelle Aenderung.
+  Test: `tests/security/spoolWeigh.test.ts`.
+- **R21**: Ab 0.21.2: Import aus Spoolman - `POST /api/inventories/:id/spoolman-import/file` (EDITOR im Ziel-Lager,
+  Zod: max. 2000 Eintraege, jede Spule einzeln geprueft, kaputte/unvollstaendige gezaehlt und uebersprungen) liest
+  eine hochgeladene Spoolman-Export-Datei (kein Login noetig, Spoolman ist selbst gehostet), legt fehlende
+  Hersteller/Materialien an und importiert Restgewicht, Leergewicht, Notiz und Lagerort; `Spool.spoolmanId`
+  verhindert Doppelimport je Lager, wie `bambuCloudId`. Anders als beim Bambu-Import gibt es keine Auswahl - alle
+  gueltigen Eintraege werden auf einmal uebernommen. Offener Punkt (OP-SM1): Die Feldnamen stammen aus der
+  oeffentlichen Spoolman-API-Dokumentation, sind aber nicht gegen eine echte Spoolman-Installation geprueft (wie
+  OP-B1 beim Bambu-Import). Test: `tests/security/spoolmanImport.test.ts`.

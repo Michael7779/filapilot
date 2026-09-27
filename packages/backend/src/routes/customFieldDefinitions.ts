@@ -65,7 +65,12 @@ customFieldDefinitionsRouter.delete(
     if (!before) {
       throw new AppError("NOT_FOUND", "Zusatzfeld wurde nicht gefunden.");
     }
-    await prisma.customFieldDefinition.delete({ where: { id } });
+    // Raeumt vorhandene Werte dieses Feldes aus allen Spulen auf (sonst blieben sie unsichtbar, aber gespeichert,
+    // liegen). Eine Anweisung fuer alle betroffenen Zeilen statt einer Schleife (kein N+1).
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`UPDATE spools SET "customFields" = "customFields" - ${id} WHERE "customFields" ? ${id}`;
+      await tx.customFieldDefinition.delete({ where: { id } });
+    });
     await recordAudit({
       actor: actorFromRequest(req),
       action: "DELETE",

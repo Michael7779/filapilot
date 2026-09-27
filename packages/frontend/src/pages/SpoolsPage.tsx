@@ -30,7 +30,9 @@ import { useSpoolPreferences } from "../hooks/useSpoolPreferences.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
 import { SpoolHistoryModal } from "../components/SpoolHistoryModal.js";
 import { SpoolDryingModal } from "../components/SpoolDryingModal.js";
+import { SpoolWeighModal } from "../components/SpoolWeighModal.js";
 import { BambuImportModal } from "../components/BambuImportModal.js";
+import { SpoolmanImportModal } from "../components/SpoolmanImportModal.js";
 import type { BambuConnectionInfo, BambuSyncSummary } from "@filapilot/shared";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
@@ -59,6 +61,8 @@ export function SpoolsPage(): React.JSX.Element {
   const [labelSpool, setLabelSpool] = useState<SpoolWithRelations | null>(null);
   const [historySpool, setHistorySpool] = useState<SpoolWithRelations | null>(null);
   const [dryingSpool, setDryingSpool] = useState<SpoolWithRelations | null>(null);
+  const [weighSpool, setWeighSpool] = useState<SpoolWithRelations | null>(null);
+  const [spoolmanImportOpen, setSpoolmanImportOpen] = useState(false);
   const [customFieldDefinitions, setCustomFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -315,6 +319,13 @@ export function SpoolsPage(): React.JSX.Element {
             </button>
             <button
               type="button"
+              onClick={() => setSpoolmanImportOpen(true)}
+              className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
+            >
+              {t("spoolman.open")}
+            </button>
+            <button
+              type="button"
               onClick={openCreate}
               className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
               style={{ backgroundColor: "var(--accent)" }}
@@ -393,6 +404,7 @@ export function SpoolsPage(): React.JSX.Element {
             onLabel={setLabelSpool}
             onHistory={setHistorySpool}
             onDrying={setDryingSpool}
+            onWeigh={setWeighSpool}
             onAddToWishlist={(spool) => void handleAddToWishlist(spool)}
             onDelete={(spool) => void handleDelete(spool)}
           />
@@ -427,6 +439,15 @@ export function SpoolsPage(): React.JSX.Element {
         />
       )}
 
+      {spoolmanImportOpen && selectedId && inventory && (
+        <SpoolmanImportModal
+          inventoryId={selectedId}
+          inventoryName={inventory.name}
+          onClose={() => setSpoolmanImportOpen(false)}
+          onImported={() => void load(true)}
+        />
+      )}
+
       {labelSpool && <SpoolLabelModal spool={labelSpool} onClose={() => setLabelSpool(null)} />}
       {historySpool && <SpoolHistoryModal spool={historySpool} onClose={() => setHistorySpool(null)} />}
       {dryingSpool && (
@@ -434,6 +455,16 @@ export function SpoolsPage(): React.JSX.Element {
           spool={dryingSpool}
           onClose={() => setDryingSpool(null)}
           onLogged={() => setActionNotice(t("spools.drying.logged"))}
+        />
+      )}
+      {weighSpool && (
+        <SpoolWeighModal
+          spool={weighSpool}
+          onClose={() => setWeighSpool(null)}
+          onWeighed={() => {
+            setActionNotice(t("spools.weigh.logged"));
+            void load(true);
+          }}
         />
       )}
     </div>

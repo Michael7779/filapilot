@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
+import { formatBedTemp } from "../lib/formatTemps.js";
 import type { PhotoChange } from "../lib/spoolPhoto.js";
 import { SpoolPhotoField } from "./SpoolPhotoField.js";
 import { SpoolColorFields } from "./SpoolColorFields.js";
@@ -46,6 +47,7 @@ function toFormState(spool: SpoolWithRelations | null) {
     colorHex2: spool?.colorHex2 ?? "",
     initialWeightG: spool ? String(spool.initialWeightG) : "1000",
     remainingWeightG: spool ? String(spool.remainingWeightG) : "1000",
+    tareWeightG: spool?.tareWeightG != null ? String(spool.tareWeightG) : "",
     location: spool?.location ?? "",
     note: spool?.note ?? "",
     purchasePriceEuro: spool?.purchasePriceCents != null ? String(spool.purchasePriceCents / 100) : ""
@@ -106,6 +108,7 @@ export function SpoolFormModal({
     )
   ];
   const selectedMaterial = materials.find((material) => material.id === form.materialId);
+  const selectedBedTemp = selectedMaterial ? formatBedTemp(selectedMaterial.bedTempC, selectedMaterial.bedTempMaxC, t) : null;
 
   function handleManufacturerChange(manufacturerId: string): void {
     const stillFits = materials.some(
@@ -143,6 +146,7 @@ export function SpoolFormModal({
       printTempMinC: Number(newMaterial.printTempMinC) || 0,
       printTempMaxC: Number(newMaterial.printTempMaxC) || 0,
       bedTempC: newMaterial.bedTempC.trim() ? Number(newMaterial.bedTempC) : null,
+      bedTempMaxC: null,
       // Dichte/Durchmesser gibt es hier nicht direkt ein - laesst sich unter Einstellungen -> Stammdaten nachtragen.
       densityGCm3: null,
       filamentDiameterMm: 1.75
@@ -174,6 +178,7 @@ export function SpoolFormModal({
           colorHex2: form.colorHex2.trim() ? form.colorHex2.trim() : null,
           initialWeightG: Number(form.initialWeightG),
           remainingWeightG: Number(form.remainingWeightG),
+          tareWeightG: form.tareWeightG.trim() ? Number(form.tareWeightG) : null,
           purchasePriceCents: form.purchasePriceEuro.trim()
             ? Math.round(Number(form.purchasePriceEuro) * 100)
             : null,
@@ -276,8 +281,7 @@ export function SpoolFormModal({
               min: selectedMaterial.printTempMinC,
               max: selectedMaterial.printTempMaxC
             })}
-            {selectedMaterial.bedTempC !== null &&
-              ` · ${t("spools.bedTempHint", { bed: selectedMaterial.bedTempC })}`}
+            {selectedBedTemp && ` · ${selectedBedTemp}`}
           </p>
         )}
 
@@ -355,6 +359,17 @@ export function SpoolFormModal({
             />
           </label>
         </div>
+
+        <label className={LABEL_CLASS}>
+          {t("spools.tareWeight")}
+          <input
+            type="number"
+            min={0}
+            value={form.tareWeightG}
+            onChange={(event) => setForm({ ...form, tareWeightG: event.target.value })}
+            className={SELECT_CLASS}
+          />
+        </label>
 
         <label className={LABEL_CLASS}>
           {t("spools.location")}

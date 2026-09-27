@@ -9,7 +9,7 @@ import { BackupManager } from "../components/BackupManager.js";
 import { AuditLogView } from "../components/AuditLogView.js";
 import { InventorySettings } from "../components/InventorySettings.js";
 import { useLogout } from "../hooks/useLogout.js";
-import { BAMBU_AUTO_SYNC_OPTIONS } from "@filapilot/shared";
+import { BAMBU_AUTO_SYNC_OPTIONS, SESSION_EXPIRY_DAY_OPTIONS } from "@filapilot/shared";
 import type {
   CreateUserInput,
   CreateUserResult,
@@ -151,6 +151,7 @@ function GeneralSettingsSection({
   const [retention, setRetention] = useState(String(settings.backupRetentionCount));
   const [auditMonths, setAuditMonths] = useState(String(settings.auditRetentionMonths));
   const [autoSync, setAutoSync] = useState(String(settings.bambuAutoSyncMinutes));
+  const [sessionExpiryDays, setSessionExpiryDays] = useState(String(settings.sessionExpiryDays));
   const [backupFolderPath, setBackupFolderPath] = useState(settings.backupFolderPath);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -167,6 +168,7 @@ function GeneralSettingsSection({
         backupRetentionCount: Number(retention),
         auditRetentionMonths: Number(auditMonths),
         bambuAutoSyncMinutes: Number(autoSync),
+        sessionExpiryDays: Number(sessionExpiryDays),
         backupFolderPath
       };
       const updated = await apiRequest<Settings>("/settings", {
@@ -213,6 +215,16 @@ function GeneralSettingsSection({
           </select>
         </Field>
         <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("settings.bambuAutoSyncHint")}</p>
+        <Field label={t("settings.sessionExpiry")}>
+          <select value={sessionExpiryDays} onChange={(event) => setSessionExpiryDays(event.target.value)} className={inputClass}>
+            {SESSION_EXPIRY_DAY_OPTIONS.map((days) => (
+              <option key={days} value={String(days)}>
+                {t("settings.sessionExpiryDays", { count: days })}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("settings.sessionExpiryHint")}</p>
         <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
           <input
             type="checkbox"

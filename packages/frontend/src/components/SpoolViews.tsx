@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { LOW_STOCK_THRESHOLD_RATIO, type CustomFieldDefinition, type Material, type SpoolWithRelations } from "@filapilot/shared";
 import { SpoolActions, type SpoolHandlers } from "./SpoolActions.js";
+import { formatBedTemp } from "../lib/formatTemps.js";
 
 export interface SpoolViewProps extends SpoolHandlers {
   spools: readonly SpoolWithRelations[];
@@ -58,6 +59,7 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {spools.map((spool) => {
         const temps = materials.find((material) => material.id === spool.materialId);
+        const bedTemp = temps ? formatBedTemp(temps.bedTempC, temps.bedTempMaxC, t) : null;
         return (
           <div key={spool.id} className={`rounded-xl border border-[var(--color-border)] bg-white p-4 ${spool.archivedAt ? "opacity-70" : ""}`}>
             {spool.photoUrl && (
@@ -81,7 +83,7 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
             {temps && (
               <div className="mb-2 text-xs text-[var(--color-text-muted)]">
                 {t("spools.tempHint", { min: temps.printTempMinC, max: temps.printTempMaxC })}
-                {temps.bedTempC !== null && ` · ${t("spools.bedTempHint", { bed: temps.bedTempC })}`}
+                {bedTemp && ` · ${bedTemp}`}
               </div>
             )}
             <div className="mb-1">

@@ -14,6 +14,14 @@ function formatLength(meters: number | null, locale: string, t: (key: string) =>
   return `${t("spools.list.approx")} ${Math.round(meters).toLocaleString(locale)} m`;
 }
 
+// "60 °C" bei nur einem Wert, sonst "60–80 °C" als Bereich (Material.bedTempMaxC).
+function bedTempCell(bedTempC: number | null, bedTempMaxC: number | null): string {
+  if (bedTempC === null) {
+    return "–";
+  }
+  return bedTempMaxC !== null ? `${bedTempC}–${bedTempMaxC} °C` : `${bedTempC} °C`;
+}
+
 function statusKey(spool: SpoolWithRelations): string {
   if (!spool.archivedAt) {
     return "spools.list.active";
@@ -84,7 +92,7 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, ...
                 <td className={cellClass}>{spool.materialName}</td>
                 {isAll && <td className={cellClass}>{spool.inventoryName ?? "–"}</td>}
                 <td className={cellClass}>{temps ? `${temps.printTempMinC}–${temps.printTempMaxC} °C` : "–"}</td>
-                <td className={cellClass}>{temps && temps.bedTempC !== null ? `${temps.bedTempC} °C` : "–"}</td>
+                <td className={cellClass}>{temps ? bedTempCell(temps.bedTempC, temps.bedTempMaxC) : "–"}</td>
                 <td className={cellClass}>
                   <div className="w-36">
                     <WeightBar spool={spool} />

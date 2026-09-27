@@ -83,4 +83,25 @@ describe("Wunschliste (instanzweit) - Negativ-Tests", () => {
     const created = await call("post", "/api/wishlist", alice, { title: "Status-Test" });
     assert.equal((await call("patch", `/api/wishlist/${created.body.data.id}`, alice, { status: "UNBEKANNT" })).status, 400);
   });
+
+  it("entfernt erledigte Eintraege auf einmal, laesst offene/bestellte stehen, anonym 401", async () => {
+    assert.equal((await call("delete", "/api/wishlist/done", null)).status, 401);
+
+    const open = await call("post", "/api/wishlist", alice, { title: "Bleibt offen" });
+    const done1 = await call("post", "/api/wishlist", alice, { title: "Erledigt 1" });
+    const done2 = await call("post", "/api/wishlist", bob, { title: "Erledigt 2" });
+    await call("patch", `/api/wishlist/${done1.body.data.id}`, alice, { status: "DONE" });
+    // Bob darf auch fremde Eintraege auf erledigt setzen (Status ist fuer alle offen) und spaeter Alice' Aufraeumen nutzen
+    await call("patch", `/api/wishlist/${done2.body.data.id}`, bob, { status: "DONE" });
+
+    const result = await call("delete", "/api/wishlist/done", bob);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.data.deleted, 2);
+    assert.equal(await prisma.wishlistItem.count({ where: { id: done1.body.data.id } }), 0);
+    assert.equal(await prisma.wishlistItem.count({ where: { id: done2.body.data.id } }), 0);
+    assert.equal(await prisma.wishlistItem.count({ where: { id: open.body.data.id } }), 1);
+
+    const again = await call("delete", "/api/wishlist/done", alice);
+    assert.deepEqual(again.body.data, { deleted: 0 });
+  });
 });

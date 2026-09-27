@@ -67,6 +67,22 @@ describe("Materials - Negativ-Tests", () => {
     assert.ok(listRes.body.data.some((m: { name: string }) => m.name === "PETG HF Test"));
   });
 
+  it("speichert einen Bett-Temperatur-Bereich (bedTempMaxC), weglassen bleibt ein Einzelwert", async () => {
+    const withRange = await request(app)
+      .post("/api/materials")
+      .set("Cookie", activeUserCookie)
+      .send({ name: "PLA Bereich Test", printTempMinC: 190, printTempMaxC: 220, bedTempC: 60, bedTempMaxC: 80 });
+    assert.equal(withRange.status, 201);
+    assert.equal(withRange.body.data.bedTempMaxC, 80);
+
+    const withoutRange = await request(app)
+      .post("/api/materials")
+      .set("Cookie", activeUserCookie)
+      .send({ name: "PLA Einzelwert Test", printTempMinC: 190, printTempMaxC: 220, bedTempC: 60 });
+    assert.equal(withoutRange.status, 201);
+    assert.equal(withoutRange.body.data.bedTempMaxC, null);
+  });
+
   it("lehnt doppelten Material-Namen ab (409 CONFLICT)", async () => {
     await request(app)
       .post("/api/materials")

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/prisma.js";
-import { createLoggedInUser, resetInventoryData, type TestUser } from "../helpers/fixtures.js";
+import { createCatalogEntries, createInventoryWithMembers, createLoggedInUser, resetInventoryData, type TestUser } from "../helpers/fixtures.js";
 
 describe("Zusatzfeld-Definitionen - Negativ-Tests", () => {
   const app = createApp();
@@ -54,5 +54,37 @@ describe("Zusatzfeld-Definitionen - Negativ-Tests", () => {
     assert.equal((await call("delete", `/api/custom-field-definitions/${id}`, user)).status, 403);
     assert.equal((await call("delete", `/api/custom-field-definitions/${id}`, admin)).status, 200);
     assert.equal(await prisma.customFieldDefinition.count({ where: { id } }), 0);
+  });
+
+  it("raeumt Werte des geloeschten Feldes aus bestehenden Spulen auf, laesst andere Felder unberuehrt", async () => {
+    const chargeField = await call("post", "/api/custom-field-definitions", admin, { name: "Charge-Aufraeumen", kind: "TEXT" });
+    const ratingField = await call("post", "/api/custom-field-definitions", admin, { name: "Bewertung-Aufraeumen", kind: "NUMBER" });
+    const chargeId = chargeField.body.data.id;
+    const ratingId = ratingField.body.data.id;
+
+    const inventory = await createInventoryWithMembers("Zusatzfeld-Aufraeum-Lager", [{ userId: admin.id, role: "EDITOR" }]);
+    const catalog = await createCatalogEntries();
+    const spool = await request(app)
+      .post("/api/spools")
+      .set("Cookie", admin.cookie)
+      .send({
+        materialId: catalog.materialId,
+        manufacturerId: catalog.manufacturerId,
+        inventoryId: inventory.id,
+        colorName: "Aufraeum-Test",
+        colorHex: null,
+        initialWeightG: 1000,
+        remainingWeightG: 1000,
+        purchasePriceCents: null,
+        purchasedAt: null,
+        location: null,
+        customFields: { [chargeId]: "Los-42", [ratingId]: 5 }
+      });
+    assert.equal(spool.status, 201);
+
+    assert.equal((await call("delete", `/api/custom-field-definitions/${chargeId}`, admin)).status, 200);
+
+    const after = await prisma.spool.findUnique({ where: { id: spool.body.data.id } });
+    assert.deepEqual(after?.customFields, { [ratingId]: 5 });
   });
 });

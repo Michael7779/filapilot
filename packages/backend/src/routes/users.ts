@@ -56,9 +56,10 @@ usersRouter.patch("/me/theme", requireAuth, requirePasswordAlreadyChanged, async
   }
 });
 
-// Threat-Model: Nutzer A koennte die Ansicht/Seitengroesse von Nutzer B aendern oder ungueltige Werte speichern. Serverseitig
-// erzwungen: Update immer auf req.user.id (nie eine Body-userId), Werte nur aus fester Liste (Zod). Negativ-Tests: anonym 401,
-// fremde userId im Body wird ignoriert, ungueltige Ansicht/Seitengroesse 400.
+// Threat-Model: Nutzer A koennte die Ansicht/Seitengroesse/den gesehenen Verlauf von Nutzer B aendern oder ungueltige
+// Werte speichern. Serverseitig erzwungen: Update immer auf req.user.id (nie eine Body-userId), Werte nur aus fester
+// Liste bzw. Laenge begrenzt (Zod). Negativ-Tests: anonym 401, fremde userId im Body wird ignoriert, ungueltige
+// Ansicht/Seitengroesse 400.
 // SCOPE: self
 usersRouter.patch(
   "/me/preferences",
@@ -69,7 +70,11 @@ usersRouter.patch(
     const current = getAuthenticatedUser(req);
     const updated = await prisma.user.update({
       where: { id: current.id },
-      data: omitUndefined({ spoolView: input.spoolView, spoolPageSize: input.spoolPageSize })
+      data: omitUndefined({
+        spoolView: input.spoolView,
+        spoolPageSize: input.spoolPageSize,
+        lastSeenChangelogVersion: input.lastSeenChangelogVersion
+      })
     });
     sendData(res, toPublicUser(updated));
   })

@@ -21,6 +21,13 @@ export const bambuAutoSyncMinutesSchema = z
   .int()
   .refine((value) => (BAMBU_AUTO_SYNC_OPTIONS as readonly number[]).includes(value), "Ungueltiges Intervall");
 
+// Wie lange eine Anmeldung gueltig bleibt (Tage), bevor sich der Nutzer neu anmelden muss.
+export const SESSION_EXPIRY_DAY_OPTIONS = [7, 14, 30, 60, 90] as const;
+export const sessionExpiryDaysSchema = z
+  .number()
+  .int()
+  .refine((value) => (SESSION_EXPIRY_DAY_OPTIONS as readonly number[]).includes(value), "Ungueltige Dauer");
+
 export const settingsSchema = z.object({
   photoUploadEnabled: z.boolean(),
   defaultPrinterSyncIntervalSeconds: z.number().int().min(10).max(3600),
@@ -30,6 +37,7 @@ export const settingsSchema = z.object({
   backupRetentionCount: z.number().int().min(1).max(365),
   auditRetentionMonths: z.number().int().min(0).max(120),
   bambuAutoSyncMinutes: bambuAutoSyncMinutesSchema,
+  sessionExpiryDays: sessionExpiryDaysSchema,
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt,
   // keine Pruef-/Gating-Logik ohne expliziten Auftrag bauen.
   licenseKey: z.string().nullable()
@@ -45,7 +53,8 @@ export const updateSettingsInputSchema = z
     backupEnabled: z.boolean(),
     backupRetentionCount: z.number().int().min(1).max(365),
     auditRetentionMonths: z.number().int().min(0).max(120),
-    bambuAutoSyncMinutes: bambuAutoSyncMinutesSchema
+    bambuAutoSyncMinutes: bambuAutoSyncMinutesSchema,
+    sessionExpiryDays: sessionExpiryDaysSchema
   })
   .partial();
 export type UpdateSettingsInput = z.infer<typeof updateSettingsInputSchema>;

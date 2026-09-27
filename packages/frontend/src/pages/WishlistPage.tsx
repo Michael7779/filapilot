@@ -117,7 +117,16 @@ export function WishlistPage(): React.JSX.Element {
     await load();
   }
 
+  async function clearDone(): Promise<void> {
+    if (!window.confirm(t("wishlist.confirmClearDone"))) {
+      return;
+    }
+    await apiRequest("/wishlist/done", { method: "DELETE" });
+    await load();
+  }
+
   const sorted = items ? [...items].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)) : [];
+  const doneCount = items ? items.filter((item) => item.status === "DONE").length : 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -207,6 +216,12 @@ export function WishlistPage(): React.JSX.Element {
       {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
       {!items && !error && <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>}
       {items && items.length === 0 && <p className="text-sm text-[var(--color-text-secondary)]">{t("wishlist.empty")}</p>}
+
+      {doneCount > 0 && (
+        <button type="button" onClick={() => void clearDone()} className="self-start text-sm font-medium" style={{ color: "var(--accent)" }}>
+          {t("wishlist.clearDone", { count: doneCount })}
+        </button>
+      )}
 
       {sorted.length > 0 && (
         <ul className="flex flex-col gap-2">

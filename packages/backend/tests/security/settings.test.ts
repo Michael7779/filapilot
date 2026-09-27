@@ -140,6 +140,26 @@ describe("Settings - Negativ-Tests", () => {
     assert.equal(denied.status, 403);
   });
 
+  it("validiert die Dauer der Anmeldung (nur feste Werte) und lehnt USER ab", async () => {
+    for (const bad of [-5, 1, 10, 45, 100, 30.5, "30"]) {
+      const res = await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ sessionExpiryDays: bad });
+      assert.equal(res.status, 400, String(bad));
+    }
+    const ok = await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ sessionExpiryDays: 14 });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.data.sessionExpiryDays, 14);
+    await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ sessionExpiryDays: 30 });
+
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "normaluser", password: "correct-horse-battery-staple" });
+    const denied = await request(app)
+      .patch("/api/settings")
+      .set("Cookie", login.headers["set-cookie"])
+      .send({ sessionExpiryDays: 14 });
+    assert.equal(denied.status, 403);
+  });
+
   it("lehnt den SMTP-Test ohne Login (401) und durch nicht-Admin (403) ab", async () => {
     assert.equal((await request(app).post("/api/settings/smtp-test")).status, 401);
     const login = await request(app)

@@ -55,4 +55,14 @@ describe("Eigene Einstellungen der Spulenliste - Negativ-Tests", () => {
     const reset = await patch(userA, { spoolView: null, spoolPageSize: null });
     assert.deepEqual([reset.body.data.spoolView, reset.body.data.spoolPageSize], [null, null]);
   });
+
+  it("merkt den gesehenen Aenderungsverlauf im eigenen Konto (nicht mehr nur im Browser), nur fuer sich selbst", async () => {
+    const res = await patch(userA, { lastSeenChangelogVersion: "1.2.3", userId: userB.id });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.lastSeenChangelogVersion, "1.2.3");
+    const other = await prisma.user.findUniqueOrThrow({ where: { id: userB.id } });
+    assert.equal(other.lastSeenChangelogVersion, null);
+    const me = await request(app).get("/api/users/me").set("Cookie", userA.cookie);
+    assert.equal(me.body.data.lastSeenChangelogVersion, "1.2.3");
+  });
 });

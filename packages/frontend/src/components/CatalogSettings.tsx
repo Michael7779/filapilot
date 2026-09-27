@@ -10,6 +10,15 @@ const LABEL_CLASS = "flex flex-col gap-1 text-sm font-medium text-[var(--color-t
 const ALL = "__all__";
 const GENERIC = "__generic__";
 
+// "60 °C" bei nur einem Wert, sonst "60–80 °C" als Bereich.
+function bedTempLabel(bedTempC: number | null, bedTempMaxC: number | null): string {
+  if (bedTempC === null) {
+    return "";
+  }
+  const range = bedTempMaxC !== null ? `${bedTempC}–${bedTempMaxC}` : String(bedTempC);
+  return ` · ${range} °C`;
+}
+
 function Card({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-5">
@@ -170,6 +179,7 @@ function MaterialModal({
   const [minC, setMinC] = useState(initial ? String(initial.printTempMinC) : "");
   const [maxC, setMaxC] = useState(initial ? String(initial.printTempMaxC) : "");
   const [bedC, setBedC] = useState(initial?.bedTempC != null ? String(initial.bedTempC) : "");
+  const [bedMaxC, setBedMaxC] = useState(initial?.bedTempMaxC != null ? String(initial.bedTempMaxC) : "");
   const [density, setDensity] = useState(initial?.densityGCm3 != null ? String(initial.densityGCm3) : "");
   const [diameter, setDiameter] = useState(String(initial?.filamentDiameterMm ?? 1.75));
   const [error, setError] = useState<string | null>(null);
@@ -190,6 +200,7 @@ function MaterialModal({
           printTempMinC: Number(minC),
           printTempMaxC: Number(maxC),
           bedTempC: bedC ? Number(bedC) : null,
+          bedTempMaxC: bedMaxC ? Number(bedMaxC) : null,
           densityGCm3: density ? Number(density) : null,
           filamentDiameterMm: Number(diameter) || 1.75
         })
@@ -236,6 +247,10 @@ function MaterialModal({
         <label className={`min-w-0 flex-1 ${LABEL_CLASS}`}>
           {t("catalog.bed")}
           <input type="number" value={bedC} onChange={(e) => setBedC(e.target.value)} className={INPUT_CLASS} />
+        </label>
+        <label className={`min-w-0 flex-1 ${LABEL_CLASS}`}>
+          {t("catalog.bedMax")}
+          <input type="number" value={bedMaxC} onChange={(e) => setBedMaxC(e.target.value)} className={INPUT_CLASS} />
         </label>
       </div>
       <div className="flex gap-2">
@@ -378,7 +393,8 @@ export function CatalogSection(): React.JSX.Element {
                 <td className="py-2">{m.name}</td>
                 <td className="py-2 text-[var(--color-text-secondary)]">{nameOfManufacturer(m.manufacturerId)}</td>
                 <td className="py-2 text-[var(--color-text-secondary)]">
-                  {m.printTempMinC}–{m.printTempMaxC} °C{m.bedTempC !== null ? ` · ${m.bedTempC} °C` : ""}
+                  {m.printTempMinC}–{m.printTempMaxC} °C
+                  {bedTempLabel(m.bedTempC, m.bedTempMaxC)}
                   {m.densityGCm3 !== null ? ` · ${m.densityGCm3} g/cm³` : ""}
                   {m.filamentDiameterMm !== 1.75 ? ` · ${m.filamentDiameterMm} mm` : ""}
                 </td>

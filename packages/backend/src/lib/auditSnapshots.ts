@@ -24,6 +24,7 @@ export function spoolSnapshot(
     colorHex2: spool.colorHex2,
     initialWeightG: spool.initialWeightG,
     remainingWeightG: spool.remainingWeightG,
+    tareWeightG: spool.tareWeightG,
     location: spool.location,
     note: spool.note,
     purchasePriceCents: spool.purchasePriceCents
@@ -43,6 +44,7 @@ export function materialSnapshot(material: PrismaMaterial, manufacturerName: str
     printTempMinC: material.printTempMinC,
     printTempMaxC: material.printTempMaxC,
     bedTempC: material.bedTempC,
+    bedTempMaxC: material.bedTempMaxC,
     densityGCm3: material.densityGCm3,
     filamentDiameterMm: material.filamentDiameterMm
   };
@@ -74,6 +76,7 @@ export function settingsSnapshot(settings: Settings): Snapshot {
     backupRetentionCount: settings.backupRetentionCount,
     auditRetentionMonths: settings.auditRetentionMonths,
     bambuAutoSyncMinutes: settings.bambuAutoSyncMinutes,
+    sessionExpiryDays: settings.sessionExpiryDays,
     backupFolderPath: settings.backupFolderPath,
     smtpHost: settings.smtp?.host ?? null,
     smtpPort: settings.smtp?.port ?? null,

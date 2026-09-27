@@ -8,8 +8,8 @@ vom Admin unter Einstellungen -> Filamente -> Zusatzfelder verwaltet. Die Werte 
 Definitionen geprueft (Whitelist der Schluessel, Typ passend zur Definition) - siehe `shared/src/customFields.ts`.
 
 ## 1.1 Offene Punkte
-- OP-C1: Loescht der Admin eine Definition, bleiben bereits gespeicherte Werte in `Spool.customFields` bestehen
-  (nicht mehr sichtbar, da die Oberflaeche nur bekannte Definitionen zeigt) - keine automatische Bereinigung.
+- OP-C1 ✅ (0.21.2): Loescht der Admin eine Definition, wird ihr Schluessel jetzt aus `customFields` aller Spulen
+  entfernt (eine SQL-Anweisung mit dem Postgres-jsonb-Operator `-`, kein N+1), statt unsichtbar liegen zu bleiben.
 - OP-C2: Kein Pflichtfeld-Merkmal (jedes Zusatzfeld ist optional).
 
 ## 1.2 Anforderungen
@@ -19,6 +19,8 @@ Definitionen geprueft (Whitelist der Schluessel, Typ passend zur Definition) - s
   und nur mit zum Typ passendem Wert (z.B. Zahl bei NUMBER, sonst 400); ein leerer Wert setzt das Feld zurueck (null).
 - **R3**: Beim Aendern einer Spule ersetzt ein mitgeschicktes `customFields`-Objekt alle Werte vollstaendig; wird es
   weggelassen, bleiben die vorhandenen Werte unveraendert.
+- **R4**: Ab 0.21.2: Loeschen einer Definition raeumt ihre Werte aus allen Spulen auf, in derselben Transaktion wie
+  das Loeschen selbst. Test: `tests/security/customFieldDefinitions.test.ts`
 
 Tests: `packages/backend/tests/unit/customFields.test.ts` (reine Validierung), `packages/backend/tests/security/customFieldDefinitions.test.ts`,
 `packages/backend/tests/security/spoolExtras.test.ts`. Oberflaeche manuell im Browser geprueft.

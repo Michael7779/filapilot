@@ -24,6 +24,8 @@
     "saveFailed": "Speichern fehlgeschlagen.",
     "titleRequired": "Bitte einen Titel eingeben.",
     "confirmDelete": "„{{title}}“ wirklich von der Wunschliste entfernen?",
+    "clearDone": "{{count}} erledigte entfernen",
+    "confirmClearDone": "Alle erledigten Einträge wirklich entfernen?",
     "addedBy": "Hinzugefügt von {{name}} am {{date}}",
     "updatedBy": "zuletzt geändert von {{name}}",
     "status": { "OPEN": "Offen", "ORDERED": "Bestellt", "DONE": "Erledigt" }
@@ -198,6 +200,8 @@
       "note": "Notiz",
       "temperatureC": "Temperatur (°C)",
       "durationMinutes": "Trockendauer (Min.)",
+      "tareWeightG": "Leergewicht (g)",
+      "bedTempMaxC": "Bett max. (°C)",
       "purchasePriceCents": "Kaufpreis",
       "name": "Name",
       "printTempMinC": "Düse min. (°C)",
@@ -294,6 +298,16 @@
     "syncBlocked": "Ungewöhnlich viele Spulen fehlten in der Cloud, deshalb wurde nichts archiviert. Bitte prüfen.",
     "failed": "Der Import ist fehlgeschlagen."
   },
+  "spoolman": {
+    "open": "Aus Spoolman importieren",
+    "title": "Aus Spoolman in „{{name}}“ importieren",
+    "intro": "Lade den Export deiner Spoolman-Instanz als JSON-Datei hoch. Alle darin enthaltenen Spulen werden übernommen, bereits importierte anhand ihrer Spoolman-ID erkannt und aktualisiert.",
+    "hint": "Keine Anmeldung nötig - Spoolman ist selbst gehostet, es reicht die Datei.",
+    "chooseFile": "Datei auswählen",
+    "fileInvalid": "Die Datei enthält keine Spoolman-Spulenliste im erwarteten Format.",
+    "importFailed": "Der Import ist fehlgeschlagen.",
+    "result": "{{created}} neu angelegt, {{updated}} aktualisiert, {{skipped}} übersprungen."
+  },
   "inventory": {
     "all": "Alle Lager",
     "current": "Dein Lager",
@@ -369,8 +383,10 @@
     "selectManufacturerFirst": "Zuerst Hersteller wählen",
     "tempHint": "Düse {{min}}–{{max}} °C",
     "bedTempHint": "Bett {{bed}} °C",
+    "bedTempRangeHint": "Bett {{min}}–{{max}} °C",
     "initialWeight": "Ursprungsgewicht (g)",
     "remainingWeight": "Restgewicht (g)",
+    "tareWeight": "Leergewicht der Spule (g, optional)",
     "location": "Lagerort (optional)",
     "purchasePrice": "Kaufpreis in Euro (optional)",
     "note": "Notiz (optional)",
@@ -396,6 +412,16 @@
       "save": "Protokollieren",
       "saveFailed": "Konnte nicht protokolliert werden.",
       "logged": "Trocknung protokolliert."
+    },
+    "weigh": {
+      "action": "Wiegen",
+      "title": "Wiegen: {{name}}",
+      "hint": "Leergewicht dieser Spule: {{tare}} g. Trage das auf der Waage abgelesene Gesamtgewicht ein.",
+      "measured": "Gewicht auf der Waage (g)",
+      "missingTare": "Für diese Spule ist noch kein Leergewicht hinterlegt. Trage es im Bearbeiten-Formular ein, dann kannst du hier wiegen.",
+      "save": "Übernehmen",
+      "saveFailed": "Konnte nicht übernommen werden.",
+      "logged": "Gewicht übernommen."
     },
     "confirmDelete": "Diese Spule wirklich löschen? Ihr Verbrauch verschwindet dann aus der Statistik. Wenn sie nur leer ist, archiviere sie besser.",
     "sort": { "added": "Zuletzt hinzugefügt", "manufacturer": "Hersteller", "name": "Material und Farbe", "price": "Kaufpreis", "remaining": "Restgewicht" },
@@ -466,6 +492,9 @@
     "backupRetentionHint": "Nach jeder regulären Sicherung werden ältere gelöscht, sodass nur die neuesten übrig bleiben.",
     "bambuAutoSync": "Automatischer Abgleich mit der Bambu-Cloud",
     "bambuAutoSyncHint": "Gilt für alle Lager mit gemerkter Bambu-Verbindung. Aus Rücksicht auf die Bambu-Cloud sind mindestens 60 Minuten möglich.",
+    "sessionExpiry": "Anmeldung gültig für",
+    "sessionExpiryDays": "{{count}} Tage",
+    "sessionExpiryHint": "Danach müssen sich Nutzer neu anmelden. Gilt für neue Anmeldungen, bestehende bleiben bis zu ihrem bisherigen Ablauf gültig.",
     "bambuAutoSyncOff": "Aus",
     "bambuAutoSyncEvery": "Alle {{hours}} Std.",
     "auditRetention": "Protokoll aufbewahren (Monate)",
@@ -529,6 +558,7 @@
     "nozzleMin": "Düse min. (°C)",
     "nozzleMax": "Düse max. (°C)",
     "bed": "Bett (°C)",
+    "bedMax": "Bett max. (°C, optional)",
     "density": "Dichte in g/cm³ (optional)",
     "diameter": "Filament-Durchmesser",
     "customFields": {

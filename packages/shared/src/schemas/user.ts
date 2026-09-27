@@ -27,6 +27,8 @@ export const userPublicSchema = z.object({
   themeAccentColor: hexColorSchema.nullable(),
   spoolView: spoolViewSchema.nullable(),
   spoolPageSize: spoolPageSizeSchema.nullable(),
+  // Neueste Version des Aenderungsverlaufs, die dieser Nutzer schon gesehen hat (pro Konto, nicht pro Browser).
+  lastSeenChangelogVersion: z.string().nullable(),
   lastLoginAt: z.coerce.date().nullable(),
   lastActiveAt: z.coerce.date().nullable(),
   createdAt: z.coerce.date()
@@ -93,7 +95,8 @@ export type UpdateOwnThemeInput = z.infer<typeof updateOwnThemeInputSchema>;
 export const updateOwnPreferencesInputSchema = z
   .object({
     spoolView: spoolViewSchema.nullable(),
-    spoolPageSize: spoolPageSizeSchema.nullable()
+    spoolPageSize: spoolPageSizeSchema.nullable(),
+    lastSeenChangelogVersion: z.string().max(30).nullable()
   })
   .partial();
 export type UpdateOwnPreferencesInput = z.infer<typeof updateOwnPreferencesInputSchema>;

@@ -24,6 +24,8 @@
     "saveFailed": "Couldn't save.",
     "titleRequired": "Please enter a title.",
     "confirmDelete": "Really remove \"{{title}}\" from the wishlist?",
+    "clearDone": "Remove {{count}} done",
+    "confirmClearDone": "Really remove all done entries?",
     "addedBy": "Added by {{name}} on {{date}}",
     "updatedBy": "last changed by {{name}}",
     "status": { "OPEN": "Open", "ORDERED": "Ordered", "DONE": "Done" }
@@ -198,6 +200,8 @@
       "note": "Note",
       "temperatureC": "Temperature (°C)",
       "durationMinutes": "Drying time (min)",
+      "tareWeightG": "Empty weight (g)",
+      "bedTempMaxC": "Bed max. (°C)",
       "purchasePriceCents": "Purchase price",
       "name": "Name",
       "printTempMinC": "Nozzle min (°C)",
@@ -294,6 +298,16 @@
     "syncBlocked": "An unusual number of spools were missing in the cloud, so nothing was archived. Please check.",
     "failed": "The import failed."
   },
+  "spoolman": {
+    "open": "Import from Spoolman",
+    "title": "Import from Spoolman into \"{{name}}\"",
+    "intro": "Upload your Spoolman instance's export as a JSON file. Every spool in it is imported; ones already imported are recognized by their Spoolman ID and updated instead.",
+    "hint": "No login needed - Spoolman is self-hosted, the file is enough.",
+    "chooseFile": "Choose file",
+    "fileInvalid": "The file doesn't contain a Spoolman spool list in the expected format.",
+    "importFailed": "The import failed.",
+    "result": "{{created}} created, {{updated}} updated, {{skipped}} skipped."
+  },
   "inventory": {
     "all": "All inventories",
     "current": "Your inventory",
@@ -369,8 +383,10 @@
     "selectManufacturerFirst": "Select a manufacturer first",
     "tempHint": "Nozzle {{min}}–{{max}} °C",
     "bedTempHint": "Bed {{bed}} °C",
+    "bedTempRangeHint": "Bed {{min}}–{{max}} °C",
     "initialWeight": "Initial weight (g)",
     "remainingWeight": "Remaining weight (g)",
+    "tareWeight": "Empty spool weight (g, optional)",
     "location": "Location (optional)",
     "purchasePrice": "Purchase price in euros (optional)",
     "note": "Note (optional)",
@@ -396,6 +412,16 @@
       "save": "Log",
       "saveFailed": "Couldn't log the drying session.",
       "logged": "Drying session logged."
+    },
+    "weigh": {
+      "action": "Weigh",
+      "title": "Weigh: {{name}}",
+      "hint": "Empty weight of this spool: {{tare}} g. Enter the total weight shown on the scale.",
+      "measured": "Weight on the scale (g)",
+      "missingTare": "This spool has no empty weight on file yet. Add it in the edit form, then you can weigh it here.",
+      "save": "Apply",
+      "saveFailed": "Couldn't apply the weight.",
+      "logged": "Weight applied."
     },
     "confirmDelete": "Really delete this spool? Its consumption will disappear from the statistics. If it's just empty, archive it instead.",
     "sort": { "added": "Recently added", "manufacturer": "Manufacturer", "name": "Material and color", "price": "Purchase price", "remaining": "Remaining weight" },
@@ -466,6 +492,9 @@
     "backupRetentionHint": "After each regular backup, older ones are deleted so that only the newest remain.",
     "bambuAutoSync": "Automatic sync with Bambu Cloud",
     "bambuAutoSyncHint": "Applies to all inventories with a remembered Bambu connection. To be gentle on the Bambu Cloud, the minimum is 60 minutes.",
+    "sessionExpiry": "Sign-in valid for",
+    "sessionExpiryDays": "{{count}} days",
+    "sessionExpiryHint": "After that, users must sign in again. Applies to new sign-ins; existing ones stay valid until their previous expiry.",
     "bambuAutoSyncOff": "Off",
     "bambuAutoSyncEvery": "Every {{hours}} h",
     "auditRetention": "Keep change log (months)",
@@ -529,6 +558,7 @@
     "nozzleMin": "Nozzle min (°C)",
     "nozzleMax": "Nozzle max (°C)",
     "bed": "Bed (°C)",
+    "bedMax": "Bed max. (°C, optional)",
     "density": "Density in g/cm³ (optional)",
     "diameter": "Filament diameter",
     "customFields": {

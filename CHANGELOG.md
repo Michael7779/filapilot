@@ -8,6 +8,21 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.21.2] - 2026-09-27
+
+### Hinzugefuegt
+- Leergewicht und Wiegen: Bei jeder Spule lässt sich das Leergewicht der leeren Spule hinterlegen. Die neue Aktion "Wiegen" fragt danach nur noch das auf der Waage abgelesene Gesamtgewicht ab und errechnet das Restgewicht selbst.
+- Import aus Spoolman: Neue Aktion "Aus Spoolman importieren" auf der Spulen-Seite – lädt den Export der eigenen Spoolman-Instanz als Datei, legt fehlende Hersteller/Materialien an und erkennt bereits importierte Spulen wieder.
+- Der mitgelieferte Hersteller-/Material-Katalog wurde deutlich erweitert (10 neue Hersteller, rund 20 weitere Materialien).
+- Material kann jetzt statt einer einzelnen Betttemperatur auch einen Bereich hinterlegen (z.B. "60–80 °C").
+- Wunschliste: Neuer Knopf "Erledigte entfernen" räumt alle erledigten Einträge auf einmal auf.
+- Einstellungen → Allgemein: Die Dauer, für die eine Anmeldung gültig bleibt, ist jetzt einstellbar (7–90 Tage, Standard weiterhin 30).
+
+### Behoben
+- Welche Version des Änderungsverlaufs man schon gesehen hat, wird jetzt im eigenen Konto gemerkt statt nur im Browser – der Hinweis-Knopf blinkt also nicht mehr auf jedem neuen Gerät erneut.
+- Löscht ein Admin ein Zusatzfeld, werden vorhandene Werte dieses Feldes jetzt aus allen Spulen entfernt, statt unsichtbar gespeichert zu bleiben.
+- Löschen einer Spule, die noch einem Drucker-AMS-Fach zugeordnet ist, schlug fehl. Das Fach wird jetzt automatisch leer, statt das Löschen zu verhindern.
+
 ## [0.21.1] - 2026-09-27
 
 ### Behoben

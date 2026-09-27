@@ -1,39 +1,32 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChangelogModal } from "./ChangelogModal.js";
+import { apiRequest } from "../lib/api.js";
+import { useAuthStore } from "../stores/useAuthStore.js";
 
-const SEEN_KEY = "fp_changelog_seen";
-
-function readSeenVersion(): string | null {
-  try {
-    return localStorage.getItem(SEEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function rememberSeenVersion(version: string): void {
-  try {
-    localStorage.setItem(SEEN_KEY, version);
-  } catch {
-    // Speicher blockiert (z.B. privates Fenster): dann blinkt es beim naechsten Laden eben wieder.
-  }
-}
-
-// "i"-Knopf in der Kopfzeile. Blinkt rot, solange die neueste Version im Aenderungsverlauf noch nicht angesehen wurde.
+// "i"-Knopf in der Kopfzeile. Blinkt rot, solange die neueste Version im Aenderungsverlauf noch nicht angesehen
+// wurde. Gemerkt wird das im Konto (nicht mehr im Browser) - so blinkt es nicht bei jedem neuen Geraet erneut.
 export function ChangelogButton(): React.JSX.Element {
   const { t } = useTranslation();
   const latestVersion = __CHANGELOG__[0]?.version ?? null;
+  const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const [open, setOpen] = useState(false);
-  const [seenVersion, setSeenVersion] = useState<string | null>(readSeenVersion);
-  const hasNews = latestVersion !== null && seenVersion !== latestVersion;
+  const hasNews = latestVersion !== null && user?.lastSeenChangelogVersion !== latestVersion;
 
-  useEffect(() => {
-    if (open && latestVersion) {
-      rememberSeenVersion(latestVersion);
-      setSeenVersion(latestVersion);
+  function handleOpen(): void {
+    setOpen(true);
+    if (!latestVersion || !user || user.lastSeenChangelogVersion === latestVersion) {
+      return;
     }
-  }, [open, latestVersion]);
+    setUser({ ...user, lastSeenChangelogVersion: latestVersion });
+    apiRequest("/users/me/preferences", {
+      method: "PATCH",
+      body: JSON.stringify({ lastSeenChangelogVersion: latestVersion })
+    }).catch(() => {
+      // Speichern im Konto fehlgeschlagen: fuer diese Sitzung gilt es trotzdem als gesehen.
+    });
+  }
 
   if (latestVersion === null) {
     return <></>;
@@ -43,7 +36,7 @@ export function ChangelogButton(): React.JSX.Element {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={handleOpen}
         aria-label={hasNews ? t("changelog.openNew") : t("changelog.open")}
         title={hasNews ? t("changelog.openNew") : t("changelog.open")}
         className={`flex h-8 w-8 items-center justify-center rounded-full border ${

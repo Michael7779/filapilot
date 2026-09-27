@@ -4,18 +4,17 @@
 - `Manufacturer` (nur Name, eindeutig) als eigene Tabelle - Spulen referenzieren `manufacturerId`
   statt eines freien Textfelds, analog zu `Material` (siehe `materials.md`).
   Quelle: `packages/backend/prisma/schema.prisma`, `packages/backend/src/routes/manufacturers.ts`
-- Liste wird automatisch mit den bekanntesten FDM-Filament-Herstellern vorbefuellt, sobald sie
-  zum ersten Mal abgefragt wird und noch leer ist (kein manuelles Seed-Kommando noetig):
-  Bambu Lab, Polymaker, eSun, Prusament, Sunlu, Overture, Devil Design, Fillamentum, ColorFabb,
-  Extrudr, Hatchbox, 3DJake.
+- Liste wird automatisch mit bekannten FDM-Filament-Herstellern vorbefuellt, sobald sie zum ersten
+  Mal abgefragt wird und noch leer ist (kein manuelles Seed-Kommando noetig) - Stand 0.21.2 22
+  Hersteller (`services/catalogData.ts`, `CATALOG_VERSION`); eine neue Version traegt beim naechsten
+  Zugriff nur fehlende Eintraege nach, bestehende und geloeschte bleiben unberuehrt.
 - Jeder eingeloggte Nutzer darf lesen und anlegen (geteilter Bestand, wie bei Material).
 - Frontend: Im Spulen-Formular ein Dropdown statt Freitext, mit "+ Neuer Hersteller"-Kurzweg
   (`packages/frontend/src/components/SpoolFormModal.tsx`).
 
 ## 1.1 Offene Punkte
-- OP-MF1: Keine dedizierte Einstellungen-Seite zum Verwalten (Umbenennen/Loeschen) der Hersteller-
-  und Material-Listen - aktuell nur Lesen + Anlegen ueber die API, wie bei Material (siehe
-  `materials.md` OP-M1). Eigene Runde, sobald die Einstellungen-Seite gebaut wird.
+- OP-MF1 ✅: Umbenennen/Loeschen gibt es seit `components/CatalogSettings.tsx` (Einstellungen ->
+  Stammdaten) - siehe R4 unten, das war hier nur nicht mehr aktualisiert.
 
 ## 1.2 Anforderungen
 - **R1**: Nur eingeloggte Nutzer koennen Hersteller lesen. Test: `tests/security/manufacturers.test.ts`

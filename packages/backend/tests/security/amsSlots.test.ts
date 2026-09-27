@@ -101,4 +101,16 @@ describe("AMS-Slot-Zuordnung - Negativ-Tests", () => {
     assert.equal((await put(editor, 254, spoolId)).status, 200);
     await put(editor, 254, null);
   });
+
+  it("loescht eine zugeordnete Spule, ohne dass das Loeschen scheitert - das Fach wird stattdessen leer (kein 500)", async () => {
+    const toDelete = (await createSpoolIn(lagerId, "Wird geloescht")).id;
+    assert.equal((await put(editor, 1, toDelete)).status, 200);
+
+    const deleted = await request(app).delete(`/api/spools/${toDelete}`).set("Cookie", editor.cookie);
+    assert.equal(deleted.status, 200);
+
+    const assignment = await prisma.amsSlotAssignment.findUnique({ where: { printerId_slotIndex: { printerId, slotIndex: 1 } } });
+    assert.ok(assignment);
+    assert.equal(assignment.spoolId, null);
+  });
 });

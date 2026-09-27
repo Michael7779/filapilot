@@ -12,6 +12,7 @@ export interface SpoolHandlers {
   onHistory: (spool: SpoolWithRelations) => void;
   onAddToWishlist: (spool: SpoolWithRelations) => void;
   onDrying: (spool: SpoolWithRelations) => void;
+  onWeigh: (spool: SpoolWithRelations) => void;
 }
 
 interface SpoolActionsProps extends SpoolHandlers {
@@ -28,7 +29,7 @@ interface ActionItem {
 const MENU_WIDTH = 180;
 
 // Aktionen einer Spule (Drei-Punkte-Menue); Betrachter sehen nur das QR-Label.
-export function SpoolActions({ spool, canEdit, onEdit, onArchive, onLabel, onDelete, onHistory, onAddToWishlist, onDrying }: SpoolActionsProps): React.JSX.Element {
+export function SpoolActions({ spool, canEdit, onEdit, onArchive, onLabel, onDelete, onHistory, onAddToWishlist, onDrying, onWeigh }: SpoolActionsProps): React.JSX.Element {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -93,6 +94,7 @@ export function SpoolActions({ spool, canEdit, onEdit, onArchive, onLabel, onDel
   items.push({ key: "label", label: t("spools.qrLabel"), run: () => onLabel(spool) });
   items.push({ key: "history", label: t("spools.history.action"), run: () => onHistory(spool) });
   items.push({ key: "drying", label: t("spools.drying.action"), run: () => onDrying(spool) });
+  items.push({ key: "weigh", label: t("spools.weigh.action"), run: () => onWeigh(spool) });
   items.push({ key: "wishlist", label: t("spools.addToWishlist"), run: () => onAddToWishlist(spool) });
   if (canEdit) {
     items.push({ key: "delete", label: t("common.delete"), danger: true, run: () => onDelete(spool) });

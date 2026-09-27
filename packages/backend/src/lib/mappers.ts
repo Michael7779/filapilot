@@ -45,6 +45,7 @@ export function toPublicUser(user: User): UserPublic {
     themeAccentColor: user.themeAccentColor,
     spoolView: spoolViewSchema.nullable().catch(null).parse(user.spoolView),
     spoolPageSize: spoolPageSizeSchema.nullable().catch(null).parse(user.spoolPageSize),
+    lastSeenChangelogVersion: user.lastSeenChangelogVersion,
     lastLoginAt: user.lastLoginAt,
     lastActiveAt: user.lastActiveAt,
     createdAt: user.createdAt
@@ -58,6 +59,7 @@ export function toPublicMaterial(material: PrismaMaterial): Material {
     printTempMinC: material.printTempMinC,
     printTempMaxC: material.printTempMaxC,
     bedTempC: material.bedTempC,
+    bedTempMaxC: material.bedTempMaxC,
     densityGCm3: material.densityGCm3,
     filamentDiameterMm: material.filamentDiameterMm,
     manufacturerId: material.manufacturerId
@@ -82,6 +84,7 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
     colorHex2: spool.colorHex2,
     initialWeightG: spool.initialWeightG,
     remainingWeightG: spool.remainingWeightG,
+    tareWeightG: spool.tareWeightG,
     photoUrl: spool.photoUrl,
     purchasePriceCents: spool.purchasePriceCents,
     purchasedAt: spool.purchasedAt,

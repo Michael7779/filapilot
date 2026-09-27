@@ -3,7 +3,7 @@
 // keine garantierten Werte - im Zweifel gilt das Datenblatt auf der Spule. Admins koennen alles unter
 // Einstellungen -> Stammdaten aendern. Bei jeder inhaltlichen Aenderung CATALOG_VERSION erhoehen, dann
 // werden fehlende Eintraege beim naechsten Zugriff nachgetragen (bestehende und geloeschte bleiben unberuehrt).
-export const CATALOG_VERSION = 2;
+export const CATALOG_VERSION = 3;
 
 export interface CatalogMaterial {
   manufacturer: string | null;
@@ -34,6 +34,7 @@ const DENSITY_BY_KEYWORD: [string, number][] = [
   ["PC Blend", 1.19],
   ["PC", 1.2],
   ["TPU", 1.21],
+  ["Filaflex", 1.21],
   ["PVA", 1.23],
   ["XT", 1.27]
 ];
@@ -45,17 +46,27 @@ function densityFor(name: string): number | null {
 
 export const CATALOG_MANUFACTURERS = [
   "3DJake",
+  "Anycubic",
   "Bambu Lab",
   "ColorFabb",
+  "Creality",
   "Devil Design",
+  "Elegoo",
   "eSun",
   "Extrudr",
+  "Fiberlogy",
   "Fillamentum",
+  "Formfutura",
+  "Geeetech",
   "Hatchbox",
+  "Kingroon",
   "Overture",
   "Polymaker",
   "Prusament",
-  "Sunlu"
+  "R3D",
+  "Recreus",
+  "Sunlu",
+  "Voxelab"
 ] as const;
 
 const m = (
@@ -82,6 +93,11 @@ export const CATALOG_MATERIALS: CatalogMaterial[] = [
   m(null, "PLA Silk", 200, 230, 60),
   m(null, "PVA", 190, 210, 55),
   m(null, "TPU", 210, 230, 50),
+  m(null, "PP", 220, 250, 100),
+  m(null, "PA6-CF", 260, 290, 90),
+  m(null, "PLA Wood", 190, 220, 55),
+  m(null, "PLA Glow", 190, 220, 55),
+  m(null, "PLA Metal", 195, 220, 60),
 
   m("Bambu Lab", "ABS", 240, 270, 90),
   m("Bambu Lab", "ASA", 240, 270, 90),
@@ -142,5 +158,45 @@ export const CATALOG_MATERIALS: CatalogMaterial[] = [
   m("Sunlu", "TPU", 210, 230, 50),
 
   m("3DJake", "PETG", 230, 250, 75),
-  m("3DJake", "PLA", 190, 220, 60)
+  m("3DJake", "PLA", 190, 220, 60),
+
+  m("Anycubic", "ABS", 230, 260, 100),
+  m("Anycubic", "PETG", 230, 250, 80),
+  m("Anycubic", "PLA", 190, 220, 60),
+  m("Anycubic", "TPU", 210, 230, 50),
+
+  m("Creality", "ABS", 230, 260, 100),
+  m("Creality", "CR-PETG", 230, 250, 80),
+  m("Creality", "CR-PLA", 190, 230, 55),
+  m("Creality", "Ender-PLA", 190, 220, 55),
+  m("Creality", "Hyper PLA", 220, 240, 55),
+
+  m("Elegoo", "ABS", 230, 260, 100),
+  m("Elegoo", "PETG", 230, 250, 80),
+  m("Elegoo", "PLA", 190, 220, 55),
+  m("Elegoo", "Rapid PLA+", 210, 230, 55),
+
+  m("Fiberlogy", "Easy PET-G", 230, 250, 80),
+  m("Fiberlogy", "Easy PLA", 195, 225, 60),
+  m("Fiberlogy", "Fiberflex 40D", 220, 240, 50),
+
+  m("Formfutura", "EasyFil ABS", 235, 260, 100),
+  m("Formfutura", "EasyFil PLA", 195, 220, 60),
+  m("Formfutura", "HDglass (PETG)", 230, 240, 80),
+
+  m("Geeetech", "ABS", 220, 250, 100),
+  m("Geeetech", "PETG", 220, 250, 75),
+  m("Geeetech", "PLA", 190, 220, 55),
+
+  m("Kingroon", "PETG", 220, 250, 75),
+  m("Kingroon", "PLA", 190, 220, 55),
+
+  m("R3D", "PETG", 225, 245, 80),
+  m("R3D", "PLA", 195, 220, 60),
+
+  m("Recreus", "Filaflex 82A", 210, 230, 50),
+  m("Recreus", "Filaflex 95A", 220, 240, 50),
+
+  m("Voxelab", "PETG", 220, 250, 75),
+  m("Voxelab", "PLA", 190, 220, 55)
 ];

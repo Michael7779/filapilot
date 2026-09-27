@@ -8,7 +8,7 @@
   Quelle: `packages/backend/prisma/schema.prisma`, `packages/backend/src/routes/materials.ts`
 - Name ist je Hersteller eindeutig (ohne Gross-/Kleinschreibung), geprueft im Code, weil ein
   DB-Unique mit `NULL` mehrere allgemeine Duplikate zulassen wuerde.
-- Mitgelieferte Vorlagen (ca. 70 Materialien fuer 12 Hersteller + allgemeine) in
+- Mitgelieferte Vorlagen (ca. 90 Materialien fuer 22 Hersteller + allgemeine, Stand 0.21.2) in
   `packages/backend/src/services/catalogData.ts`, eingespielt von `catalogService.ts` beim ersten
   Abruf der Listen. `Settings.catalogVersion` merkt sich den Stand; bei Version-Erhoehung werden nur
   *fehlende* Eintraege nachgetragen, geaenderte/geloeschte bleiben unberuehrt. Die Temperaturen sind
@@ -25,7 +25,7 @@
   Die Statistik-Seite zeigt zusaetzlich zur Auswertung nach Material-Name eine nach Typ.
 
 ## 1.1 Offene Punkte
-- OP-M2: Betttemperatur ist ein Einzelwert, kein Bereich.
+- OP-M2 ✅ (0.21.2): Betttemperatur kann jetzt ein Bereich sein, siehe R9.
 
 ## 1.2 Anforderungen
 - **R1**: Nur eingeloggte Nutzer koennen Materialien lesen. Test: `tests/security/materials.test.ts`
@@ -45,3 +45,6 @@
   mitgelieferten Materialien bekommen eine typische Dichte anhand ihres Namens (`catalogData.ts::densityFor`);
   bestehende Materialien ohne Dichte werden beim Update einmalig nachgetragen (nur wenn noch leer), Admin-Aenderungen
   bleiben unberuehrt. Test: `tests/security/materials.test.ts`, `tests/unit/spoolLength.test.ts`
+- **R9**: Ab 0.21.2 hat ein Material zusaetzlich zu `bedTempC` ein optionales `bedTempMaxC` (0-150 °C) fuer einen
+  Bett-Temperatur-Bereich (z.B. "60-80 °C"); weglassen (`null`) bedeutet weiterhin ein Einzelwert wie zuvor.
+  Test: `tests/security/materials.test.ts`

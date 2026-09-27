@@ -15,6 +15,9 @@ export const spoolSchema = z.object({
   colorHex2: hexColor.nullable(),
   initialWeightG: z.number().int().positive(),
   remainingWeightG: z.number().int().min(0),
+  // Leergewicht der Spule ohne Filament (g); mit diesem Wert kann "Wiegen" aus dem gemessenen Gesamtgewicht
+  // automatisch das Restgewicht errechnen, ohne dass man selbst subtrahieren muss.
+  tareWeightG: z.number().int().min(0).nullable(),
   // Vom Server verwaltet (Upload ueber PUT /api/spools/:id/photo), nie vom Client frei setzbar.
   photoUrl: z.string().nullable(),
   purchasePriceCents: z.number().int().min(0).nullable(),
@@ -43,13 +46,15 @@ export const createSpoolInputSchema = spoolSchema
     archiveReason: true,
     customFields: true,
     colorHex2: true,
-    note: true
+    note: true,
+    tareWeightG: true
   })
   .extend({
     inventoryId: z.string().uuid(),
     // Neuere, optionale Felder: weglassen ist gleichbedeutend mit "kein Wert" (Abwaertskompatibilitaet).
     colorHex2: hexColor.nullable().optional().default(null),
     note: z.string().trim().max(500).nullable().optional().default(null),
+    tareWeightG: z.number().int().min(0).nullable().optional().default(null),
     customFields: rawCustomFieldValuesSchema.optional().default({})
   });
 export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;

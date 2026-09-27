@@ -17,11 +17,10 @@
   Druckauftrag), aber ist sofort nutzbar ohne die AMS-Fach-Zuordnung erst zu bauen.
 
 ## 1.1 Offene Punkte
-- OP-ST1: Kein zeitlicher Verlauf (z.B. Verbrauch pro Monat) - dafuer muesste entweder `PrintJob`
-  gebaut werden oder Spulen-Aenderungen historisiert werden (aktuell wird nur der aktuelle
-  Restgewicht-Wert gespeichert, keine Historie).
-- OP-ST2: Sobald `PrintJob` existiert, sollte die Statistik-Seite um Kennzahlen pro Drucker
-  (Auslastung, Druckzeit) erweitert werden.
+- OP-ST1 ✅ (0.14.5): Zeitlicher Verlauf gibt es seit "2.0 Verbrauch ueber die Zeit" unten
+  (`SpoolWeightLog`-basiert, nach Tag/Woche/Monat/Jahr).
+- OP-ST2: `PrintJob` existiert seit 0.17.0 (siehe `printers.md`) - die Statistik-Seite koennte jetzt um
+  Kennzahlen pro Drucker (Auslastung, Druckzeit, Anzahl Auftraege) erweitert werden. Noch nicht gebaut.
 
 ## 1.2 Anforderungen
 - **R1**: Jeder eingeloggte Nutzer sieht eine Uebersicht aus Spulen-Gesamtzahl, verbrauchtem

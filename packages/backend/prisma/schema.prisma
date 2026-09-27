@@ -23,6 +23,8 @@ enum WeightLogSource {
   MANUAL
   CLOUD_IMPORT
   CLOUD_SYNC
+  WEIGHED
+  SPOOLMAN_IMPORT
 }
 
 enum InventoryRole {
@@ -64,6 +66,8 @@ model User {
   lastActiveAt        DateTime?
   resetToken          String?   @unique
   resetTokenExpiresAt DateTime?
+  // Neueste Version des Aenderungsverlaufs, die dieser Nutzer schon gesehen hat (pro Konto, nicht pro Browser).
+  lastSeenChangelogVersion String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   sessions            Session[]
@@ -223,6 +227,8 @@ model Material {
   printTempMinC  Int
   printTempMaxC  Int
   bedTempC       Int?
+  // Oberes Ende eines Bett-Temperatur-Bereichs; null = weiterhin ein Einzelwert (bedTempC), wie zuvor.
+  bedTempMaxC    Int?
   // Fuer die ungefaehre Restlaengen-Anzeige der Spule (g/cm3); optional, typische Herstellerangabe.
   densityGCm3    Float?
   // Durchmesser des Filaments in mm (fast immer 1,75, selten 2,85) - fuer die Restlaengen-Naeherung der Spule.
@@ -256,6 +262,8 @@ model Spool {
   colorHex2           String?
   initialWeightG      Int
   remainingWeightG    Int
+  // Leergewicht der Spule ohne Filament (g); optional, ermoeglicht "Wiegen": Restgewicht = gemessenes Gewicht - Tara.
+  tareWeightG         Int?
   photoUrl            String?
   // Freie Notiz (z.B. Charge, Eindruck beim Drucken).
   note                String?
@@ -273,6 +281,9 @@ model Spool {
   // gefuellten Tabelle eine Freigabe (--accept-data-loss), und das Update-Skript bricht dann ab. Die Eindeutigkeit stellt der
   // Import im Code sicher (Pruefung innerhalb der Transaktion).
   bambuCloudId        String?
+  // Spulen-ID aus Spoolman beim Import (erkennt schon importierte Spulen je Lager, wie bambuCloudId). Bewusst
+  // KEINE Datenbank-Eindeutigkeit, aus demselben Grund wie bei bambuCloudId (siehe dort).
+  spoolmanId          String?
   // Archivierte Spulen zaehlen im Verbrauch weiter mit, nicht mehr im Restbestand.
   archivedAt          DateTime?
   archiveReason       SpoolArchiveReason?
@@ -286,6 +297,7 @@ model Spool {
   @@index([manufacturerId])
   @@index([inventoryId])
   @@index([inventoryId, bambuCloudId])
+  @@index([inventoryId, spoolmanId])
   @@index([inventoryId, archivedAt])
   @@map("spools")
 }
@@ -332,7 +344,8 @@ model AmsSlotAssignment {
   printer   Printer   @relation(fields: [printerId], references: [id], onDelete: Cascade)
   slotIndex Int
   spoolId   String?
-  spool     Spool?    @relation(fields: [spoolId], references: [id])
+  // Loeschen der zugeordneten Spule leert das Fach (SetNull), statt das Loeschen der Spule zu verhindern.
+  spool     Spool?    @relation(fields: [spoolId], references: [id], onDelete: SetNull)
   // Kalibrierung beim Zuordnen: Restgewicht/AMS-Fuellstand zu diesem Zeitpunkt, Basis der Verbrauchsberechnung
   assignedAt          DateTime?
   baselineRemainingG  Int?
@@ -381,6 +394,8 @@ model Settings {
   bambuAutoSyncMinutes               Int      @default(0)
   // Stand der mitgelieferten Hersteller-/Material-Vorlagen, die zuletzt eingespielt wurden.
   catalogVersion                     Int      @default(0)
+  // Wie lange eine Anmeldung gueltig bleibt, bevor sie sich neu anmelden muessen.
+  sessionExpiryDays                  Int      @default(30)
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt.
   licenseKey                         String?
   updatedAt                          DateTime @updatedAt

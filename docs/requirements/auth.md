@@ -13,7 +13,8 @@
 - Pro Konto anpassbare Akzentfarbe (`themeAccentColor`, `PATCH /api/users/me/theme`)
 
 ## 1.1 Offene Punkte
-- OP-A2: Sitzungs-Ablauf (30 Tage) ist hart codiert - soll das konfigurierbar sein?
+- OP-A2 ✅ (0.21.2): Sitzungs-Ablauf ist jetzt konfigurierbar (`Settings.sessionExpiryDays`, 7/14/30/60/90 Tage,
+  Standard weiterhin 30), siehe R7. Aendert nur neue Anmeldungen, bestehende Sitzungen laufen wie zuvor ab.
 
 Ausserdem: Login-Seite (`packages/frontend/src/pages/LoginPage.tsx`), Passwort-Aendern-Seite
 (`ChangePasswordPage.tsx`) und Bootstrap-Skript fuer den allerersten Admin-Account
@@ -70,3 +71,6 @@ wirklich verschickt wurde).
   Test: `packages/backend/tests/security/auth.test.ts`
 - **R13**: Die Benutzerliste zeigt zusaetzlich "Zuletzt aktiv" (`User.lastActiveAt`, bei authentifizierten
   Anfragen hoechstens einmal pro Minute aktualisiert). Test: `packages/backend/tests/security/auth.test.ts`
+- **R14**: Ab 0.21.2: `Settings.sessionExpiryDays` (nur Admin aenderbar, feste Werte 7/14/30/60/90, sonst 400)
+  bestimmt sowohl die Gueltigkeit des Sitzungs-Eintrags als auch das `Max-Age` des Anmelde-Cookies - beide
+  bleiben synchron. Tests: `tests/security/settings.test.ts`, `tests/security/sessionCookieHeader.test.ts`

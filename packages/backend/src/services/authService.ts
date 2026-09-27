@@ -1,9 +1,15 @@
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "../prisma.js";
+import { getSettings } from "./settingsService.js";
 
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const BCRYPT_ROUNDS = 12;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export async function getSessionTtlMs(): Promise<number> {
+  const { sessionExpiryDays } = await getSettings();
+  return sessionExpiryDays * MS_PER_DAY;
+}
 
 export function hashToken(rawToken: string): string {
   return crypto.createHash("sha256").update(rawToken).digest("hex");
@@ -23,11 +29,12 @@ export function generateRandomPassword(): string {
 
 export async function createSession(userId: string): Promise<string> {
   const rawToken = crypto.randomBytes(32).toString("base64url");
+  const ttlMs = await getSessionTtlMs();
   await prisma.session.create({
     data: {
       userId,
       tokenHash: hashToken(rawToken),
-      expiresAt: new Date(Date.now() + SESSION_TTL_MS)
+      expiresAt: new Date(Date.now() + ttlMs)
     }
   });
   return rawToken;

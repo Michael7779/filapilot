@@ -69,6 +69,29 @@ wishlistRouter.get(
   })
 );
 
+// Aufraeumen: entfernt alle erledigten Eintraege auf einmal (OP-W1) - die Liste waechst sonst unbegrenzt. Wie beim
+// Setzen des Status darf das jeder aktive Nutzer, nicht nur der/die Ersteller:in der einzelnen Eintraege.
+// SCOPE: user
+wishlistRouter.delete(
+  "/done",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const done = await prisma.wishlistItem.findMany({ where: { status: "DONE" }, select: { id: true } });
+    if (done.length === 0) {
+      sendData(res, { deleted: 0 });
+      return;
+    }
+    await prisma.wishlistItem.deleteMany({ where: { status: "DONE" } });
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "EVENT",
+      area: "WISHLIST",
+      description: `${done.length} erledigte Eintraege entfernt`
+    });
+    sendData(res, { deleted: done.length });
+  })
+);
+
 // SCOPE: user
 wishlistRouter.post(
   "/",

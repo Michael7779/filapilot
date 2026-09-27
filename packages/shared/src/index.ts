@@ -21,3 +21,5 @@ export * from "./schemas/customField.js";
 export * from "./customFields.js";
 export * from "./schemas/wishlist.js";
 export * from "./schemas/spoolDrying.js";
+export * from "./schemas/spoolWeigh.js";
+export * from "./schemas/spoolmanImport.js";

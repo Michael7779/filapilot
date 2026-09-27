@@ -29,7 +29,8 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   stehen bei Fehlern Schritt, Status und Feldnamen (nie Inhalte).
 - OP-B2: Anmeldung per Authenticator-App (TFA) ist nicht unterstuetzt (eigener Pfad mit CSRF-Cookie, nicht verifiziert); die App meldet das
   und verweist auf die JSON-Datei.
-- OP-B3: Kein automatischer (zeitgesteuerter) Abgleich und kein Schreiben in die Bambu-Cloud; der Abgleich laeuft nur auf Knopfdruck (ab 0.14.4).
+- OP-B3 ✅ (0.16.0): Automatischer (zeitgesteuerter) Abgleich gibt es seit `R-AUTO` unten (`Settings.bambuAutoSyncMinutes`).
+  Kein Schreiben in die Bambu-Cloud bleibt bewusst so (nur Lesen).
 - OP-B4: Notizen und Bambu-Farbcodes der Spulen werden nicht uebernommen (kein Feld in FilaPilot).
 - OP-B5: Die Bedeutung der Status-Werte ausser 0 ist nicht dokumentiert; solche Spulen sind in der Vorschau abgewaehlt, aber waehlbar.
 

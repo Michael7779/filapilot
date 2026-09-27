@@ -7,7 +7,9 @@ Status offen/bestellt/erledigt, `addedByUserId`/`addedByName` als Momentaufnahme
 Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
 
 ## 1.1 Offene Punkte
-- OP-W1: Kein automatisches Entfernen erledigter Eintraege - die Liste waechst, bis jemand von Hand aufraeumt.
+- OP-W1 ✅ (0.21.2): Kein automatisches Entfernen, aber `DELETE /api/wishlist/done` (siehe R5) entfernt alle
+  erledigten Eintraege auf einmal - bewusst manuell ausgeloest statt automatisch/zeitgesteuert, damit nichts
+  verschwindet, das jemand noch als Beleg braucht.
 - OP-W2: Kein Verweis von einem Wunsch auf eine konkrete Spule/einen Katalog-Eintrag (reiner Freitext-Titel).
 
 ## 1.2 Anforderungen
@@ -17,6 +19,8 @@ Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
 - **R3**: Den Status (offen/bestellt/erledigt) darf jeder aktive Nutzer setzen, auch bei fremden Eintraegen -
   bewusst so, damit alle an der Sammelbestellung mitwirken koennen; `updatedByName` haelt fest, wer zuletzt geaendert hat.
 - **R4**: Eingaben werden validiert (leerer Titel 400, unbekannter Status 400).
+- **R5**: Ab 0.21.2: `DELETE /api/wishlist/done` entfernt alle Eintraege mit Status "erledigt" auf einmal; darf
+  jeder aktive Nutzer (wie das Setzen des Status), nicht nur die/der Ersteller:in der einzelnen Eintraege.
 
 Tests: `packages/backend/tests/security/wishlist.test.ts`. Oberflaeche manuell im Browser geprueft.
 
