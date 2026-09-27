@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.21.0] - 2026-09-27
+
+### Hinzugefuegt
+- Trocknungs-Protokoll: Bei jeder Spule gibt es jetzt die Aktion "Trocknen protokollieren" (Temperatur, Dauer, optionale Notiz, z.B. für PETG, Nylon oder TPU). Der Eintrag erscheint zusammen mit den anderen Ereignissen im Verlauf der Spule.
+
 ## [0.20.1] - 2026-09-27
 
 ### Behoben

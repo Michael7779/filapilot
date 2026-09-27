@@ -29,6 +29,7 @@ import { SpoolPager, SpoolViewSwitch } from "../components/SpoolViewControls.js"
 import { useSpoolPreferences } from "../hooks/useSpoolPreferences.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
 import { SpoolHistoryModal } from "../components/SpoolHistoryModal.js";
+import { SpoolDryingModal } from "../components/SpoolDryingModal.js";
 import { BambuImportModal } from "../components/BambuImportModal.js";
 import type { BambuConnectionInfo, BambuSyncSummary } from "@filapilot/shared";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
@@ -57,6 +58,7 @@ export function SpoolsPage(): React.JSX.Element {
   const [modalOpen, setModalOpen] = useState(false);
   const [labelSpool, setLabelSpool] = useState<SpoolWithRelations | null>(null);
   const [historySpool, setHistorySpool] = useState<SpoolWithRelations | null>(null);
+  const [dryingSpool, setDryingSpool] = useState<SpoolWithRelations | null>(null);
   const [customFieldDefinitions, setCustomFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export function SpoolsPage(): React.JSX.Element {
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [wishlistNotice, setWishlistNotice] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const inventories = useInventoryStore((state) => state.inventories);
   const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
@@ -143,15 +145,15 @@ export function SpoolsPage(): React.JSX.Element {
   }
 
   async function handleAddToWishlist(spool: SpoolWithRelations): Promise<void> {
-    setWishlistNotice(null);
+    setActionNotice(null);
     try {
       await apiRequest("/wishlist", {
         method: "POST",
         body: JSON.stringify({ title: `${spool.manufacturerName} ${spool.materialName} ${spool.colorName}` })
       });
-      setWishlistNotice(t("spools.addedToWishlist"));
+      setActionNotice(t("spools.addedToWishlist"));
     } catch (err) {
-      setWishlistNotice(err instanceof ApiRequestError ? err.message : t("spools.addToWishlistFailed"));
+      setActionNotice(err instanceof ApiRequestError ? err.message : t("spools.addToWishlistFailed"));
     }
   }
 
@@ -354,7 +356,7 @@ export function SpoolsPage(): React.JSX.Element {
         </div>
       </div>
       {exportError && <p className="text-sm text-[var(--color-danger)]">{exportError}</p>}
-      {wishlistNotice && <p className="text-sm text-[var(--color-text-secondary)]">{wishlistNotice}</p>}
+      {actionNotice && <p className="text-sm text-[var(--color-text-secondary)]">{actionNotice}</p>}
 
       {notice && <p className="text-sm text-[var(--color-danger)]">{notice}</p>}
 
@@ -390,6 +392,7 @@ export function SpoolsPage(): React.JSX.Element {
             onArchive={(spool, archive) => void handleArchive(spool, archive)}
             onLabel={setLabelSpool}
             onHistory={setHistorySpool}
+            onDrying={setDryingSpool}
             onAddToWishlist={(spool) => void handleAddToWishlist(spool)}
             onDelete={(spool) => void handleDelete(spool)}
           />
@@ -426,6 +429,13 @@ export function SpoolsPage(): React.JSX.Element {
 
       {labelSpool && <SpoolLabelModal spool={labelSpool} onClose={() => setLabelSpool(null)} />}
       {historySpool && <SpoolHistoryModal spool={historySpool} onClose={() => setHistorySpool(null)} />}
+      {dryingSpool && (
+        <SpoolDryingModal
+          spool={dryingSpool}
+          onClose={() => setDryingSpool(null)}
+          onLogged={() => setActionNotice(t("spools.drying.logged"))}
+        />
+      )}
     </div>
   );
 }

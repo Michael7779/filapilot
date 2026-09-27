@@ -20,3 +20,4 @@ export * from "./spoolLength.js";
 export * from "./schemas/customField.js";
 export * from "./customFields.js";
 export * from "./schemas/wishlist.js";
+export * from "./schemas/spoolDrying.js";

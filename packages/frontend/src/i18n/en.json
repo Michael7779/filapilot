@@ -195,6 +195,9 @@
       "initialWeightG": "Initial weight (g)",
       "remainingWeightG": "Remaining weight (g)",
       "location": "Location",
+      "note": "Note",
+      "temperatureC": "Temperature (°C)",
+      "durationMinutes": "Drying time (min)",
       "purchasePriceCents": "Purchase price",
       "name": "Name",
       "printTempMinC": "Nozzle min (°C)",
@@ -383,6 +386,16 @@
       "title": "History: {{name}}",
       "empty": "No entry in the log yet.",
       "loadFailed": "Couldn't load the history."
+    },
+    "drying": {
+      "action": "Log drying",
+      "title": "Log drying: {{name}}",
+      "temperature": "Temperature (°C)",
+      "duration": "Duration (minutes)",
+      "note": "Note (optional)",
+      "save": "Log",
+      "saveFailed": "Couldn't log the drying session.",
+      "logged": "Drying session logged."
     },
     "confirmDelete": "Really delete this spool? Its consumption will disappear from the statistics. If it's just empty, archive it instead.",
     "sort": { "added": "Recently added", "manufacturer": "Manufacturer", "name": "Material and color", "price": "Purchase price", "remaining": "Remaining weight" },

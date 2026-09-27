@@ -31,6 +31,20 @@ function summarize(entry: AuditEntry, translate: (key: string, fallback: string)
   if (entry.action === "CREATE" && after.remainingWeightG !== undefined) {
     return `${translate("audit.fields.remainingWeightG", "Restgewicht (g)")}: ${formatValue("remainingWeightG", after.remainingWeightG, translate)}`;
   }
+  if (entry.action === "EVENT") {
+    // Ereignisse mit eigenen Werten (z.B. Trocknung: Temperatur/Dauer) - reine Status-Ereignisse ohne Momentaufnahme
+    // (archiviert, wiederhergestellt, ...) haben kein "after" und liefern hier nichts.
+    const keys = Object.keys(after).filter((key) => after[key] !== null && after[key] !== undefined);
+    if (keys.length === 0) {
+      return null;
+    }
+    return keys
+      .map((key) => {
+        const label = translate(`audit.fields.${key}`, key);
+        return `${label}: ${formatValue(key, after[key], translate)}`;
+      })
+      .join(" · ");
+  }
   return null;
 }
 

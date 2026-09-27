@@ -195,6 +195,9 @@
       "initialWeightG": "Ursprungsgewicht (g)",
       "remainingWeightG": "Restgewicht (g)",
       "location": "Lagerort",
+      "note": "Notiz",
+      "temperatureC": "Temperatur (°C)",
+      "durationMinutes": "Trockendauer (Min.)",
       "purchasePriceCents": "Kaufpreis",
       "name": "Name",
       "printTempMinC": "Düse min. (°C)",
@@ -383,6 +386,16 @@
       "title": "Verlauf: {{name}}",
       "empty": "Noch kein Eintrag im Protokoll.",
       "loadFailed": "Verlauf konnte nicht geladen werden."
+    },
+    "drying": {
+      "action": "Trocknen protokollieren",
+      "title": "Trocknung protokollieren: {{name}}",
+      "temperature": "Temperatur (°C)",
+      "duration": "Dauer (Minuten)",
+      "note": "Notiz (optional)",
+      "save": "Protokollieren",
+      "saveFailed": "Konnte nicht protokolliert werden.",
+      "logged": "Trocknung protokolliert."
     },
     "confirmDelete": "Diese Spule wirklich löschen? Ihr Verbrauch verschwindet dann aus der Statistik. Wenn sie nur leer ist, archiviere sie besser.",
     "sort": { "added": "Zuletzt hinzugefügt", "manufacturer": "Hersteller", "name": "Material und Farbe", "price": "Kaufpreis", "remaining": "Restgewicht" },

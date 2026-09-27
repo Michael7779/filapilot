@@ -89,3 +89,10 @@
   lieferte die App-Huelle statt der Datei (`vite.config.ts`: `navigateFallbackDenylist` schliesst `/api/` jetzt aus).
   Test: `tests/security/spoolExtras.test.ts`; die Oberflaeche wurde manuell im Browser geprueft (Netzwerk-Log
   200 OK, echte `.xlsx`-Datei mit ZIP-Signatur).
+- **R18**: Ab 0.21.0: Trocknungs-Protokoll - `POST /api/spools/:id/drying` (EDITOR im Lager der Spule, Zod:
+  Temperatur 1-150 Grad, Dauer 1-2880 Minuten, Notiz optional max. 300 Zeichen) legt keinen eigenen Datensatz an,
+  sondern einen EVENT-Eintrag im bestehenden Aenderungsprotokoll (`area=SPOOL`), damit er zusammen mit
+  Anlegen/Aendern/Cloud-Ereignissen im Verlauf dieser Spule erscheint (`GET /api/spools/:id/history`,
+  `components/SpoolHistoryModal.tsx` zeigt Temperatur/Dauer/Notiz direkt in der Liste). Aktion "Trocknen
+  protokollieren" bei jeder Spule (`components/SpoolActions.tsx`, `components/SpoolDryingModal.tsx`).
+  Test: `tests/security/spoolDrying.test.ts`.
