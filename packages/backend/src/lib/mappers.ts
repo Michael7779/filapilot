@@ -41,6 +41,7 @@ export function toPublicMaterial(material: PrismaMaterial): Material {
     printTempMinC: material.printTempMinC,
     printTempMaxC: material.printTempMaxC,
     bedTempC: material.bedTempC,
+    densityGCm3: material.densityGCm3,
     manufacturerId: material.manufacturerId
   };
 }

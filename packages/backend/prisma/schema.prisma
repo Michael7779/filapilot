@@ -175,6 +175,8 @@ model Material {
   printTempMinC  Int
   printTempMaxC  Int
   bedTempC       Int?
+  // Fuer die ungefaehre Restlaengen-Anzeige der Spule (g/cm3); optional, typische Herstellerangabe.
+  densityGCm3    Float?
   spools         Spool[]
   createdAt      DateTime      @default(now())
 

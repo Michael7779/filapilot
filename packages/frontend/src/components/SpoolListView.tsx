@@ -1,10 +1,18 @@
 import { useTranslation } from "react-i18next";
-import type { SpoolWithRelations } from "@filapilot/shared";
+import { estimateRemainingLengthM, type SpoolWithRelations } from "@filapilot/shared";
 import { SpoolActions } from "./SpoolActions.js";
 import { ColorDot, WeightBar, type SpoolViewProps } from "./SpoolViews.js";
 
 const headClass = "whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-[var(--color-text-secondary)]";
 const cellClass = "whitespace-nowrap px-3 py-2 align-middle";
+
+// "–" ohne bekannte Dichte des Materials, sonst "≈ 335 m" (Naeherung, siehe estimateRemainingLengthM).
+function formatLength(meters: number | null, locale: string, t: (key: string) => string): string {
+  if (meters === null) {
+    return "–";
+  }
+  return `${t("spools.list.approx")} ${Math.round(meters).toLocaleString(locale)} m`;
+}
 
 function statusKey(spool: SpoolWithRelations): string {
   if (!spool.archivedAt) {
@@ -32,6 +40,7 @@ export function ListView({ spools, materials, isAll, ...handlers }: SpoolViewPro
             <th className={headClass}>{t("spools.list.nozzle")}</th>
             <th className={headClass}>{t("spools.list.bed")}</th>
             <th className={headClass}>{t("spools.list.weight")}</th>
+            <th className={headClass}>{t("spools.list.length")}</th>
             <th className={headClass}>{t("spools.filter.location")}</th>
             <th className={headClass}>{t("spools.filter.price")}</th>
             <th className={headClass}>{t("spools.list.purchasedAt")}</th>
@@ -70,6 +79,7 @@ export function ListView({ spools, materials, isAll, ...handlers }: SpoolViewPro
                     </span>
                   </div>
                 </td>
+                <td className={cellClass}>{formatLength(estimateRemainingLengthM(spool.remainingWeightG, temps?.densityGCm3 ?? null), i18n.language, t)}</td>
                 <td className={cellClass}>{spool.location ?? "–"}</td>
                 <td className={cellClass}>{price(spool)}</td>
                 <td className={cellClass}>{date(spool.purchasedAt)}</td>

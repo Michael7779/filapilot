@@ -148,7 +148,9 @@ export function SpoolFormModal({
           manufacturerId,
           printTempMinC: Number(newMaterial.printTempMinC) || 0,
           printTempMaxC: Number(newMaterial.printTempMaxC) || 0,
-          bedTempC: newMaterial.bedTempC.trim() ? Number(newMaterial.bedTempC) : null
+          bedTempC: newMaterial.bedTempC.trim() ? Number(newMaterial.bedTempC) : null,
+          // Dichte gibt es hier nicht direkt ein - laesst sich unter Einstellungen -> Stammdaten nachtragen.
+          densityGCm3: null
         });
         materialId = created.id;
       }

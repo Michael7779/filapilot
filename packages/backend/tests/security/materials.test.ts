@@ -109,6 +109,20 @@ describe("Materials - Negativ-Tests", () => {
     assert.equal(del.status, 200);
   });
 
+  it("speichert die Dichte (g/cm3) mit und weist ungueltige Werte ab (400)", async () => {
+    const created = await request(app)
+      .post("/api/materials")
+      .set("Cookie", adminCookie)
+      .send({ ...sample, name: "Dichte Test", densityGCm3: 1.24 });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.densityGCm3, 1.24);
+
+    for (const bad of [0, -1, 11]) {
+      const res = await request(app).post("/api/materials").set("Cookie", activeUserCookie).send({ ...sample, name: "Dichte Ungueltig", densityGCm3: bad });
+      assert.equal(res.status, 400, String(bad));
+    }
+  });
+
   it("lehnt Loeschen eines Materials ab, das noch von Spulen genutzt wird (409)", async () => {
     const manufacturer = await prisma.manufacturer.create({ data: { name: "Mat Test Hersteller" } });
     const material = await prisma.material.create({ data: { name: "Benutzt Test", printTempMinC: 1, printTempMaxC: 2 } });

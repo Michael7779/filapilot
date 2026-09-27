@@ -170,6 +170,7 @@ function MaterialModal({
   const [minC, setMinC] = useState(initial ? String(initial.printTempMinC) : "");
   const [maxC, setMaxC] = useState(initial ? String(initial.printTempMaxC) : "");
   const [bedC, setBedC] = useState(initial?.bedTempC != null ? String(initial.bedTempC) : "");
+  const [density, setDensity] = useState(initial?.densityGCm3 != null ? String(initial.densityGCm3) : "");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -187,7 +188,8 @@ function MaterialModal({
           manufacturerId: manufacturerId || null,
           printTempMinC: Number(minC),
           printTempMaxC: Number(maxC),
-          bedTempC: bedC ? Number(bedC) : null
+          bedTempC: bedC ? Number(bedC) : null,
+          densityGCm3: density ? Number(density) : null
         })
       });
       onSaved();
@@ -234,6 +236,11 @@ function MaterialModal({
           <input type="number" value={bedC} onChange={(e) => setBedC(e.target.value)} className={INPUT_CLASS} />
         </label>
       </div>
+      <label className={LABEL_CLASS}>
+        {t("catalog.density")}
+        <input type="number" step="0.01" min="0" value={density} onChange={(e) => setDensity(e.target.value)} className={INPUT_CLASS} />
+      </label>
+      <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("catalog.densityHint")}</p>
     </ModalForm>
   );
 }
@@ -361,6 +368,7 @@ export function CatalogSection(): React.JSX.Element {
                 <td className="py-2 text-[var(--color-text-secondary)]">{nameOfManufacturer(m.manufacturerId)}</td>
                 <td className="py-2 text-[var(--color-text-secondary)]">
                   {m.printTempMinC}–{m.printTempMaxC} °C{m.bedTempC !== null ? ` · ${m.bedTempC} °C` : ""}
+                  {m.densityGCm3 !== null ? ` · ${m.densityGCm3} g/cm³` : ""}
                 </td>
                 <td className="py-2">
                   <RowActions

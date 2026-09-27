@@ -7,14 +7,17 @@ export const materialSchema = z.object({
   manufacturerId: z.string().uuid().nullable(),
   printTempMinC: z.number().int().min(0).max(400),
   printTempMaxC: z.number().int().min(0).max(400),
-  bedTempC: z.number().int().min(0).max(150).nullable()
+  bedTempC: z.number().int().min(0).max(150).nullable(),
+  // g/cm3, fuer die ungefaehre Restlaengen-Anzeige der Spule; typische Herstellerangabe, keine garantierte Messung.
+  densityGCm3: z.number().positive().max(10).nullable()
 });
 export type Material = z.infer<typeof materialSchema>;
 
 const materialInputBase = materialSchema.omit({ id: true });
 
 export const createMaterialInputSchema = materialInputBase.extend({
-  manufacturerId: z.string().uuid().nullable().default(null)
+  manufacturerId: z.string().uuid().nullable().default(null),
+  densityGCm3: z.number().positive().max(10).nullable().default(null)
 });
 export type CreateMaterialInput = z.infer<typeof createMaterialInputSchema>;
 

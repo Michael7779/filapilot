@@ -1,9 +1,9 @@
-// Mitgelieferte Hersteller und Materialien mit Richttemperaturen (Duese min/max, Druckbett).
-// Das sind typische Herstellerempfehlungen, keine garantierten Werte - im Zweifel gilt das
-// Datenblatt auf der Spule. Admins koennen alles unter Einstellungen -> Stammdaten aendern.
-// Bei jeder inhaltlichen Aenderung CATALOG_VERSION erhoehen, dann werden fehlende Eintraege
-// beim naechsten Zugriff nachgetragen (bestehende und geloeschte bleiben unberuehrt).
-export const CATALOG_VERSION = 1;
+// Mitgelieferte Hersteller und Materialien mit Richttemperaturen (Duese min/max, Druckbett) und
+// typischer Dichte (g/cm³, fuer die ungefaehre Restlaengen-Anzeige). Das sind typische Herstellerangaben,
+// keine garantierten Werte - im Zweifel gilt das Datenblatt auf der Spule. Admins koennen alles unter
+// Einstellungen -> Stammdaten aendern. Bei jeder inhaltlichen Aenderung CATALOG_VERSION erhoehen, dann
+// werden fehlende Eintraege beim naechsten Zugriff nachgetragen (bestehende und geloeschte bleiben unberuehrt).
+export const CATALOG_VERSION = 2;
 
 export interface CatalogMaterial {
   manufacturer: string | null;
@@ -11,6 +11,36 @@ export interface CatalogMaterial {
   minC: number;
   maxC: number;
   bedC: number | null;
+  densityGCm3: number | null;
+}
+
+// Dichte haengt praktisch nur von der Material-Chemie ab, nicht von der Marke - deshalb ueber den Namen erkannt statt
+// pro Zeile gepflegt. Reihenfolge wichtig: spezifischere Namen (z.B. "PETG-CF") muessen vor dem allgemeinen Namen
+// ("PETG") stehen, sonst gewinnt der falsche Treffer.
+const DENSITY_BY_KEYWORD: [string, number][] = [
+  ["PA-CF", 1.15],
+  ["PA6-CF", 1.15],
+  ["PAHT-CF", 1.15],
+  ["PETG-CF", 1.3],
+  ["PETG HF", 1.27],
+  ["PETG", 1.27],
+  ["PLA-CF", 1.26],
+  ["PLA", 1.24],
+  ["PA", 1.14],
+  ["Nylon", 1.14],
+  ["ASA", 1.07],
+  ["ABS", 1.04],
+  ["HIPS", 1.04],
+  ["PC Blend", 1.19],
+  ["PC", 1.2],
+  ["TPU", 1.21],
+  ["PVA", 1.23],
+  ["XT", 1.27]
+];
+
+function densityFor(name: string): number | null {
+  const match = DENSITY_BY_KEYWORD.find(([keyword]) => name.includes(keyword));
+  return match ? match[1] : null;
 }
 
 export const CATALOG_MANUFACTURERS = [
@@ -34,7 +64,7 @@ const m = (
   minC: number,
   maxC: number,
   bedC: number | null
-): CatalogMaterial => ({ manufacturer, name, minC, maxC, bedC });
+): CatalogMaterial => ({ manufacturer, name, minC, maxC, bedC, densityGCm3: densityFor(name) });
 
 export const CATALOG_MATERIALS: CatalogMaterial[] = [
   // Allgemein (fuer jeden Hersteller waehlbar)

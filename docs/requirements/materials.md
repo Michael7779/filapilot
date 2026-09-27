@@ -40,3 +40,8 @@
   Test: `tests/security/spools.test.ts`
 - **R7**: Produktnamen werden dem richtigen Material-Typ zugeordnet, Unbekanntes bleibt unveraendert.
   Test: `tests/unit/materialType.test.ts`
+- **R8**: Ab 0.18.0 hat ein Material eine optionale Dichte (g/cm³, 0 < x ≤ 10, sonst 400) fuer die ungefaehre
+  Restlaengen-Anzeige der Spule (`estimateRemainingLengthM`, Standard-Durchmesser 1,75mm, keine Messung). Die
+  mitgelieferten Materialien bekommen eine typische Dichte anhand ihres Namens (`catalogData.ts::densityFor`);
+  bestehende Materialien ohne Dichte werden beim Update einmalig nachgetragen (nur wenn noch leer), Admin-Aenderungen
+  bleiben unberuehrt. Test: `tests/security/materials.test.ts`, `tests/unit/spoolLength.test.ts`

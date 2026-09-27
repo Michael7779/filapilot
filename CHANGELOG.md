@@ -8,20 +8,25 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.18.0] - 2026-09-27
+
+### Hinzugefuegt
+- Materialien haben jetzt eine Dichte (g/cm³) - für die mitgelieferten Materialien bereits mit typischen Werten befüllt (z.B. PLA 1,24, PETG 1,27, ABS 1,04). Unter Einstellungen → Stammdaten lässt sie sich pro Material eintragen oder anpassen.
+- Die Listenansicht der Spulen zeigt jetzt eine ungefähre Restlänge in Metern (aus Restgewicht und Dichte, Standard-Durchmesser 1,75mm) - eine Näherung, keine Messung. Ohne bekannte Dichte des Materials erscheint ein Strich.
+
+### Behoben
+- Der Änderungsverlauf in der App ("i"-Knopf) zeigte die Versionen 0.15.0 bis 0.17.0 nicht oder nur unvollständig, weil die Überschrift "Hinzugefügt" (mit Umlaut) in diesem Dokument nicht zur erwarteten Schreibweise passte. Alle drei Versionen sind jetzt vollständig sichtbar; die genannten Funktionen selbst waren davon nicht betroffen.
+
 ## [0.17.0] - 2026-09-27
 
-### Hinzugefügt
+### Hinzugefuegt
 - Automatischer Verbrauch pro Druck: In den Drucker-Einstellungen ordnest du jedem AMS-Slot (und der extern eingelegten Spule) eine Spule aus FilaPilot zu. Beginnt und endet ein Druck, bucht FilaPilot automatisch den Verbrauch anhand des AMS-Füllstands, legt einen Druckauftrag mit Gewicht und Kosten an und aktualisiert das Restgewicht. Fehlgeschlagene Drucke werden als solche markiert, der Verbrauch aber trotzdem gebucht.
 - Statistik-Seite zeigt "Letzte Druckaufträge" mit Drucker, Spule, Gewicht, Kosten und Datum.
-
-### Bekannte Einschränkungen
-- Die AMS-Feldnamen im Drucker-Status stammen aus öffentlich bekannter Dokumentation, nicht von einem echten Drucker verifiziert.
-- Der AMS-Füllstand in Prozent bezieht sich auf das Gewicht, das der Drucker kennt, nicht zwingend auf das in FilaPilot hinterlegte Ursprungsgewicht - die Gramm-Angabe ist eine Näherung.
-- Ein Serverneustart während eines laufenden Drucks verliert die Erkennung für diesen einen Auftrag.
+- Bekannte Einschränkung: Die AMS-Feldnamen im Drucker-Status stammen aus öffentlich bekannter Dokumentation, nicht von einem echten Drucker verifiziert; der AMS-Füllstand in Prozent bezieht sich auf das Gewicht, das der Drucker kennt (nicht zwingend das in FilaPilot hinterlegte Ursprungsgewicht) - die Gramm-Angabe ist eine Näherung; ein Serverneustart während eines laufenden Drucks verliert die Erkennung für diesen einen Auftrag.
 
 ## [0.16.0] - 2026-09-27
 
-### Hinzugefügt
+### Hinzugefuegt
 - Vier Ansichten der Spulenliste: Standard, Kompakt (kleine Kacheln, Aktionen im Menü), Liste (Tabelle mit allen Angaben: Farbe mit Farbcode, Hersteller, Material, Düsen- und Betttemperatur, Restgewicht, Lagerort, Preis, Kaufdatum, Hinzugefügt-Datum, Status) und Farbkacheln. Die zuletzt gewählte Ansicht wird pro Konto gespeichert und beim nächsten Öffnen (auch auf einem anderen Gerät) wieder angezeigt. Auf schmalen Handys startet neuen Konten die Kompakt-Ansicht.
 - Die Zahl der Spulen pro Seite ist einstellbar (12, 24, 48, 96 oder alle) und wird ebenfalls im Konto gemerkt; darunter gibt es Zurück/Weiter.
 - Auf der Spulen-Seite steht bei verbundenen Lagern, wann zuletzt aus der Bambu-Cloud aktualisiert wurde (Datum, Uhrzeit, automatisch oder von Hand), ob die automatische Aktualisierung an ist und, falls der letzte Versuch fehlschlug, warum.
@@ -29,7 +34,7 @@ erscheint nicht in der App.
 
 ## [0.15.0] - 2026-09-26
 
-### Hinzugefügt
+### Hinzugefuegt
 - Spulen durchsuchen und filtern: Suchfeld (Hersteller, Material, Farbe, Lagerort) sowie Filter nach Hersteller, Material, Farbe, Lagerort, Restgewicht (von/bis), Kaufpreis (von/bis) und "Nur fast leere". Die Liste lässt sich nach Material und Farbe, Hersteller, Restgewicht, Kaufpreis oder zuletzt hinzugefügt sortieren.
 - Anzahlen: Über der Liste steht, wie viele Spulen erfasst sind ("5 von 12 Spulen", bei Bedarf mit Anzahl der archivierten) und das gesamte Restgewicht der angezeigten Spulen.
 - Einstellungen → Lager → "Spulen verschieben": alle Spulen eines Lagers (auch archivierte) samt Verbrauchsverlauf in ein anderes Lager verschieben. Dafür braucht man Besitzer-Rechte im Quell-Lager und Bearbeiten-Rechte im Ziel-Lager.

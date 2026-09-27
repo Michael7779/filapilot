@@ -40,7 +40,8 @@ export function materialSnapshot(material: PrismaMaterial, manufacturerName: str
     manufacturerName,
     printTempMinC: material.printTempMinC,
     printTempMaxC: material.printTempMaxC,
-    bedTempC: material.bedTempC
+    bedTempC: material.bedTempC,
+    densityGCm3: material.densityGCm3
   };
 }
 
