@@ -19,6 +19,7 @@ import type {
   SpoolWithRelations
 } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
+import { downloadFile } from "../lib/download.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 import { SpoolFilterBar } from "../components/SpoolFilterBar.js";
 import { BambuSyncStatus } from "../components/BambuSyncStatus.js";
@@ -66,6 +67,9 @@ export function SpoolsPage(): React.JSX.Element {
   const [connection, setConnection] = useState<BambuConnectionInfo | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [wishlistNotice, setWishlistNotice] = useState<string | null>(null);
   const inventories = useInventoryStore((state) => state.inventories);
   const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
@@ -118,6 +122,38 @@ export function SpoolsPage(): React.JSX.Element {
   useEffect(() => {
     void loadConnection();
   }, [loadConnection]);
+
+  async function handleExport(format: "csv" | "json" | "xlsx"): Promise<void> {
+    if (!selectedId) {
+      return;
+    }
+    setExporting(true);
+    setExportError(null);
+    try {
+      const archivedParam = showArchived ? "include" : "exclude";
+      await downloadFile(
+        `/spools/export?inventoryId=${selectedId}&archived=${archivedParam}&format=${format}`,
+        `filapilot-spulen.${format}`
+      );
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : t("spools.export.failed"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleAddToWishlist(spool: SpoolWithRelations): Promise<void> {
+    setWishlistNotice(null);
+    try {
+      await apiRequest("/wishlist", {
+        method: "POST",
+        body: JSON.stringify({ title: `${spool.manufacturerName} ${spool.materialName} ${spool.colorName}` })
+      });
+      setWishlistNotice(t("spools.addedToWishlist"));
+    } catch (err) {
+      setWishlistNotice(err instanceof ApiRequestError ? err.message : t("spools.addToWishlistFailed"));
+    }
+  }
 
   async function handleSync(): Promise<void> {
     if (!selectedId) {
@@ -298,26 +334,27 @@ export function SpoolsPage(): React.JSX.Element {
           {selectedId && (
             <span className="text-xs text-[var(--color-text-muted)]">
               {t("spools.export.label")}{" "}
-              <a
-                href={`/api/spools/export?inventoryId=${selectedId}&archived=${showArchived ? "include" : "exclude"}&format=csv`}
-                className="font-medium"
-                style={{ color: "var(--accent)" }}
-              >
-                CSV
-              </a>
-              {" · "}
-              <a
-                href={`/api/spools/export?inventoryId=${selectedId}&archived=${showArchived ? "include" : "exclude"}&format=json`}
-                className="font-medium"
-                style={{ color: "var(--accent)" }}
-              >
-                JSON
-              </a>
+              {(["xlsx", "csv", "json"] as const).map((format, index) => (
+                <span key={format}>
+                  {index > 0 && " · "}
+                  <button
+                    type="button"
+                    disabled={exporting}
+                    onClick={() => void handleExport(format)}
+                    className="font-medium disabled:opacity-60"
+                    style={{ color: "var(--accent)" }}
+                  >
+                    {t(`spools.export.${format}`)}
+                  </button>
+                </span>
+              ))}
             </span>
           )}
           <SpoolViewSwitch view={view} onChange={setView} />
         </div>
       </div>
+      {exportError && <p className="text-sm text-[var(--color-danger)]">{exportError}</p>}
+      {wishlistNotice && <p className="text-sm text-[var(--color-text-secondary)]">{wishlistNotice}</p>}
 
       {notice && <p className="text-sm text-[var(--color-danger)]">{notice}</p>}
 
@@ -353,6 +390,7 @@ export function SpoolsPage(): React.JSX.Element {
             onArchive={(spool, archive) => void handleArchive(spool, archive)}
             onLabel={setLabelSpool}
             onHistory={setHistorySpool}
+            onAddToWishlist={(spool) => void handleAddToWishlist(spool)}
             onDelete={(spool) => void handleDelete(spool)}
           />
           <SpoolPager page={currentPage} pageCount={pageCount} pageSize={pageSize} total={visibleSpools.length} onPage={setPage} onPageSize={setPageSize} />

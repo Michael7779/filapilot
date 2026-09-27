@@ -82,3 +82,10 @@
   deutscher Spracheinstellung die Datei per Doppelklick korrekt in Spalten aufteilt und Umlaute richtig zeigt (deutsche
   Windows-Installationen nutzen das Semikolon als Listentrennzeichen); der Kaufpreis nutzt das Komma als Dezimaltrennzeichen.
   Test: `tests/security/spoolExtras.test.ts`
+- **R17**: Der Export kennt zusaetzlich `format=xlsx` (echtes Excel-Dateiformat, `exceljs` - Zahlen/Daten bleiben
+  Zahl/Datum, keine Datei-Operationen auf der Platte). Die Export- und Zusatzfelder-Aktion einer Spule ("Zur
+  Wunschliste") loesen den Download/das Anlegen ueber `fetch`+Blob aus statt ueber einen direkten Link
+  (`lib/download.ts`): ein direkter `<a href>` auf `/api/...` wurde vom Service Worker der PWA abgefangen und
+  lieferte die App-Huelle statt der Datei (`vite.config.ts`: `navigateFallbackDenylist` schliesst `/api/` jetzt aus).
+  Test: `tests/security/spoolExtras.test.ts`; die Oberflaeche wurde manuell im Browser geprueft (Netzwerk-Log
+  200 OK, echte `.xlsx`-Datei mit ZIP-Signatur).

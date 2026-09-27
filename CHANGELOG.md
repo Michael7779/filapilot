@@ -8,6 +8,19 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.20.0] - 2026-09-27
+
+### Behoben
+- Der CSV-/Excel-Export öffnete sich beim Anklicken als leere Seite statt als Download. Grund: Die App merkt sich Seiten zum Offline-Nutzen (PWA) und hat den Export-Link fälschlich dafür gehalten. Der Download läuft jetzt anders (im Hintergrund geladen, dann gespeichert) und lässt sich davon nicht mehr stören.
+
+### Hinzugefuegt
+- Echter Excel-Export (.xlsx) zusätzlich zu CSV und JSON – Zahlen und Daten bleiben in Excel Zahl und Datum, nicht nur Text.
+- Beim Hinzufügen zur Wunschliste lassen sich Hersteller und Material jetzt wie beim Anlegen einer Spule aus einer Liste auswählen, statt nur Freitext einzutippen.
+- Neue Aktion "Zur Wunschliste" bei jeder Spule: legt mit einem Klick einen Wunsch mit Hersteller, Material und Farbe der Spule an – praktisch zum Nachbestellen.
+
+### Hinweis zum Update
+- Neue Abhängigkeit `exceljs` für den Excel-Export (kein Bordmittel kann eine echte .xlsx-Datei ohne Fremdbibliothek erzeugen); wird beim Update automatisch mitinstalliert.
+
 ## [0.19.0] - 2026-09-27
 
 ### Hinzugefuegt

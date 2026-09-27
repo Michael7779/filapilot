@@ -20,7 +20,7 @@ import { describeSpool, spoolSnapshot } from "../lib/auditSnapshots.js";
 import { actorFromRequest, recordAudit, recordUpdate, listEntityHistory } from "../services/auditService.js";
 import { deletePhoto } from "../services/spoolPhotoService.js";
 import { recordWeightChange } from "../services/spoolWeightLog.js";
-import { spoolsToCsv } from "../services/spoolExportService.js";
+import { spoolsToCsv, spoolsToXlsx } from "../services/spoolExportService.js";
 import {
   accessibleInventoryIds,
   requireAccessToObjectInventory,
@@ -139,7 +139,7 @@ spoolsRouter.get(
   ...requireActiveUser,
   asyncHandler(async (req, res) => {
     const { inventoryId, archived } = listQuerySchema.parse(req.query);
-    const format = z.enum(["csv", "json"]).default("csv").parse(req.query.format);
+    const format = z.enum(["csv", "json", "xlsx"]).default("csv").parse(req.query.format);
     const user = getAuthenticatedUser(req);
     let where: { inventoryId: string } | { inventoryId: { in: string[] } };
     if (inventoryId === "all") {
@@ -163,6 +163,9 @@ spoolsRouter.get(
     if (format === "json") {
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.send(JSON.stringify(spools, null, 2));
+    } else if (format === "xlsx") {
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.send(Buffer.from(await spoolsToXlsx(spools, densityByMaterialId, diameterByMaterialId)));
     } else {
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       // BOM voranstellen, damit Excel Umlaute korrekt als UTF-8 erkennt statt als Windows-1252 zu raten.

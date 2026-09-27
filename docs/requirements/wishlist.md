@@ -19,3 +19,9 @@ Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
 - **R4**: Eingaben werden validiert (leerer Titel 400, unbekannter Status 400).
 
 Tests: `packages/backend/tests/security/wishlist.test.ts`. Oberflaeche manuell im Browser geprueft.
+
+## 1.3 Aenderungen ab 0.20.0
+- Das Formular "Hinzufügen" bekommt zusaetzlich Hersteller-/Material-Dropdowns aus dem bestehenden Stammdaten-Katalog
+  (wie im "Neue Spule"-Dialog); eine Auswahl befuellt den freien Titel, der weiter frei editierbar bleibt.
+- Auf der Spulen-Seite legt die Aktion "Zur Wunschliste" (jede Spule, jede Ansicht) einen Wunsch mit dem Titel
+  "{Hersteller} {Material} {Farbe}" an - praktisch zum Nachbestellen einer Spule, die zur Neige geht.

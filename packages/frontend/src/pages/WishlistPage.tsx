@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import type { CreateWishlistItemInput, WishlistItem, WishlistStatus } from "@filapilot/shared";
+import type { CreateWishlistItemInput, Manufacturer, Material, WishlistItem, WishlistStatus } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
+import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
 
 const STATUS_ORDER: WishlistStatus[] = ["OPEN", "ORDERED", "DONE"];
@@ -23,6 +24,10 @@ export function WishlistPage(): React.JSX.Element {
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [quantity, setQuantity] = useState("1");
+  const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [manufacturerId, setManufacturerId] = useState("");
+  const [materialId, setMaterialId] = useState("");
   const [editing, setEditing] = useState<WishlistItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,7 +41,24 @@ export function WishlistPage(): React.JSX.Element {
 
   useEffect(() => {
     void load();
+    // Fuer die "wie bei Neue Spule"-Dropdowns, die den Titel vorbefuellen; Fehler dabei sind nicht kritisch.
+    apiRequest<Manufacturer[]>("/manufacturers").then(setManufacturers).catch(() => setManufacturers([]));
+    apiRequest<Material[]>("/materials").then(setMaterials).catch(() => setMaterials([]));
   }, []);
+
+  const availableMaterials = manufacturerId
+    ? materials.filter((material) => material.manufacturerId === manufacturerId || material.manufacturerId === null)
+    : materials;
+
+  // Auswahl aus den Dropdowns setzt/ergaenzt den Titel - der bleibt trotzdem frei editierbar (z.B. fuer Farbe/Menge-Details).
+  function applyCatalogPick(nextManufacturerId: string, nextMaterialId: string): void {
+    const manufacturerName = manufacturers.find((manufacturer) => manufacturer.id === nextManufacturerId)?.name ?? "";
+    const materialName = materials.find((material) => material.id === nextMaterialId)?.name ?? "";
+    const combined = [manufacturerName, materialName].filter(Boolean).join(" ");
+    if (combined) {
+      setTitle(combined);
+    }
+  }
 
   function canEditContent(item: WishlistItem): boolean {
     return user?.role === "ADMIN" || user?.id === item.addedByUserId;
@@ -60,6 +82,8 @@ export function WishlistPage(): React.JSX.Element {
       setTitle("");
       setNote("");
       setQuantity("1");
+      setManufacturerId("");
+      setMaterialId("");
       setEditing(null);
       await load();
     } catch (err) {
@@ -104,6 +128,42 @@ export function WishlistPage(): React.JSX.Element {
 
       <form onSubmit={(event) => void handleAdd(event)} className="flex flex-wrap items-end gap-2 rounded-xl border border-[var(--color-border)] bg-white p-4">
         <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+          {t("spools.manufacturer")}
+          <select
+            value={manufacturerId}
+            onChange={(event) => {
+              setManufacturerId(event.target.value);
+              applyCatalogPick(event.target.value, materialId);
+            }}
+            className={INPUT_CLASS}
+          >
+            <option value="">{t("wishlist.anyManufacturer")}</option>
+            {sortAlphabetically(manufacturers, (manufacturer) => manufacturer.name, i18n.language).map((manufacturer) => (
+              <option key={manufacturer.id} value={manufacturer.id}>
+                {manufacturer.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+          {t("spools.material")}
+          <select
+            value={materialId}
+            onChange={(event) => {
+              setMaterialId(event.target.value);
+              applyCatalogPick(manufacturerId, event.target.value);
+            }}
+            className={INPUT_CLASS}
+          >
+            <option value="">{t("wishlist.anyMaterial")}</option>
+            {sortAlphabetically(availableMaterials, (material) => material.name, i18n.language).map((material) => (
+              <option key={material.id} value={material.id}>
+                {material.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
           {t("wishlist.itemTitle")}
           <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT_CLASS} />
         </label>
@@ -129,6 +189,8 @@ export function WishlistPage(): React.JSX.Element {
             onClick={() => {
               setEditing(null);
               setTitle("");
+              setManufacturerId("");
+              setMaterialId("");
               setNote("");
               setQuantity("1");
             }}

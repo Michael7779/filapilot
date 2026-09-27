@@ -1,6 +1,7 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
+import ExcelJS from "exceljs";
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/prisma.js";
 import {
@@ -131,5 +132,20 @@ describe("Spulen: zweite Farbe, Notiz, Zusatzfelder, Protokoll und Export - Nega
     assert.equal(json.status, 200);
     assert.ok(Array.isArray(json.body));
     assert.ok(json.body.some((spool: { colorName: string }) => spool.colorName === "Export-Test"));
+
+    const xlsx = await request(app).get(`/api/spools/export?inventoryId=${inventoryId}&format=xlsx`).set("Cookie", viewer.cookie).buffer(true).parse((res, cb) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
+      res.on("end", () => cb(null, Buffer.concat(chunks)));
+    });
+    assert.equal(xlsx.status, 200);
+    assert.match(xlsx.headers["content-type"], /spreadsheetml/);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(xlsx.body as Buffer);
+    const sheet = workbook.getWorksheet("Spulen");
+    assert.ok(sheet);
+    assert.equal(sheet?.getRow(1).getCell(1).value, "Hersteller");
+    const colorValues = sheet?.getColumn(3).values ?? [];
+    assert.ok(colorValues.includes("Export-Test"));
   });
 });
