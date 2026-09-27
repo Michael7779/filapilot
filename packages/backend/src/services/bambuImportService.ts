@@ -14,6 +14,7 @@ import { recordWeightChange } from "./spoolWeightLog.js";
 import { prisma } from "../prisma.js";
 import { BambuCloudError } from "./bambuCloudClient.js";
 import type { ImportSession } from "./bambuImportSessions.js";
+import { recordAudit, type AuditActor, type Snapshot } from "./auditService.js";
 
 const DEFAULT_TOTAL_G = 1000;
 const DEFAULT_TEMPS = { min: 190, max: 230, bed: 60 } as const;
@@ -112,6 +113,34 @@ function key(value: string): string {
   return value.trim().toLowerCase();
 }
 
+// Ein Protokoll-Eintrag fuer EINE Spule, gesammelt waehrend der Transaktion und erst danach geschrieben (siehe unten) -
+// so bleibt "alles in einer Transaktion" auch fuers Protokoll wahr: schlaegt die Transaktion fehl, gibt es keinen verwaisten Eintrag.
+export interface SpoolAuditEvent {
+  spoolId: string;
+  action: "CREATE" | "UPDATE" | "EVENT";
+  description: string;
+  before?: Snapshot;
+  after?: Snapshot;
+}
+
+// Gleiche Feldauswahl wie das manuelle Anlegen/Aendern (spoolSnapshot), aus den beim Cloud-Import/-Abgleich bereits
+// bekannten Werten - ohne Nachladen der Spule mit allen Relationen.
+export function cloudSpoolSnapshot(inventoryName: string, spool: MappedSpool, materialName: string, remainingWeightG: number): Snapshot {
+  return {
+    inventoryName,
+    manufacturerName: spool.vendor,
+    materialName,
+    colorName: spool.colorName,
+    colorHex: spool.colorHex,
+    colorHex2: null,
+    initialWeightG: spool.totalG,
+    remainingWeightG,
+    location: spool.inPrinter ? spool.deviceName : null,
+    note: null,
+    purchasePriceCents: null
+  };
+}
+
 export async function buildPreview(inventoryId: string, session: ImportSession): Promise<BambuPreview> {
   const spools = session.spools ?? [];
   const [imported, manufacturers, materials] = await Promise.all([
@@ -161,11 +190,13 @@ export interface CatalogMaterial {
 export interface ImportContext {
   tx: Tx;
   inventoryId: string;
+  inventoryName: string;
   input: BambuImportInput;
   summary: BambuImportSummary;
   manufacturers: Map<string, string>;
   materials: CatalogMaterial[];
   existing: Map<string | null, { id: string; initialWeightG: number; remainingWeightG: number }>;
+  auditEvents: SpoolAuditEvent[];
 }
 
 export const MATERIAL_SELECT = { id: true, name: true, manufacturerId: true, printTempMinC: true, printTempMaxC: true, bedTempC: true } as const;
@@ -217,6 +248,15 @@ async function importOne(context: ImportContext, spool: MappedSpool): Promise<vo
         { spoolId: already.id, inventoryId: context.inventoryId, before: already.remainingWeightG, after: remaining, source: "CLOUD_IMPORT" },
         context.tx
       );
+      if (remaining !== already.remainingWeightG) {
+        context.auditEvents.push({
+          spoolId: already.id,
+          action: "UPDATE",
+          description: `${spool.vendor} ${spool.materialName} ${spool.colorName}: Restgewicht aus Bambu-Cloud aktualisiert`,
+          before: { remainingWeightG: already.remainingWeightG },
+          after: { remainingWeightG: remaining }
+        });
+      }
       context.summary.updated += 1;
     } else {
       context.summary.skipped += 1;
@@ -231,7 +271,7 @@ async function importOne(context: ImportContext, spool: MappedSpool): Promise<vo
 export async function createSpoolFromCloud(context: ImportContext, spool: MappedSpool): Promise<void> {
   const manufacturerId = await ensureManufacturer(context, spool);
   const material = await ensureMaterial(context, spool, manufacturerId);
-  await context.tx.spool.create({
+  const created = await context.tx.spool.create({
     data: {
       materialId: material.id,
       manufacturerId,
@@ -244,26 +284,52 @@ export async function createSpoolFromCloud(context: ImportContext, spool: Mapped
       bambuCloudId: spool.cloudId
     }
   });
+  context.auditEvents.push({
+    spoolId: created.id,
+    action: "CREATE",
+    description: `${spool.vendor} ${material.name} ${spool.colorName}`,
+    after: cloudSpoolSnapshot(context.inventoryName, spool, material.name, spool.remainingG)
+  });
 }
 
 // Laedt Hersteller und Materialien fuer einen Lauf (Import oder Abgleich).
 export async function buildImportContext(
   tx: Tx,
-  base: Pick<ImportContext, "inventoryId" | "input" | "summary" | "existing">
+  base: Pick<ImportContext, "inventoryId" | "inventoryName" | "input" | "summary" | "existing">
 ): Promise<ImportContext> {
   return {
     ...base,
     tx,
     manufacturers: new Map((await tx.manufacturer.findMany({ select: { id: true, name: true } })).map((m) => [key(m.name), m.id])),
-    materials: await tx.material.findMany({ select: MATERIAL_SELECT })
+    materials: await tx.material.findMany({ select: MATERIAL_SELECT }),
+    auditEvents: []
   };
+}
+
+// Schreibt die waehrend eines Laufs gesammelten Protokoll-Eintraege - erst NACH erfolgreicher Transaktion, damit ein
+// zurueckgerollter Import/Abgleich nie einen Eintrag fuer eine nicht (mehr) existierende Spule hinterlaesst.
+export async function flushAuditEvents(actor: AuditActor, inventory: { id: string; name: string }, events: SpoolAuditEvent[]): Promise<void> {
+  for (const event of events) {
+    await recordAudit({
+      actor,
+      action: event.action,
+      area: "SPOOL",
+      entityId: event.spoolId,
+      inventory,
+      description: event.description,
+      before: event.before ?? null,
+      after: event.after ?? null
+    });
+  }
 }
 
 // Uebernimmt die gewaehlten Spulen in das Lager - alles in EINER Transaktion (bei einem Fehler bleibt alles unveraendert).
 export async function importSelected(
   inventoryId: string,
   session: ImportSession,
-  input: BambuImportInput
+  input: BambuImportInput,
+  actor: AuditActor,
+  inventory: { id: string; name: string }
 ): Promise<BambuImportSummary> {
   const wanted = new Set(input.cloudIds);
   const selected = (session.spools ?? []).filter((spool) => wanted.has(spool.id)).map((spool) => mapBambuSpool(spool));
@@ -274,6 +340,7 @@ export async function importSelected(
     manufacturersCreated: 0,
     materialsCreated: 0
   };
+  let auditEvents: SpoolAuditEvent[] = [];
 
   await prisma.$transaction(
     async (tx) => {
@@ -283,6 +350,7 @@ export async function importSelected(
       });
       const context = await buildImportContext(tx, {
         inventoryId,
+        inventoryName: inventory.name,
         input,
         summary,
         existing: new Map(existing.map((spool) => [spool.bambuCloudId, spool]))
@@ -290,8 +358,10 @@ export async function importSelected(
       for (const spool of selected) {
         await importOne(context, spool);
       }
+      auditEvents = context.auditEvents;
     },
     { timeout: 60_000 }
   );
+  await flushAuditEvents(actor, inventory, auditEvents);
   return summary;
 }

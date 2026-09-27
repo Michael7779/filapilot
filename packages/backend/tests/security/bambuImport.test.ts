@@ -230,6 +230,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     const spools = await prisma.spool.findMany({ where: { inventoryId: lagerId }, include: { material: true, manufacturer: true }, orderBy: { bambuCloudId: "asc" } });
     assert.equal(spools.length, 2);
     const white = spools[0];
+    assert.ok(white);
     assert.deepEqual(
       [white?.bambuCloudId, white?.manufacturer.name, white?.material.name, white?.colorName, white?.colorHex, white?.initialWeightG, white?.remainingWeightG, white?.location],
       ["101", "Bambu Lab", "PLA Basic", "Weiß", "#FFFFFF", 1000, 931, "X1C"]
@@ -238,6 +239,13 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     assert.deepEqual([white?.material.printTempMinC, white?.material.printTempMaxC, white?.material.bedTempC], [195, 225, 55]);
     const blue = spools[1];
     assert.deepEqual([blue?.material.printTempMinC, blue?.material.printTempMaxC, blue?.location], [190, 230, null]);
+
+    // Jede neu angelegte Spule bekommt einen eigenen Verlauf-Eintrag (nicht nur den einen Sammel-Eintrag am Lager)
+    const whiteHistory = await prisma.auditLog.findMany({ where: { area: "SPOOL", entityId: white.id } });
+    assert.equal(whiteHistory.length, 1);
+    assert.equal(whiteHistory[0]?.action, "CREATE");
+    assert.match(whiteHistory[0]?.description ?? "", /Bambu Lab PLA Basic Weiß/);
+    assert.equal((whiteHistory[0]?.after as { remainingWeightG: number } | null)?.remainingWeightG, 931);
 
     // Die Sitzung ist nach dem Import weg (Token verworfen)
     assert.equal((await get(`${base()}/${sessionId}/preview`, editor)).status, 404);
@@ -250,6 +258,8 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     const again = await post(`${base()}/${second}/import`, editor, { cloudIds: ["101", "102"] });
     assert.deepEqual(again.body.data, { created: 0, updated: 0, skipped: 2, manufacturersCreated: 0, materialsCreated: 0 });
     assert.equal(await prisma.spool.count({ where: { inventoryId: lagerId } }), 2);
+    // "skipped" (nicht updateExisting): kein weiterer Verlauf-Eintrag, da nichts geaendert wurde
+    assert.equal(await prisma.auditLog.count({ where: { area: "SPOOL", entityId: white.id } }), 1);
 
     await prisma.spool.updateMany({ where: { bambuCloudId: "101" }, data: { remainingWeightG: 10 } });
     const third = await startSession(editor);
@@ -260,6 +270,14 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     // Das Aktualisieren haelt die Aenderung im Gewichtsverlauf fest (10 g -> 931 g, also -921 g Verbrauch)
     const log = await prisma.spoolWeightLog.findFirst({ where: { spool: { bambuCloudId: "101", inventoryId: lagerId } }, orderBy: { at: "desc" } });
     assert.deepEqual([log?.deltaG, log?.remainingG, log?.source], [-921, 931, "CLOUD_IMPORT"]);
+    // ... und erscheint als eigener UPDATE-Eintrag im Verlauf dieser Spule
+    const whiteHistoryAfterUpdate = await prisma.auditLog.findMany({ where: { area: "SPOOL", entityId: white.id }, orderBy: { createdAt: "asc" } });
+    assert.equal(whiteHistoryAfterUpdate.length, 2);
+    assert.equal(whiteHistoryAfterUpdate[1]?.action, "UPDATE");
+    assert.deepEqual(
+      [whiteHistoryAfterUpdate[1]?.before, whiteHistoryAfterUpdate[1]?.after],
+      [{ remainingWeightG: 10 }, { remainingWeightG: 931 }]
+    );
   });
 
   it("importiert nichts in ein anderes Lager und trennt gleiche Bambu-IDs je Lager", async () => {

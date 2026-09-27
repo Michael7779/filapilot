@@ -1,7 +1,16 @@
 import type { BambuSpool, BambuSyncSummary } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
-import { buildImportContext, createSpoolFromCloud, mapBambuSpool, type ImportContext, type MappedSpool, type Tx } from "./bambuImportService.js";
+import {
+  buildImportContext,
+  createSpoolFromCloud,
+  flushAuditEvents,
+  mapBambuSpool,
+  type ImportContext,
+  type MappedSpool,
+  type SpoolAuditEvent
+} from "./bambuImportService.js";
 import { recordWeightChange } from "./spoolWeightLog.js";
+import type { AuditActor } from "./auditService.js";
 
 interface LinkedSpool {
   id: string;
@@ -10,6 +19,13 @@ interface LinkedSpool {
   remainingWeightG: number;
   archivedAt: Date | null;
   archiveReason: "MANUAL" | "CLOUD_REMOVED" | null;
+  colorName: string;
+  manufacturer: { name: string };
+  material: { name: string };
+}
+
+function describeLinked(spool: LinkedSpool): string {
+  return `${spool.manufacturer.name} ${spool.material.name} ${spool.colorName}`;
 }
 
 // Ab dieser Menge (und mehr als die Haelfte der aktiven Cloud-Spulen) gilt "fehlt in der Cloud" als verdaechtig.
@@ -51,16 +67,28 @@ async function syncOne(
     { spoolId: existing.id, inventoryId: context.inventoryId, before: existing.remainingWeightG, after: remaining, source: "CLOUD_SYNC" },
     context.tx
   );
-  if (restore) {
-    summary.restored += 1;
-  }
   if (changed) {
+    context.auditEvents.push({
+      spoolId: existing.id,
+      action: "UPDATE",
+      description: `${describeLinked(existing)}: Restgewicht aus Bambu-Cloud aktualisiert`,
+      before: { remainingWeightG: existing.remainingWeightG },
+      after: { remainingWeightG: remaining }
+    });
     summary.updated += 1;
+  }
+  if (restore) {
+    context.auditEvents.push({
+      spoolId: existing.id,
+      action: "EVENT",
+      description: `${describeLinked(existing)}: in der Bambu-Cloud wieder vorhanden, wiederhergestellt`
+    });
+    summary.restored += 1;
   }
 }
 
 // In FilaPilot mit Cloud-ID, in der Cloud nicht mehr vorhanden: als erledigt archivieren - ausser die Liste sieht falsch aus.
-async function archiveMissing(tx: Tx, linked: LinkedSpool[], cloudIds: Set<string>, summary: BambuSyncSummary): Promise<void> {
+async function archiveMissing(context: ImportContext, linked: LinkedSpool[], cloudIds: Set<string>, summary: BambuSyncSummary): Promise<void> {
   const active = linked.filter((spool) => !spool.archivedAt);
   const missing = active.filter((spool) => !cloudIds.has(spool.bambuCloudId ?? ""));
   if (missing.length === 0) {
@@ -70,17 +98,29 @@ async function archiveMissing(tx: Tx, linked: LinkedSpool[], cloudIds: Set<strin
     summary.archiveBlocked = true;
     return;
   }
-  await tx.spool.updateMany({
+  await context.tx.spool.updateMany({
     where: { id: { in: missing.map((spool) => spool.id) } },
     data: { archivedAt: new Date(), archiveReason: "CLOUD_REMOVED" }
   });
   summary.archived = missing.length;
+  for (const spool of missing) {
+    context.auditEvents.push({
+      spoolId: spool.id,
+      action: "EVENT",
+      description: `${describeLinked(spool)}: in der Bambu-Cloud nicht mehr gefunden, archiviert`
+    });
+  }
 }
 
 // Gleicht ein Lager mit der (vollstaendig geladenen) Spulenliste der Cloud ab, ohne Auswahl, in EINER Transaktion:
 // bestehende Spulen bekommen das Restgewicht der Cloud (Verlauf wird geschrieben), neue werden angelegt, in der Cloud entfernte
 // archiviert (und bei Rueckkehr wiederhergestellt). Die Cloud gewinnt bei Spulen aus der Cloud.
-export async function syncInventoryFromCloud(inventoryId: string, cloud: BambuSpool[]): Promise<BambuSyncSummary> {
+export async function syncInventoryFromCloud(
+  inventoryId: string,
+  cloud: BambuSpool[],
+  actor: AuditActor,
+  inventory: { id: string; name: string }
+): Promise<BambuSyncSummary> {
   const mapped = cloud.map((spool) => mapBambuSpool(spool));
   const cloudIds = new Set(mapped.map((spool) => spool.cloudId));
   const summary: BambuSyncSummary = {
@@ -94,16 +134,28 @@ export async function syncInventoryFromCloud(inventoryId: string, cloud: BambuSp
     manufacturersCreated: 0,
     materialsCreated: 0
   };
+  let auditEvents: SpoolAuditEvent[] = [];
 
   await prisma.$transaction(
     async (tx) => {
       const linked = await tx.spool.findMany({
         where: { inventoryId, bambuCloudId: { not: null } },
-        select: { id: true, bambuCloudId: true, initialWeightG: true, remainingWeightG: true, archivedAt: true, archiveReason: true }
+        select: {
+          id: true,
+          bambuCloudId: true,
+          initialWeightG: true,
+          remainingWeightG: true,
+          archivedAt: true,
+          archiveReason: true,
+          colorName: true,
+          manufacturer: { select: { name: true } },
+          material: { select: { name: true } }
+        }
       });
       const byCloudId = new Map(linked.map((spool) => [spool.bambuCloudId, spool]));
       const context = await buildImportContext(tx, {
         inventoryId,
+        inventoryName: inventory.name,
         input: { cloudIds: [], updateExisting: true },
         summary: { created: 0, updated: 0, skipped: 0, manufacturersCreated: 0, materialsCreated: 0 },
         existing: new Map()
@@ -111,12 +163,14 @@ export async function syncInventoryFromCloud(inventoryId: string, cloud: BambuSp
       for (const spool of mapped) {
         await syncOne(context, byCloudId.get(spool.cloudId), spool, summary);
       }
-      await archiveMissing(tx, linked, cloudIds, summary);
+      await archiveMissing(context, linked, cloudIds, summary);
       summary.manufacturersCreated = context.summary.manufacturersCreated;
       summary.materialsCreated = context.summary.materialsCreated;
+      auditEvents = context.auditEvents;
     },
     { timeout: 60_000 }
   );
+  await flushAuditEvents(actor, inventory, auditEvents);
   return summary;
 }
 

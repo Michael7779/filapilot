@@ -222,12 +222,13 @@ bambuImportRouter.post(
     if (!session.spools) {
       throw new AppError("VALIDATION_ERROR", "Bitte zuerst die Vorschau laden.");
     }
-    const summary = await importSelected(id, session, input);
+    const actor = actorFromRequest(req);
+    const inventory = await getInventoryRow(id);
+    const summary = await importSelected(id, session, input, actor, inventory);
     // Das Token wird nach dem Import sofort verworfen.
     deleteSession(sessionId);
-    const inventory = await getInventoryRow(id);
     await recordAudit({
-      actor: actorFromRequest(req),
+      actor,
       action: "EVENT",
       area: "INVENTORY",
       entityId: id,

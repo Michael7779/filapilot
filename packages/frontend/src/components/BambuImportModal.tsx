@@ -56,7 +56,7 @@ export function BambuImportModal({
   const base = `/inventories/${inventoryId}/bambu-import`;
   const [step, setStep] = useState<Step>("loading");
   const [connection, setConnection] = useState<BambuConnectionInfo | null>(null);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [syncSummary, setSyncSummary] = useState<BambuSyncSummary | null>(null);
   const [region, setRegion] = useState<BambuRegion>("global");
   const [account, setAccount] = useState("");

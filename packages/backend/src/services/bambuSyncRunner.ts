@@ -29,10 +29,10 @@ export async function runCloudSync(inventoryId: string, actor: AuditActor, auto:
     throw appError;
   }
   const { spools } = parseBambuHits(hits);
-  const summary = await syncInventoryFromCloud(inventoryId, spools);
+  const inventory = await getInventoryRow(inventoryId);
+  const summary = await syncInventoryFromCloud(inventoryId, spools, actor, inventory);
   const text = describeSync(summary);
   await markSynced(inventoryId, text, auto);
-  const inventory = await getInventoryRow(inventoryId);
   await recordAudit({
     actor,
     action: "EVENT",

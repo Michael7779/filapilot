@@ -73,13 +73,26 @@ describe("Automatischer Bambu-Abgleich", () => {
     await setInterval(60);
     assert.equal(await runAutoSyncOnce({ now, pauseMs: 0 }), 1);
     assert.equal(listCalls, 1);
-    assert.equal(await prisma.spool.count({ where: { inventoryId: lager, bambuCloudId: "7" } }), 1);
+    const created = await prisma.spool.findFirst({ where: { inventoryId: lager, bambuCloudId: "7" } });
+    assert.ok(created);
     const info = await getConnectionInfo(lager);
     assert.equal(info.lastSyncAuto, true);
     assert.ok(info.lastSyncAt);
     assert.equal(info.lastSyncError, null);
+    // Die neue Spule bekommt einen eigenen Verlauf-Eintrag (unter "System", da automatisch gelaufen)
+    const history = await prisma.auditLog.findMany({ where: { area: "SPOOL", entityId: created.id } });
+    assert.equal(history.length, 1);
+    assert.equal(history[0]?.action, "CREATE");
+    assert.equal(history[0]?.username, "System");
+
     assert.equal(await runAutoSyncOnce({ now: new Date(Date.now() + 10 * 60_000), pauseMs: 0 }), 0);
     assert.equal(listCalls, 1);
+
+    // Ein weiterer, faelliger Abgleich ohne echte Aenderung (gleicher Cloud-Stand) schreibt keinen weiteren Eintrag
+    await prisma.bambuConnection.updateMany({ data: { lastAttemptAt: null } });
+    assert.equal(await runAutoSyncOnce({ now, pauseMs: 0 }), 1);
+    assert.equal(listCalls, 2);
+    assert.equal(await prisma.auditLog.count({ where: { area: "SPOOL", entityId: created.id } }), 1);
   });
 
   it("merkt Fehler mit Grund und versucht nicht sofort erneut; abgelaufenes Token verwirft die Verbindung", async () => {

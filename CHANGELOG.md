@@ -8,6 +8,14 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.20.1] - 2026-09-27
+
+### Behoben
+- Der Verlauf einer Spule zeigte bisher nichts an, wenn sie aus der Bambu-Cloud importiert oder durch den Cloud-Abgleich geändert wurde (nur ein Sammel-Eintrag am Lager wurde geschrieben). Jetzt bekommt jede Spule dafür einen eigenen Eintrag: Anlegen, Restgewicht-Änderung sowie Archivieren/Wiederherstellen durch den Abgleich. Ein Abgleich ohne echte Änderung erzeugt weiterhin keinen Eintrag.
+
+### Geändert
+- Beim Bambu-Cloud-Import ist "Verbindung für dieses Lager merken" jetzt standardmäßig angehakt (Besitzer können den Haken weiterhin entfernen).
+
 ## [0.20.0] - 2026-09-27
 
 ### Behoben

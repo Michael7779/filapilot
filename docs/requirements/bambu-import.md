@@ -61,3 +61,9 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   Intervall her; Fehler werden am Lager vermerkt (`lastSyncError`) und nicht sofort wiederholt; 401 der Cloud trennt die Verbindung; das Archivieren hat dieselben Schutzgrenzen wie
   beim manuellen Abgleich. Die Spulen-Seite zeigt Zeit/Art des letzten Abgleichs. Tests: `tests/integration/bambuAutoSync.test.ts`, `tests/security/settings.test.ts`
   Offen (OP-B7): Bei mehreren Instanzen mit demselben Bambu-Konto wuerden beide abgleichen (nicht vorgesehen).
+- **R11** ✅ Ab 0.20.1: Import UND Abgleich (manuell wie automatisch) schreiben zusaetzlich zum einen Sammel-Eintrag am Lager
+  einen eigenen Verlauf-Eintrag je betroffener Spule (Anlegen, Restgewicht-Aenderung, Archivieren/Wiederherstellen durch die Cloud) -
+  so zeigt der Verlauf einer Spule (`GET /spools/:id/history`) auch Cloud-Aenderungen, nicht nur manuelle. Ohne echte Aenderung
+  (z.B. erneuter Abgleich mit gleichem Cloud-Stand) entsteht kein Eintrag. Die Eintraege werden erst NACH erfolgreichem Abschluss
+  der Transaktion geschrieben (kein verwaister Eintrag bei einem Fehlschlag). Tests: `tests/security/bambuImport.test.ts`,
+  `tests/integration/bambuAutoSync.test.ts`
