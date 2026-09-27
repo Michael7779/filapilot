@@ -56,3 +56,8 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   lueckenhafter Liste wird nichts archiviert. Tests: `tests/security/bambuConnection.test.ts`, `tests/unit/bambuCloudClient.test.ts`
 - **R7** ✅ Oberflaeche (Assistent, Datei-Weg, Vorschau, Ergebnis): manuell per Browser mit dem Datei-Weg geprueft (2026-09-26); der Weg ueber
   die echte Cloud ist nicht geprueft (OP-B1).
+- **R-AUTO**: Ab 0.16.0: `Settings.bambuAutoSyncMinutes` (0 = aus, sonst 60/180/360/720/1440; nur Admin aenderbar, andere Werte 400) steuert den automatischen Abgleich
+  aller gemerkten Verbindungen (`services/bambuAutoSync.ts`, Pruefung alle 5 Minuten, nacheinander mit Pause). Faellig = letzter Versuch (auch fehlgeschlagen) laenger als das
+  Intervall her; Fehler werden am Lager vermerkt (`lastSyncError`) und nicht sofort wiederholt; 401 der Cloud trennt die Verbindung; das Archivieren hat dieselben Schutzgrenzen wie
+  beim manuellen Abgleich. Die Spulen-Seite zeigt Zeit/Art des letzten Abgleichs. Tests: `tests/integration/bambuAutoSync.test.ts`, `tests/security/settings.test.ts`
+  Offen (OP-B7): Bei mehreren Instanzen mit demselben Bambu-Konto wuerden beide abgleichen (nicht vorgesehen).

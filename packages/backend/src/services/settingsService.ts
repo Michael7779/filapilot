@@ -33,6 +33,7 @@ export async function getSettings(): Promise<Settings> {
     backupEnabled: row.backupEnabled,
     backupRetentionCount: row.backupRetentionCount,
     auditRetentionMonths: row.auditRetentionMonths,
+    bambuAutoSyncMinutes: row.bambuAutoSyncMinutes,
     licenseKey: row.licenseKey
   };
 }
@@ -72,6 +73,7 @@ export async function updateSettings(input: UpdateSettingsInput): Promise<Settin
       ...(input.auditRetentionMonths !== undefined && {
         auditRetentionMonths: input.auditRetentionMonths
       }),
+      ...(input.bambuAutoSyncMinutes !== undefined && { bambuAutoSyncMinutes: input.bambuAutoSyncMinutes }),
       ...(input.smtp !== undefined && {
         smtpHost: input.smtp?.host ?? null,
         smtpPort: input.smtp?.port ?? null,

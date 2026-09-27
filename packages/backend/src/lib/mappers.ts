@@ -1,3 +1,4 @@
+import { spoolPageSizeSchema, spoolViewSchema } from "@filapilot/shared";
 import type {
   User,
   Spool as PrismaSpool,
@@ -25,6 +26,8 @@ export function toPublicUser(user: User): UserPublic {
     role: user.role,
     mustChangePassword: user.mustChangePassword,
     themeAccentColor: user.themeAccentColor,
+    spoolView: spoolViewSchema.nullable().catch(null).parse(user.spoolView),
+    spoolPageSize: spoolPageSizeSchema.nullable().catch(null).parse(user.spoolPageSize),
     lastLoginAt: user.lastLoginAt,
     lastActiveAt: user.lastActiveAt,
     createdAt: user.createdAt

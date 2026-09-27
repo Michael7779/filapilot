@@ -57,6 +57,12 @@ export interface BambuConnectionInfo {
   tokenExpiresAt: string | null;
   lastSyncAt: string | null;
   lastSyncSummary: string | null;
+  // Letzter Versuch (auch fehlgeschlagen), ob automatisch, und der Fehler des letzten Versuchs
+  lastAttemptAt: string | null;
+  lastSyncAuto: boolean;
+  lastSyncError: string | null;
+  // Intervall des automatischen Abgleichs laut Einstellungen in Minuten (0 = aus)
+  autoSyncMinutes: number;
 }
 
 export interface BambuSyncSummary {

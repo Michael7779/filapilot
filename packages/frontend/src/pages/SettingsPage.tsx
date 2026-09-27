@@ -8,6 +8,7 @@ import { BackupManager } from "../components/BackupManager.js";
 import { AuditLogView } from "../components/AuditLogView.js";
 import { InventorySettings } from "../components/InventorySettings.js";
 import { useLogout } from "../hooks/useLogout.js";
+import { BAMBU_AUTO_SYNC_OPTIONS } from "@filapilot/shared";
 import type {
   CreateUserInput,
   CreateUserResult,
@@ -148,6 +149,7 @@ function GeneralSettingsSection({
   const [backupEnabled, setBackupEnabled] = useState(settings.backupEnabled);
   const [retention, setRetention] = useState(String(settings.backupRetentionCount));
   const [auditMonths, setAuditMonths] = useState(String(settings.auditRetentionMonths));
+  const [autoSync, setAutoSync] = useState(String(settings.bambuAutoSyncMinutes));
   const [backupFolderPath, setBackupFolderPath] = useState(settings.backupFolderPath);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -163,6 +165,7 @@ function GeneralSettingsSection({
         backupEnabled,
         backupRetentionCount: Number(retention),
         auditRetentionMonths: Number(auditMonths),
+        bambuAutoSyncMinutes: Number(autoSync),
         backupFolderPath
       };
       const updated = await apiRequest<Settings>("/settings", {
@@ -199,6 +202,16 @@ function GeneralSettingsSection({
             className={inputClass}
           />
         </Field>
+        <Field label={t("settings.bambuAutoSync")}>
+          <select value={autoSync} onChange={(event) => setAutoSync(event.target.value)} className={inputClass}>
+            {BAMBU_AUTO_SYNC_OPTIONS.map((minutes) => (
+              <option key={minutes} value={String(minutes)}>
+                {minutes === 0 ? t("settings.bambuAutoSyncOff") : t("settings.bambuAutoSyncEvery", { hours: minutes / 60 })}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("settings.bambuAutoSyncHint")}</p>
         <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
           <input
             type="checkbox"

@@ -20,6 +20,11 @@ import type {
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 import { SpoolFilterBar } from "../components/SpoolFilterBar.js";
+import { BambuSyncStatus } from "../components/BambuSyncStatus.js";
+import { ListView } from "../components/SpoolListView.js";
+import { CompactView, StandardView, SwatchView } from "../components/SpoolViews.js";
+import { SpoolPager, SpoolViewSwitch } from "../components/SpoolViewControls.js";
+import { useSpoolPreferences } from "../hooks/useSpoolPreferences.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
 import { BambuImportModal } from "../components/BambuImportModal.js";
 import type { BambuConnectionInfo, BambuSyncSummary } from "@filapilot/shared";
@@ -34,8 +39,14 @@ import {
 
 export function SpoolsPage(): React.JSX.Element {
   const { t, i18n } = useTranslation();
-  const [filter, setFilter] = useState<SpoolFilter>(EMPTY_SPOOL_FILTER);
+  const [filter, setFilterState] = useState<SpoolFilter>(EMPTY_SPOOL_FILTER);
+  const setFilter = (next: SpoolFilter): void => {
+    setFilterState(next);
+    setPage(1);
+  };
   const [sort, setSort] = useState<SpoolSortKey>("name");
+  const [page, setPage] = useState(1);
+  const { view, pageSize, setView, setPageSize } = useSpoolPreferences();
   const [spools, setSpools] = useState<SpoolWithRelations[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
@@ -206,6 +217,11 @@ export function SpoolsPage(): React.JSX.Element {
   } else if (visibleSpools.length === 0) {
     emptyText = t("spools.filter.noMatch");
   }
+  // Seitenweise anzeigen (0 = alle); bei geaenderten Filtern zurueck auf Seite 1
+  const pageCount = pageSize === 0 ? 1 : Math.max(1, Math.ceil(visibleSpools.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pagedSpools = pageSize === 0 ? visibleSpools : visibleSpools.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const SpoolViewComponent = { standard: StandardView, compact: CompactView, list: ListView, swatch: SwatchView }[view];
   const archivedCount = spools.filter((spool) => spool.archivedAt).length;
   const totalRemainingG = visibleSpools.reduce((sum, spool) => sum + spool.remainingWeightG, 0);
   const formatWeight = (grams: number): string =>
@@ -266,16 +282,24 @@ export function SpoolsPage(): React.JSX.Element {
       </div>
       {isAll && <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.allHint")}</p>}
       {syncNotice && <p className="text-sm text-[var(--color-text-secondary)]">{syncNotice}</p>}
-      <label className="flex w-fit items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-        <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
-        {t("spools.showArchived")}
-      </label>
+      {connection && <BambuSyncStatus info={connection} />}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <label className="flex w-fit items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+          <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
+          {t("spools.showArchived")}
+        </label>
+        <SpoolViewSwitch view={view} onChange={setView} />
+      </div>
 
       {notice && <p className="text-sm text-[var(--color-danger)]">{notice}</p>}
 
       {spools.length > 0 && (
         <>
-          <SpoolFilterBar spools={spools} filter={filter} sort={sort} onFilterChange={setFilter} onSortChange={setSort} />
+          <SpoolFilterBar spools={spools} filter={filter} sort={sort} onFilterChange={setFilter} onSortChange={(next) => {
+              setSort(next);
+              setPage(1);
+            }}
+          />
           <p className="text-sm text-[var(--color-text-secondary)]">
             {isFilterActive(filter)
               ? t("spools.filter.countSome", { shown: visibleSpools.length, total: spools.length })
@@ -290,93 +314,19 @@ export function SpoolsPage(): React.JSX.Element {
       {emptyText ? (
         <p className="text-sm text-[var(--color-text-secondary)]">{emptyText}</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {visibleSpools.map((spool) => {
-            const percent = Math.round((spool.remainingWeightG / spool.initialWeightG) * 100);
-            const lowStock = spool.remainingWeightG / spool.initialWeightG <= LOW_STOCK_THRESHOLD_RATIO;
-            const temps = materials.find((material) => material.id === spool.materialId);
-            return (
-              <div
-                key={spool.id}
-                className={`rounded-xl border border-[var(--color-border)] bg-white p-4 ${spool.archivedAt ? "opacity-70" : ""}`}
-              >
-                {spool.photoUrl && (
-                  <img
-                    src={spool.photoUrl}
-                    alt=""
-                    loading="lazy"
-                    className="mb-3 h-32 w-full rounded-lg border border-[var(--color-border)] object-cover"
-                  />
-                )}
-                <div className="mb-2 flex items-center gap-2">
-                  <div
-                    className="h-5 w-5 shrink-0 rounded-full border border-[var(--color-border)]"
-                    style={{ backgroundColor: spool.colorHex ?? "#cccccc" }}
-                    aria-hidden="true"
-                  />
-                  <div className="text-sm font-semibold">
-                    {spool.materialName} {spool.colorName}
-                  </div>
-                  {spool.archivedAt && (
-                    <span className="ml-auto shrink-0 rounded-full bg-[var(--color-bg)] px-2 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">
-                      {spool.archiveReason === "CLOUD_REMOVED" ? t("spools.archivedCloud") : t("spools.archived")}
-                    </span>
-                  )}
-                  {lowStock && !spool.archivedAt && (
-                    <span className="ml-auto shrink-0 rounded-full bg-[var(--color-danger)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-danger)]">
-                      {t("spools.lowStock")}
-                    </span>
-                  )}
-                </div>
-                <div className="mb-2 text-xs text-[var(--color-text-muted)]">
-                  {isAll && spool.inventoryName ? `${spool.inventoryName} · ` : ""}
-                  {spool.manufacturerName}
-                  {spool.location ? ` · ${spool.location}` : ""}
-                </div>
-                {temps && (
-                  <div className="mb-2 text-xs text-[var(--color-text-muted)]">
-                    {t("spools.tempHint", { min: temps.printTempMinC, max: temps.printTempMaxC })}
-                    {temps.bedTempC !== null &&
-                      ` · ${t("spools.bedTempHint", { bed: temps.bedTempC })}`}
-                  </div>
-                )}
-                <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-[var(--color-bg)]">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${percent}%`, backgroundColor: "var(--accent)" }}
-                  />
-                </div>
-                <div className="mb-3 text-xs text-[var(--color-text-secondary)]">
-                  {spool.remainingWeightG} g / {spool.initialWeightG} g
-                </div>
-                <div className="flex gap-2 text-xs font-medium">
-                  {canEdit && (
-                    <button type="button" onClick={() => openEdit(spool)} style={{ color: "var(--accent)" }}>
-                      {t("common.edit")}
-                    </button>
-                  )}
-                  {canEdit && (
-                    <button type="button" onClick={() => void handleArchive(spool, !spool.archivedAt)} style={{ color: "var(--accent)" }}>
-                      {spool.archivedAt ? t("spools.unarchive") : t("spools.archive")}
-                    </button>
-                  )}
-                  <button type="button" onClick={() => setLabelSpool(spool)} style={{ color: "var(--accent)" }}>
-                    {t("spools.qrLabel")}
-                  </button>
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(spool)}
-                      className="text-[var(--color-danger)]"
-                    >
-                      {t("common.delete")}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <>
+          <SpoolViewComponent
+            spools={pagedSpools}
+            materials={materials}
+            isAll={isAll}
+            canEdit={canEdit}
+            onEdit={openEdit}
+            onArchive={(spool, archive) => void handleArchive(spool, archive)}
+            onLabel={setLabelSpool}
+            onDelete={(spool) => void handleDelete(spool)}
+          />
+          <SpoolPager page={currentPage} pageCount={pageCount} pageSize={pageSize} total={visibleSpools.length} onPage={setPage} onPageSize={setPageSize} />
+        </>
       )}
 
       {modalOpen && (

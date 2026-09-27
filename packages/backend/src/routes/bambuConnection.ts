@@ -5,11 +5,9 @@ import { AppError, sendData } from "../lib/apiResult.js";
 import { getAuthenticatedUser, requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
 import { createBambuRateLimiter } from "../middleware/rateLimit.js";
 import { actorFromRequest, recordAudit } from "../services/auditService.js";
-import { BambuCloudError, getBambuCloudClient, logBambuFailure } from "../services/bambuCloudClient.js";
-import { deleteConnection, getConnectionInfo, getStoredToken, markSynced } from "../services/bambuConnectionService.js";
-import { parseBambuHits, toAppError } from "../services/bambuImportService.js";
+import { deleteConnection, getConnectionInfo, getStoredToken } from "../services/bambuConnectionService.js";
 import { createSession } from "../services/bambuImportSessions.js";
-import { describeSync, syncInventoryFromCloud } from "../services/bambuSyncService.js";
+import { runCloudSync } from "../services/bambuSyncRunner.js";
 import { requireInventoryRole } from "../services/inventoryAccess.js";
 import { getInventoryRow } from "../services/inventoryService.js";
 
@@ -92,35 +90,6 @@ bambuConnectionRouter.post(
   asyncHandler(async (req, res) => {
     const { id } = inventoryParamSchema.parse(req.params);
     await requireInventoryRole(getAuthenticatedUser(req), id, "EDITOR");
-    const stored = await getStoredToken(id);
-    if (!stored) {
-      throw new AppError("VALIDATION_ERROR", "Für dieses Lager ist keine Bambu-Verbindung gemerkt.");
-    }
-    let hits: unknown[];
-    try {
-      hits = await getBambuCloudClient().listFilaments(stored.region, stored.token);
-    } catch (err) {
-      logBambuFailure(err);
-      if (err instanceof BambuCloudError && err.kind === "unauthorized") {
-        // Das Token ist abgelaufen: die Verbindung verwerfen, damit sich der Benutzer neu anmeldet.
-        await deleteConnection(id);
-        throw new AppError("VALIDATION_ERROR", "Die gemerkte Bambu-Verbindung ist abgelaufen. Bitte neu anmelden (Aus Bambu-Cloud importieren).");
-      }
-      throw toAppError(err);
-    }
-    const { spools } = parseBambuHits(hits);
-    const summary = await syncInventoryFromCloud(id, spools);
-    const text = describeSync(summary);
-    await markSynced(id, text);
-    const inventory = await getInventoryRow(id);
-    await recordAudit({
-      actor: actorFromRequest(req),
-      action: "EVENT",
-      area: "INVENTORY",
-      entityId: id,
-      inventory,
-      description: `${inventory.name}: Abgleich mit Bambu-Cloud: ${text}`
-    });
-    sendData(res, summary);
+    sendData(res, await runCloudSync(id, actorFromRequest(req), false));
   })
 );

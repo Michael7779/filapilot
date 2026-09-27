@@ -14,6 +14,13 @@ export const smtpConfigInputSchema = smtpConfigSchema.extend({
 });
 export type SmtpConfigInput = z.infer<typeof smtpConfigInputSchema>;
 
+// Automatischer Abgleich mit der Bambu-Cloud: 0 = aus, sonst mindestens alle 60 Minuten (Schutz vor Sperre durch die Cloud)
+export const BAMBU_AUTO_SYNC_OPTIONS = [0, 60, 180, 360, 720, 1440] as const;
+export const bambuAutoSyncMinutesSchema = z
+  .number()
+  .int()
+  .refine((value) => (BAMBU_AUTO_SYNC_OPTIONS as readonly number[]).includes(value), "Ungueltiges Intervall");
+
 export const settingsSchema = z.object({
   photoUploadEnabled: z.boolean(),
   defaultPrinterSyncIntervalSeconds: z.number().int().min(10).max(3600),
@@ -22,6 +29,7 @@ export const settingsSchema = z.object({
   backupEnabled: z.boolean(),
   backupRetentionCount: z.number().int().min(1).max(365),
   auditRetentionMonths: z.number().int().min(0).max(120),
+  bambuAutoSyncMinutes: bambuAutoSyncMinutesSchema,
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt,
   // keine Pruef-/Gating-Logik ohne expliziten Auftrag bauen.
   licenseKey: z.string().nullable()
@@ -36,7 +44,8 @@ export const updateSettingsInputSchema = z
     backupFolderPath: z.string().min(1),
     backupEnabled: z.boolean(),
     backupRetentionCount: z.number().int().min(1).max(365),
-    auditRetentionMonths: z.number().int().min(0).max(120)
+    auditRetentionMonths: z.number().int().min(0).max(120),
+    bambuAutoSyncMinutes: bambuAutoSyncMinutesSchema
   })
   .partial();
 export type UpdateSettingsInput = z.infer<typeof updateSettingsInputSchema>;

@@ -7,6 +7,17 @@ export const hexColorSchema = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "Muss ein Hex-Farbwert sein, z.B. #2F6FED");
 
+// Ansichten und erlaubte Seitengroessen der Spulenliste (0 = alle auf einer Seite)
+export const SPOOL_VIEWS = ["standard", "compact", "list", "swatch"] as const;
+export const spoolViewSchema = z.enum(SPOOL_VIEWS);
+export type SpoolView = z.infer<typeof spoolViewSchema>;
+export const SPOOL_PAGE_SIZES = [12, 24, 48, 96, 0] as const;
+export const spoolPageSizeSchema = z
+  .number()
+  .int()
+  .refine((value) => (SPOOL_PAGE_SIZES as readonly number[]).includes(value), "Ungueltige Seitengroesse");
+export const DEFAULT_SPOOL_PAGE_SIZE = 24;
+
 export const userPublicSchema = z.object({
   id: z.string().uuid(),
   username: z.string().min(3).max(32),
@@ -14,6 +25,8 @@ export const userPublicSchema = z.object({
   role: userRoleSchema,
   mustChangePassword: z.boolean(),
   themeAccentColor: hexColorSchema.nullable(),
+  spoolView: spoolViewSchema.nullable(),
+  spoolPageSize: spoolPageSizeSchema.nullable(),
   lastLoginAt: z.coerce.date().nullable(),
   lastActiveAt: z.coerce.date().nullable(),
   createdAt: z.coerce.date()
@@ -75,3 +88,12 @@ export const updateOwnThemeInputSchema = z.object({
   themeAccentColor: hexColorSchema.nullable()
 });
 export type UpdateOwnThemeInput = z.infer<typeof updateOwnThemeInputSchema>;
+
+// Eigene Einstellungen der Spulenliste; nur die angegebenen Felder werden geaendert (null = zurueck auf Standard).
+export const updateOwnPreferencesInputSchema = z
+  .object({
+    spoolView: spoolViewSchema.nullable(),
+    spoolPageSize: spoolPageSizeSchema.nullable()
+  })
+  .partial();
+export type UpdateOwnPreferencesInput = z.infer<typeof updateOwnPreferencesInputSchema>;

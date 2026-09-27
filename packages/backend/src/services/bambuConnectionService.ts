@@ -2,6 +2,7 @@ import { bambuRegionSchema, type BambuConnectionInfo, type BambuRegion } from "@
 import { prisma } from "../prisma.js";
 import { logger } from "../logger.js";
 import { decryptSecret, encryptSecret } from "../lib/secretCrypto.js";
+import { getSettings } from "./settingsService.js";
 
 // Liest den Ablauf (exp) aus dem Zugangs-Token, nur zur Anzeige. Ohne Pruefung der Signatur - das Token wird nie als Beweis benutzt.
 export function tokenExpiry(token: string): Date | null {
@@ -32,7 +33,10 @@ export async function saveConnection(input: {
     connectedByName: input.connectedByName,
     connectedAt: new Date(),
     lastSyncAt: null,
-    lastSyncSummary: null
+    lastSyncSummary: null,
+    lastAttemptAt: null,
+    lastSyncAuto: false,
+    lastSyncError: null
   };
   await prisma.bambuConnection.upsert({
     where: { inventoryId: input.inventoryId },
@@ -61,10 +65,11 @@ export async function getStoredToken(inventoryId: string): Promise<{ region: Bam
 
 // Status fuer die Oberflaeche - nie mit dem Token.
 export async function getConnectionInfo(inventoryId: string): Promise<BambuConnectionInfo> {
+  const { bambuAutoSyncMinutes } = await getSettings();
   const usable = await getStoredToken(inventoryId);
   const row = usable ? await prisma.bambuConnection.findUnique({ where: { inventoryId } }) : null;
   if (!usable || !row) {
-    return { connected: false, region: null, connectedByName: null, connectedAt: null, tokenExpiresAt: null, lastSyncAt: null, lastSyncSummary: null };
+    return { connected: false, region: null, connectedByName: null, connectedAt: null, tokenExpiresAt: null, lastSyncAt: null, lastSyncSummary: null, lastAttemptAt: null, lastSyncAuto: false, lastSyncError: null, autoSyncMinutes: bambuAutoSyncMinutes };
   }
   return {
     connected: true,
@@ -73,7 +78,11 @@ export async function getConnectionInfo(inventoryId: string): Promise<BambuConne
     connectedAt: row.connectedAt.toISOString(),
     tokenExpiresAt: row.tokenExpiresAt?.toISOString() ?? null,
     lastSyncAt: row.lastSyncAt?.toISOString() ?? null,
-    lastSyncSummary: row.lastSyncSummary
+    lastSyncSummary: row.lastSyncSummary,
+    lastAttemptAt: row.lastAttemptAt?.toISOString() ?? null,
+    lastSyncAuto: row.lastSyncAuto,
+    lastSyncError: row.lastSyncError,
+    autoSyncMinutes: bambuAutoSyncMinutes
   };
 }
 
@@ -82,6 +91,18 @@ export async function deleteConnection(inventoryId: string): Promise<boolean> {
   return count > 0;
 }
 
-export async function markSynced(inventoryId: string, summary: string): Promise<void> {
-  await prisma.bambuConnection.updateMany({ where: { inventoryId }, data: { lastSyncAt: new Date(), lastSyncSummary: summary } });
+export async function markSynced(inventoryId: string, summary: string, auto = false): Promise<void> {
+  const now = new Date();
+  await prisma.bambuConnection.updateMany({
+    where: { inventoryId },
+    data: { lastSyncAt: now, lastAttemptAt: now, lastSyncAuto: auto, lastSyncSummary: summary, lastSyncError: null }
+  });
+}
+
+// Fehlgeschlagener Versuch: merkt Zeit und Grund, damit der Zeitplan nicht dauernd neu versucht und die Oberflaeche den Grund zeigt.
+export async function markSyncFailed(inventoryId: string, message: string, auto: boolean): Promise<void> {
+  await prisma.bambuConnection.updateMany({
+    where: { inventoryId },
+    data: { lastAttemptAt: new Date(), lastSyncAuto: auto, lastSyncError: message.slice(0, 300) }
+  });
 }

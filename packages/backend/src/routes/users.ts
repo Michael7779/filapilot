@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import {
   createUserInputSchema,
+  updateOwnPreferencesInputSchema,
   updateOwnThemeInputSchema,
   updateUserInputSchema
 } from "@filapilot/shared";
@@ -54,6 +55,25 @@ usersRouter.patch("/me/theme", requireAuth, requirePasswordAlreadyChanged, async
     next(err);
   }
 });
+
+// Threat-Model: Nutzer A koennte die Ansicht/Seitengroesse von Nutzer B aendern oder ungueltige Werte speichern. Serverseitig
+// erzwungen: Update immer auf req.user.id (nie eine Body-userId), Werte nur aus fester Liste (Zod). Negativ-Tests: anonym 401,
+// fremde userId im Body wird ignoriert, ungueltige Ansicht/Seitengroesse 400.
+// SCOPE: self
+usersRouter.patch(
+  "/me/preferences",
+  requireAuth,
+  requirePasswordAlreadyChanged,
+  asyncHandler(async (req, res) => {
+    const input = updateOwnPreferencesInputSchema.parse(req.body);
+    const current = getAuthenticatedUser(req);
+    const updated = await prisma.user.update({
+      where: { id: current.id },
+      data: omitUndefined({ spoolView: input.spoolView, spoolPageSize: input.spoolPageSize })
+    });
+    sendData(res, toPublicUser(updated));
+  })
+);
 
 // Threat-Model: Ein Nutzer ohne Admin-Rolle koennte versuchen, sich selbst oder andere als Admin
 // anzulegen. Serverseitig erzwungen: requireRole("ADMIN") vor dem Handler. Negativ-Test: Nutzer

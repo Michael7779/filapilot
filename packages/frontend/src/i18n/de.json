@@ -207,6 +207,15 @@
     "openNew": "Neu: Änderungsverlauf anzeigen"
   },
   "bambu": {
+    "status": {
+      "last": "Zuletzt aus der Bambu-Cloud aktualisiert: {{date}} ({{how}})",
+      "auto": "automatisch",
+      "manual": "von Hand",
+      "never": "Noch nicht aus der Bambu-Cloud aktualisiert",
+      "interval": "automatisch alle {{hours}} Std.",
+      "autoOff": "automatische Aktualisierung aus",
+      "failed": "Letzter Versuch fehlgeschlagen ({{date}}): {{reason}}"
+    },
     "open": "Aus Bambu-Cloud importieren",
     "title": "Aus Bambu-Cloud in „{{name}}“ importieren",
     "intro": "Melde dich mit deinem Bambu-Konto an, um deine Filamentliste aus Bambu Studio zu übernehmen. Das ist ein einmaliger Import in dieses Lager.",
@@ -353,6 +362,10 @@
       "archivedPart": "{{count}} archiviert",
       "remainingTotal": "Restgewicht gesamt: {{weight}}"
     },
+    "actions": "Aktionen",
+    "view": { "label": "Ansicht", "standard": "Standard", "compact": "Kompakt", "list": "Liste", "swatch": "Farbkacheln" },
+    "pager": { "perPage": "Spulen pro Seite", "all": "Alle", "prev": "Zurück", "next": "Weiter", "page": "Seite {{page}} von {{count}}" },
+    "list": { "color": "Farbe", "nozzle": "Düse", "bed": "Bett", "weight": "Restgewicht", "purchasedAt": "Gekauft am", "addedAt": "Hinzugefügt am", "status": "Status", "active": "Aktiv" },
     "showArchived": "Archiv anzeigen",
     "archive": "Archivieren",
     "unarchive": "Wiederherstellen",
@@ -395,6 +408,10 @@
     "backupFolderPath": "Backup-Ordner (im Container)",
     "backupRetention": "Anzahl aufzubewahrender Sicherungen",
     "backupRetentionHint": "Nach jeder regulären Sicherung werden ältere gelöscht, sodass nur die neuesten übrig bleiben.",
+    "bambuAutoSync": "Automatischer Abgleich mit der Bambu-Cloud",
+    "bambuAutoSyncHint": "Gilt für alle Lager mit gemerkter Bambu-Verbindung. Aus Rücksicht auf die Bambu-Cloud sind mindestens 60 Minuten möglich.",
+    "bambuAutoSyncOff": "Aus",
+    "bambuAutoSyncEvery": "Alle {{hours}} Std.",
     "auditRetention": "Protokoll aufbewahren (Monate)",
     "auditRetentionHint": "0 = unbegrenzt. Ältere Einträge des Änderungsprotokolls werden täglich automatisch gelöscht.",
     "createdAt": "Erstellt am",

@@ -68,3 +68,6 @@
 - **R13**: Ab 0.15.0 lassen sich Spulen im Browser durchsuchen, filtern (Hersteller, Material, Farbe, Lagerort, Restgewicht, Kaufpreis, Fast leer), sortieren
   und zaehlen; die Logik ist rein (`packages/shared/src/spoolFilter.ts`), Oberflaeche `SpoolFilterBar.tsx`. Die Liste ist bereits auf das Lager begrenzt (keine
   serverseitige Filterung, keine Rechte-Auswirkung). Test: `tests/unit/spoolFilter.test.ts`; die Oberflaeche wurde manuell geprueft.
+- **R14**: Ab 0.16.0: Ansicht (standard/compact/list/swatch) und Seitengroesse (12/24/48/96/alle) der Spulenliste werden pro Konto gespeichert
+  (`PATCH /api/users/me/preferences`, SCOPE self, nur feste Werte, fremde userId ignoriert; Browser-Merker nur als Startwert). Die Liste zeigt alle Angaben der Spule.
+  Tests: `tests/security/preferences.test.ts`; die Oberflaeche wurde manuell geprueft.

@@ -120,6 +120,26 @@ describe("Settings - Negativ-Tests", () => {
     assert.equal(denied.status, 403);
   });
 
+  it("validiert das Intervall des automatischen Bambu-Abgleichs (nur feste Werte, mindestens 60 Minuten) und lehnt USER ab", async () => {
+    for (const bad of [-5, 1, 59, 90, 10000, 60.5, "60"]) {
+      const res = await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ bambuAutoSyncMinutes: bad });
+      assert.equal(res.status, 400, String(bad));
+    }
+    const ok = await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ bambuAutoSyncMinutes: 360 });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.data.bambuAutoSyncMinutes, 360);
+    await request(app).patch("/api/settings").set("Cookie", adminCookie).send({ bambuAutoSyncMinutes: 0 });
+
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "normaluser", password: "correct-horse-battery-staple" });
+    const denied = await request(app)
+      .patch("/api/settings")
+      .set("Cookie", login.headers["set-cookie"])
+      .send({ bambuAutoSyncMinutes: 60 });
+    assert.equal(denied.status, 403);
+  });
+
   it("lehnt den SMTP-Test ohne Login (401) und durch nicht-Admin (403) ab", async () => {
     assert.equal((await request(app).post("/api/settings/smtp-test")).status, 401);
     const login = await request(app)

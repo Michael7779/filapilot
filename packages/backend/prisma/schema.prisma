@@ -43,6 +43,9 @@ model User {
   role                UserRole  @default(USER)
   mustChangePassword  Boolean   @default(true)
   themeAccentColor    String?
+  // Bevorzugte Ansicht und Seitengroesse der Spulenliste (leer = Standard)
+  spoolView           String?
+  spoolPageSize       Int?
   lastLoginAt         DateTime?
   lastActiveAt        DateTime?
   resetToken          String?   @unique
@@ -127,6 +130,10 @@ model BambuConnection {
   connectedAt     DateTime  @default(now())
   lastSyncAt      DateTime?
   lastSyncSummary String?
+  // Letzter Versuch (auch fehlgeschlagen), ob er automatisch lief, und der Fehler des letzten Versuchs
+  lastAttemptAt   DateTime?
+  lastSyncAuto    Boolean   @default(false)
+  lastSyncError   String?
 
   @@map("bambu_connections")
 }
@@ -303,6 +310,8 @@ model Settings {
   backupRetentionCount               Int      @default(14)
   // Wie viele Monate das Aenderungsprotokoll aufbewahrt wird; 0 = unbegrenzt.
   auditRetentionMonths               Int      @default(12)
+  // Automatischer Abgleich gemerkter Bambu-Verbindungen in Minuten, 0 = aus
+  bambuAutoSyncMinutes               Int      @default(0)
   // Stand der mitgelieferten Hersteller-/Material-Vorlagen, die zuletzt eingespielt wurden.
   catalogVersion                     Int      @default(0)
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt.

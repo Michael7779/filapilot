@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { createApp } from "./app.js";
 import { attachSocketServer } from "./socket.js";
 import { startDailyBackupScheduler } from "./services/backupScheduler.js";
+import { startBambuAutoSync } from "./services/bambuAutoSync.js";
 import { connectAllPrinters } from "./services/printerRuntime.js";
 import { ensureDefaultInventory } from "./services/inventoryService.js";
 import { runWithStartupRetry } from "./lib/startupRetry.js";
@@ -15,6 +16,7 @@ const app = createApp();
 const httpServer = createServer(app);
 attachSocketServer(httpServer);
 startDailyBackupScheduler();
+startBambuAutoSync();
 
 // Erst das Hauptlager sicherstellen (Spulen/Drucker ohne Lager zuordnen), dann die Drucker verbinden. Direkt nach einem Update
 // fehlen der Datenbank evtl. noch Tabellen (das Update-Skript gleicht sie erst nach dem Start ab) - dann wird es wiederholt.

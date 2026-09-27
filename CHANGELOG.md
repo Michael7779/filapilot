@@ -8,6 +8,14 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.16.0] - 2026-09-27
+
+### Hinzugefügt
+- Vier Ansichten der Spulenliste: Standard, Kompakt (kleine Kacheln, Aktionen im Menü), Liste (Tabelle mit allen Angaben: Farbe mit Farbcode, Hersteller, Material, Düsen- und Betttemperatur, Restgewicht, Lagerort, Preis, Kaufdatum, Hinzugefügt-Datum, Status) und Farbkacheln. Die zuletzt gewählte Ansicht wird pro Konto gespeichert und beim nächsten Öffnen (auch auf einem anderen Gerät) wieder angezeigt. Auf schmalen Handys startet neuen Konten die Kompakt-Ansicht.
+- Die Zahl der Spulen pro Seite ist einstellbar (12, 24, 48, 96 oder alle) und wird ebenfalls im Konto gemerkt; darunter gibt es Zurück/Weiter.
+- Auf der Spulen-Seite steht bei verbundenen Lagern, wann zuletzt aus der Bambu-Cloud aktualisiert wurde (Datum, Uhrzeit, automatisch oder von Hand), ob die automatische Aktualisierung an ist und, falls der letzte Versuch fehlschlug, warum.
+- Automatischer Abgleich mit der Bambu-Cloud für alle Lager mit gemerkter Verbindung. Das Intervall stellt der Admin unter Einstellungen → Allgemein ein (aus, oder alle 1, 3, 6, 12 oder 24 Stunden). Ein Fehler wird vermerkt und nicht sofort wiederholt; ein abgelaufenes Token trennt die Verbindung wie beim manuellen Abgleich.
+
 ## [0.15.0] - 2026-09-26
 
 ### Hinzugefügt

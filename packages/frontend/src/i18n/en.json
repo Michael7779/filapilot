@@ -207,6 +207,15 @@
     "openNew": "New: show change history"
   },
   "bambu": {
+    "status": {
+      "last": "Last updated from Bambu Cloud: {{date}} ({{how}})",
+      "auto": "automatic",
+      "manual": "manual",
+      "never": "Not updated from Bambu Cloud yet",
+      "interval": "automatically every {{hours}} h",
+      "autoOff": "automatic update off",
+      "failed": "Last attempt failed ({{date}}): {{reason}}"
+    },
     "open": "Import from Bambu Cloud",
     "title": "Import from Bambu Cloud into “{{name}}”",
     "intro": "Sign in with your Bambu account to take over your filament list from Bambu Studio. This is a one-time import into this inventory.",
@@ -353,6 +362,10 @@
       "archivedPart": "{{count}} archived",
       "remainingTotal": "Total remaining weight: {{weight}}"
     },
+    "actions": "Actions",
+    "view": { "label": "View", "standard": "Standard", "compact": "Compact", "list": "List", "swatch": "Color tiles" },
+    "pager": { "perPage": "Spools per page", "all": "All", "prev": "Back", "next": "Next", "page": "Page {{page}} of {{count}}" },
+    "list": { "color": "Color", "nozzle": "Nozzle", "bed": "Bed", "weight": "Remaining weight", "purchasedAt": "Purchased", "addedAt": "Added", "status": "Status", "active": "Active" },
     "showArchived": "Show archive",
     "archive": "Archive",
     "unarchive": "Restore",
@@ -395,6 +408,10 @@
     "backupFolderPath": "Backup folder (inside the container)",
     "backupRetention": "Number of backups to keep",
     "backupRetentionHint": "After each regular backup, older ones are deleted so that only the newest remain.",
+    "bambuAutoSync": "Automatic sync with Bambu Cloud",
+    "bambuAutoSyncHint": "Applies to all inventories with a remembered Bambu connection. To be gentle on the Bambu Cloud, the minimum is 60 minutes.",
+    "bambuAutoSyncOff": "Off",
+    "bambuAutoSyncEvery": "Every {{hours}} h",
     "auditRetention": "Keep change log (months)",
     "auditRetentionHint": "0 = unlimited. Older change-log entries are deleted automatically every day.",
     "createdAt": "Created on",
