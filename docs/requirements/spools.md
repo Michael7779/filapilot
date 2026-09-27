@@ -77,7 +77,7 @@
   und diese `entityId`, anders als das admin-only Gesamt-Protokoll). `GET /api/spools/export?inventoryId=&format=csv|json` (VIEWER, "all" nur eigene
   Lager) liefert den Bestand als Datei (CSV mit BOM fuer Excel, oder JSON). Loeschen von Drucker/Spule raeumt `PrintJob`-Eintraege jetzt kaskadierend
   auf (wie der Gewichtsverlauf). Tests: `tests/security/spoolExtras.test.ts`; die Oberflaeche (Formular, Listenansicht, Verlauf, Export-Links) wurde
-  manuell im Browser geprueft.
+  manuell im Browser geprueft. Ab 0.20.1 zeigt der Verlauf pro Eintrag zusaetzlich die Art (Angelegt/Geaendert/Ereignis) und bei Aenderungen die betroffenen Werte direkt als "vorher -> nachher" (`components/SpoolHistoryModal.tsx`), statt nur Beschreibung/Datum/Person.
 - **R16**: Der CSV-Export trennt Spalten mit Semikolon (nicht Komma) und beginnt mit einer UTF-8-BOM, damit Excel mit
   deutscher Spracheinstellung die Datei per Doppelklick korrekt in Spalten aufteilt und Umlaute richtig zeigt (deutsche
   Windows-Installationen nutzen das Semikolon als Listentrennzeichen); der Kaufpreis nutzt das Komma als Dezimaltrennzeichen.

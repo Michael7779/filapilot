@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { AuditEntry } from "@filapilot/shared";
 
-function formatValue(key: string, value: unknown, translate: (key: string, fallback: string) => string): string {
+export function formatValue(key: string, value: unknown, translate: (key: string, fallback: string) => string): string {
   if (value === null || value === undefined || value === "") {
     return "—";
   }

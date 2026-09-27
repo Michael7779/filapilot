@@ -12,6 +12,7 @@ erscheint nicht in der App.
 
 ### Behoben
 - Der Verlauf einer Spule zeigte bisher nichts an, wenn sie aus der Bambu-Cloud importiert oder durch den Cloud-Abgleich geändert wurde (nur ein Sammel-Eintrag am Lager wurde geschrieben). Jetzt bekommt jede Spule dafür einen eigenen Eintrag: Anlegen, Restgewicht-Änderung sowie Archivieren/Wiederherstellen durch den Abgleich. Ein Abgleich ohne echte Änderung erzeugt weiterhin keinen Eintrag.
+- Die Einträge im Verlauf einer Spule zeigten nur Beschreibung, Datum und Person - nicht, was sich geändert hat. Jetzt steht dabei, ob angelegt/geändert/ein Ereignis war, und bei Änderungen direkt "vorher → nachher" (z.B. Restgewicht).
 
 ### Geändert
 - Beim Bambu-Cloud-Import ist "Verbindung für dieses Lager merken" jetzt standardmäßig angehakt (Besitzer können den Haken weiterhin entfernen).

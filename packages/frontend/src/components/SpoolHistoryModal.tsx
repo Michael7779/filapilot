@@ -2,11 +2,36 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AuditEntry, SpoolWithRelations } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
-import { AuditEntryDetailModal } from "./AuditEntryDetail.js";
+import { AuditEntryDetailModal, formatValue } from "./AuditEntryDetail.js";
 
 interface SpoolHistoryModalProps {
   spool: SpoolWithRelations;
   onClose: () => void;
+}
+
+// Kurzfassung "was hat sich geaendert", damit man das nicht erst aufklappen muss: bei Aenderungen die
+// abweichenden Felder (vorher -> nachher), beim Anlegen das Restgewicht, mit dem die Spule anfing.
+function summarize(entry: AuditEntry, translate: (key: string, fallback: string) => string): string | null {
+  const before = (entry.before ?? {}) as Record<string, unknown>;
+  const after = (entry.after ?? {}) as Record<string, unknown>;
+  if (entry.action === "UPDATE") {
+    const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
+      (key) => JSON.stringify(before[key]) !== JSON.stringify(after[key])
+    );
+    if (keys.length === 0) {
+      return null;
+    }
+    return keys
+      .map((key) => {
+        const label = translate(`audit.fields.${key}`, key);
+        return `${label}: ${formatValue(key, before[key], translate)} → ${formatValue(key, after[key], translate)}`;
+      })
+      .join(" · ");
+  }
+  if (entry.action === "CREATE" && after.remainingWeightG !== undefined) {
+    return `${translate("audit.fields.remainingWeightG", "Restgewicht (g)")}: ${formatValue("remainingWeightG", after.remainingWeightG, translate)}`;
+  }
+  return null;
 }
 
 // Protokoll (Aenderungsverlauf) genau dieser einen Spule - aus dem allgemeinen Protokoll gefiltert, aber auch
@@ -42,17 +67,27 @@ export function SpoolHistoryModal({ spool, onClose }: SpoolHistoryModalProps): R
         {entries && entries.length === 0 && <p className="text-sm text-[var(--color-text-secondary)]">{t("spools.history.empty")}</p>}
         {entries && entries.length > 0 && (
           <ul className="flex flex-col">
-            {entries.map((entry) => (
-              <li key={entry.id} className="border-t border-[var(--color-border)] py-2 text-sm first:border-t-0">
-                <button type="button" onClick={() => setDetail(entry)} className="w-full text-left">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{entry.description}</span>
-                    <span className="shrink-0 text-xs text-[var(--color-text-muted)]">{new Date(entry.createdAt).toLocaleString(i18n.language)}</span>
-                  </div>
-                  <div className="text-xs text-[var(--color-text-muted)]">{entry.username}</div>
-                </button>
-              </li>
-            ))}
+            {entries.map((entry) => {
+              const translate = (key: string, fallback: string): string => t(key, { defaultValue: fallback });
+              const summary = summarize(entry, translate);
+              return (
+                <li key={entry.id} className="border-t border-[var(--color-border)] py-2 text-sm first:border-t-0">
+                  <button type="button" onClick={() => setDetail(entry)} className="w-full text-left">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2">
+                        <span className="rounded-full bg-[var(--color-bg)] px-2 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">
+                          {t(`audit.actions.${entry.action}`)}
+                        </span>
+                        <span className="font-medium">{entry.description}</span>
+                      </span>
+                      <span className="shrink-0 text-xs text-[var(--color-text-muted)]">{new Date(entry.createdAt).toLocaleString(i18n.language)}</span>
+                    </div>
+                    {summary && <div className="mt-1 text-xs text-[var(--color-text-secondary)]">{summary}</div>}
+                    <div className="text-xs text-[var(--color-text-muted)]">{entry.username}</div>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
         <button type="button" onClick={onClose} className="self-end rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium">
