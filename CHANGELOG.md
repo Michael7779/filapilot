@@ -8,6 +8,16 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.21.3] - 2026-09-28
+
+### Hinzugefuegt
+- Zusatzfelder können jetzt als Pflichtfeld markiert werden – eine Spule lässt sich dann ohne einen Wert dafür nicht mehr anlegen oder ändern.
+- Wunschliste: Die Auswahl aus den Hersteller-/Material-Dropdowns wird jetzt als echter Verweis gespeichert (nicht nur als Text) und in der Liste angezeigt.
+- Lager-Besitzer können jetzt einen "Verlauf"-Knopf für ihr eigenes Lager öffnen und sehen darin alles, was in ihrem Lager passiert ist – bisher war das nur Admins vorbehalten.
+
+### Behoben
+- Ein Server-Neustart mitten in einem laufenden Druck ließ den automatischen Verbrauch für genau diesen Auftrag verloren gehen. Der Zwischenstand wird jetzt zusätzlich gespeichert und übersteht einen Neustart.
+
 ## [0.21.2] - 2026-09-27
 
 ### Hinzugefuegt

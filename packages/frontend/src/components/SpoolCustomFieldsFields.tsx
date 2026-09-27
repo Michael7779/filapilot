@@ -38,8 +38,10 @@ export function SpoolCustomFieldsFields({ definitions, values, onChange }: Spool
         return (
           <label key={definition.id} className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
             {definition.name}
+            {definition.required && <span className="text-[var(--color-danger)]"> *</span>}
             <input
               type={inputType}
+              required={definition.required}
               value={value === null ? "" : String(value)}
               onChange={(event) => {
                 const raw = event.target.value;

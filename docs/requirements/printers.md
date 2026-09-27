@@ -40,8 +40,9 @@
 - OP-P5: Der AMS-Fuellstand-Prozentwert bezieht sich auf das Gewicht, das der Drucker/Bambu Studio fuer die Spule
   kennt - nicht zwingend das in FilaPilot hinterlegte Ursprungsgewicht. Die automatische Gramm-Berechnung ist deshalb
   eine Naeherung.
-- OP-P6: Ein Serverneustart waehrend eines laufenden Drucks verliert die Erkennung fuer genau diesen einen Auftrag
-  (In-Memory-Zustand); der naechste Auftrag wird wieder normal erfasst.
+- OP-P6 ✅ (0.21.3): Der Zwischenstand liegt jetzt auch in der Datenbank (`Printer.lastKnownPrintState`/
+  `activeJobName`/`activeJobStartedAt`), nicht mehr nur im Arbeitsspeicher - ein Serverneustart mitten im Druck
+  verliert die Kalibrierung nicht mehr. Siehe R7.
 - OP-P7: Mehrere AMS-Einheiten in Reihe an einem Drucker werden nicht unterschieden (nur die erste wird gelesen).
 
 ## 1.2 Anforderungen
@@ -69,7 +70,12 @@
   Erfolg/Misserfolg angelegt, und die Kalibrierung aufgefrischt. Pause/Fortsetzen beendet keinen Auftrag. Ohne
   Zuordnung, ohne bekannten Fuellstand oder wenn die Spule inzwischen in einem anderen Lager liegt, wird nichts
   gebucht. Ein Fehler hier darf die Status-Anzeige nie stoeren (nur geloggt).
-  Tests: `tests/unit/printJobTracker.test.ts` (reine Logik), `tests/integration/printJobTracker.test.ts` (mit DB)
+  Ab 0.21.3: Zustand (letzter Status, laufender Auftrag) wird zusaetzlich am Drucker gespeichert, nicht mehr nur im
+  Arbeitsspeicher gehalten - bei jeder tatsaechlichen Aenderung geschrieben (nicht bei jedem gleichbleibenden Status),
+  und beim ersten Status je Drucker aus der DB zurueckgelesen. Ein Serverneustart mitten im Druck erkennt den Auftrag
+  dadurch weiterhin als laufend, statt ihn faelschlich neu zu beginnen und die bisherige Kalibrierung zu verwerfen.
+  Tests: `tests/unit/printJobTracker.test.ts` (reine Logik), `tests/integration/printJobTracker.test.ts` (mit DB,
+  inkl. simuliertem Neustart)
 - **R8**: `GET /api/print-jobs?inventoryId=<uuid|all>&printerId=&spoolId=&limit=&cursor=` (VIEWER, cursor-basierte
   Seiten à max. 50) zeigt den Auftrags-Verlauf mit Anzeigenamen; "all" nur eigene Lager, ein fremder Drucker/Spule-Filter
   404. Auf der Statistik-Seite als "Letzte Druckaufträge" (`PrintJobHistory.tsx`) und in den Drucker-Einstellungen als

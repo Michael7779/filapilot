@@ -120,4 +120,33 @@ describe("Automatische Verbrauchsbuchung aus dem Druckstatus", () => {
     const untouched = await prisma.spool.findUniqueOrThrow({ where: { id: otherSpoolId } });
     assert.equal(untouched.remainingWeightG, 500);
   });
+
+  it("uebersteht einen Server-Neustart mitten im Druck: die Kalibrierung von vor dem Neustart bleibt gueltig (OP-P6)", async () => {
+    await prisma.amsSlotAssignment.create({ data: { printerId, slotIndex: 0, spoolId } });
+
+    await processPrinterStatus(printer(), status({ printState: "running", currentJobName: "Ueberlebt-Neustart", amsSlots: [{ slotIndex: 0, reportedMaterial: null, reportedColorHex: null, remainingPercent: 80 }] }));
+    const midway = await prisma.printer.findUniqueOrThrow({ where: { id: printerId } });
+    assert.equal(midway.lastKnownPrintState, "running");
+    assert.equal(midway.activeJobName, "Ueberlebt-Neustart");
+
+    // Simuliert den Neustart: der Arbeitsspeicher-Zustand ist weg, der Drucker meldet aber weiterhin "running".
+    resetPrintJobTrackerForTests();
+    await processPrinterStatus(printer(), status({ printState: "running", amsSlots: [{ slotIndex: 0, reportedMaterial: null, reportedColorHex: null, remainingPercent: 75 }] }));
+
+    const afterRestartAssignment = await prisma.amsSlotAssignment.findFirstOrThrow({ where: { printerId, slotIndex: 0 } });
+    // Waere die Kalibrierung faelschlich neu gesetzt worden (als "neuer Start" erkannt), stuende hier 75 statt 80.
+    assert.equal(afterRestartAssignment.baselineRemainPercent, 80);
+
+    await processPrinterStatus(printer(), status({ printState: "finished", amsSlots: [{ slotIndex: 0, reportedMaterial: null, reportedColorHex: null, remainingPercent: 60 }] }));
+
+    const jobs = await prisma.printJob.findMany({ where: { spoolId } });
+    assert.equal(jobs.length, 1);
+    // 80% -> 60% = 200g, nicht nur die 75% -> 60% = 150g nach dem Neustart - der Verbrauch VOR dem Neustart zaehlt mit.
+    assert.equal(jobs[0].filamentUsedG, 200);
+    assert.equal(jobs[0].name, "Ueberlebt-Neustart");
+
+    const cleared = await prisma.printer.findUniqueOrThrow({ where: { id: printerId } });
+    assert.equal(cleared.lastKnownPrintState, "finished");
+    assert.equal(cleared.activeJobName, null);
+  });
 });

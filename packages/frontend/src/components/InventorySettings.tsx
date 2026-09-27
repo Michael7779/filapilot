@@ -5,6 +5,7 @@ import { InventoryDeleteModal } from "./InventoryDeleteModal.js";
 import { InventoryFormModal } from "./InventoryFormModal.js";
 import { InventoryMembersModal } from "./InventoryMembersModal.js";
 import { InventoryMoveModal } from "./InventoryMoveModal.js";
+import { InventoryAuditModal } from "./InventoryAuditModal.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 
 type Dialog =
@@ -12,6 +13,7 @@ type Dialog =
   | { kind: "rename"; inventory: Inventory }
   | { kind: "members"; inventory: Inventory }
   | { kind: "move"; inventory: Inventory }
+  | { kind: "audit"; inventory: Inventory }
   | { kind: "delete"; inventory: Inventory };
 
 const linkButton = "text-xs font-medium";
@@ -98,6 +100,14 @@ export function InventorySettings(): React.JSX.Element {
                     >
                       {t("inventory.rename")}
                     </button>
+                    <button
+                      type="button"
+                      className={linkButton}
+                      style={{ color: "var(--accent)" }}
+                      onClick={() => setDialog({ kind: "audit", inventory })}
+                    >
+                      {t("inventory.audit.action")}
+                    </button>
                     {inventory.spoolCount > 0 && (
                       <button
                         type="button"
@@ -160,6 +170,7 @@ export function InventorySettings(): React.JSX.Element {
           }}
         />
       )}
+      {dialog?.kind === "audit" && <InventoryAuditModal inventory={dialog.inventory} onClose={close} />}
       {dialog?.kind === "delete" && (
         <InventoryDeleteModal
           inventory={dialog.inventory}

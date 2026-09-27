@@ -76,7 +76,7 @@ function inventoryOf(spool: { inventory: { id: string; name: string } | null }):
 
 // Gegen die bekannten Zusatzfeld-Definitionen validieren (Whitelist der Schluessel + Typ je Definition).
 async function resolveCustomFields(raw: RawCustomFieldValues): Promise<CustomFieldValues> {
-  const definitions = await prisma.customFieldDefinition.findMany({ select: { id: true, kind: true, name: true } });
+  const definitions = await prisma.customFieldDefinition.findMany({ select: { id: true, kind: true, name: true, required: true } });
   try {
     return validateCustomFieldValues(definitions, raw);
   } catch (err) {

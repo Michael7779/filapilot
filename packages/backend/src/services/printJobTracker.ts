@@ -35,12 +35,35 @@ interface ActiveJob {
   startedAt: Date;
 }
 
+// In-Memory-Zwischenspeicher (schnell, kein DB-Zugriff bei jedem MQTT-Status), aber bei jeder tatsaechlichen
+// Aenderung sofort in Printer.lastKnownPrintState/activeJobName/activeJobStartedAt gespiegelt (siehe hydrate/
+// persist unten) - ein Server-Neustart mitten im Druck liest beim naechsten Status den letzten Stand aus der DB
+// zurueck, statt faelschlich einen neuen Auftrag zu beginnen und die bisherige Kalibrierung zu verwerfen (OP-P6).
 const previousState = new Map<string, PrintState>();
 const activeJobs = new Map<string, ActiveJob>();
+const hydrated = new Set<string>();
 
 export function resetPrintJobTrackerForTests(): void {
   previousState.clear();
   activeJobs.clear();
+  hydrated.clear();
+}
+
+async function hydrate(printerId: string): Promise<void> {
+  if (hydrated.has(printerId)) {
+    return;
+  }
+  hydrated.add(printerId);
+  const row = await prisma.printer.findUnique({
+    where: { id: printerId },
+    select: { lastKnownPrintState: true, activeJobName: true, activeJobStartedAt: true }
+  });
+  if (row?.lastKnownPrintState) {
+    previousState.set(printerId, row.lastKnownPrintState as PrintState);
+  }
+  if (row?.activeJobName && row.activeJobStartedAt) {
+    activeJobs.set(printerId, { name: row.activeJobName, startedAt: row.activeJobStartedAt });
+  }
 }
 
 interface TrackedPrinter {
@@ -130,17 +153,28 @@ async function finalizeEnd(printer: TrackedPrinter, status: PrinterLiveStatus, j
 // ein Fehler hier darf die Status-Anzeige/den Socket-Broadcast nicht stoeren.
 export async function processPrinterStatus(printer: TrackedPrinter, status: PrinterLiveStatus, deps: PrintJobTrackerDeps = {}): Promise<void> {
   const now = deps.now?.() ?? new Date();
+  await hydrate(printer.id);
   const previous = previousState.get(printer.id) ?? null;
   const transition = decideTransition(previous, status.printState);
-  previousState.set(printer.id, status.printState);
+  if (previous !== status.printState) {
+    previousState.set(printer.id, status.printState);
+    await prisma.printer.update({ where: { id: printer.id }, data: { lastKnownPrintState: status.printState } }).catch(() => undefined);
+  }
 
   try {
     if (transition === "start") {
-      activeJobs.set(printer.id, { name: status.currentJobName ?? "Druckauftrag", startedAt: now });
+      const job: ActiveJob = { name: status.currentJobName ?? "Druckauftrag", startedAt: now };
+      activeJobs.set(printer.id, job);
+      await prisma.printer
+        .update({ where: { id: printer.id }, data: { activeJobName: job.name, activeJobStartedAt: job.startedAt } })
+        .catch(() => undefined);
       await captureStart(printer, status);
     } else if (transition === "end") {
       const job = activeJobs.get(printer.id);
       activeJobs.delete(printer.id);
+      await prisma.printer
+        .update({ where: { id: printer.id }, data: { activeJobName: null, activeJobStartedAt: null } })
+        .catch(() => undefined);
       await finalizeEnd(printer, status, job, now);
     }
   } catch (err) {

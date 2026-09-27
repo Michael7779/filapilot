@@ -101,6 +101,27 @@ describe("Spulen: zweite Farbe, Notiz, Zusatzfelder, Protokoll und Export - Nega
     assert.deepEqual(updated.body.data.customFields, { [numberFieldId]: 1 });
   });
 
+  it("erzwingt ein Pflichtfeld beim Anlegen und beim vollstaendigen Ersetzen (400 ohne Wert)", async () => {
+    const requiredField = await prisma.customFieldDefinition.create({ data: { name: "Pflicht Test", kind: "TEXT", required: true } });
+    try {
+      const missing = await post(editor, spoolBody({ customFields: { [textFieldId]: "Ohne Pflichtfeld" } }));
+      assert.equal(missing.status, 400);
+
+      const withValue = await post(editor, spoolBody({ customFields: { [requiredField.id]: "Los-1" } }));
+      assert.equal(withValue.status, 201);
+
+      // Beim Aendern OHNE customFields bleibt der vorhandene Pflichtwert unangetastet (kein erneuter Zwang).
+      const untouched = await patch(editor, withValue.body.data.id, { note: "nur Notiz geaendert" });
+      assert.equal(untouched.status, 200);
+
+      // Wird customFields beim Aendern mitgeschickt (voller Ersatz), muss das Pflichtfeld weiterhin dabei sein.
+      const replacedWithoutRequired = await patch(editor, withValue.body.data.id, { customFields: { [textFieldId]: "x" } });
+      assert.equal(replacedWithoutRequired.status, 400);
+    } finally {
+      await prisma.customFieldDefinition.delete({ where: { id: requiredField.id } });
+    }
+  });
+
   it("Protokoll einer Spule: Fremde 404, Betrachter duerfen lesen, zeigt nur Eintraege dieser Spule", async () => {
     const created = await post(editor, spoolBody({ colorName: "Protokoll-Test" }));
     const id = created.body.data.id;

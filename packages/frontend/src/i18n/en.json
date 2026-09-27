@@ -339,6 +339,12 @@
     "add": "Add",
     "counts": "{{spools}} spools · {{printers}} printers · {{members}} members",
     "moveSpools": "Move spools",
+    "audit": {
+      "action": "History",
+      "title": "History: {{name}}",
+      "empty": "No entry in the log yet.",
+      "loadFailed": "Couldn't load the history."
+    },
     "moveTitle": "Move spools out of “{{name}}”",
     "moveHint": "All spools of this inventory ({{count}}), including archived ones, are moved with their consumption history to the chosen inventory. The inventory itself stays.",
     "moveTarget": "Target inventory",
@@ -569,6 +575,9 @@
       "kindLabel": "Type",
       "kind": { "TEXT": "Text", "NUMBER": "Number", "DATE": "Date", "BOOLEAN": "Yes/No" },
       "add": "Add",
+      "required": "Required",
+      "makeRequired": "Make required",
+      "makeOptional": "Make optional",
       "confirmDelete": "Really delete the custom field \"{{name}}\"? Values spools have for it will then disappear from view."
     },
     "densityHint": "For the spool's estimated remaining length. Typical values: PLA 1.24 · PETG 1.27 · ABS 1.04 · TPU 1.21.",

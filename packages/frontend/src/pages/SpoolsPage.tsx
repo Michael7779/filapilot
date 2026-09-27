@@ -153,7 +153,11 @@ export function SpoolsPage(): React.JSX.Element {
     try {
       await apiRequest("/wishlist", {
         method: "POST",
-        body: JSON.stringify({ title: `${spool.manufacturerName} ${spool.materialName} ${spool.colorName}` })
+        body: JSON.stringify({
+          title: `${spool.manufacturerName} ${spool.materialName} ${spool.colorName}`,
+          manufacturerId: spool.manufacturerId,
+          materialId: spool.materialId
+        })
       });
       setActionNotice(t("spools.addedToWishlist"));
     } catch (err) {

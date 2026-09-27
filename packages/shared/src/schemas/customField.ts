@@ -7,11 +7,15 @@ export const customFieldDefinitionSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(40),
   kind: customFieldKindSchema,
+  // Pflichtfeld: eine Spule kann ohne Wert dafuer nicht angelegt/geaendert werden (siehe validateCustomFieldValues).
+  required: z.boolean(),
   createdAt: z.coerce.date()
 });
 export type CustomFieldDefinition = z.infer<typeof customFieldDefinitionSchema>;
 
-export const createCustomFieldDefinitionInputSchema = customFieldDefinitionSchema.omit({ id: true, createdAt: true });
+export const createCustomFieldDefinitionInputSchema = customFieldDefinitionSchema
+  .omit({ id: true, createdAt: true, required: true })
+  .extend({ required: z.boolean().optional().default(false) });
 export type CreateCustomFieldDefinitionInput = z.infer<typeof createCustomFieldDefinitionInputSchema>;
 
 // Werte, die eine Spule fuer die Zusatzfelder haelt: Schluessel = Definitions-ID, roh (noch nicht gegen die

@@ -5,16 +5,17 @@ import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendData, AppError } from "../lib/apiResult.js";
 import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../middleware/auth.js";
-import { actorFromRequest, recordAudit } from "../services/auditService.js";
+import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 
 export const customFieldDefinitionsRouter = Router();
 
 const requireActiveUser = [requireAuth, requirePasswordAlreadyChanged] as const;
 const requireAdmin = [...requireActiveUser, requireRole("ADMIN")] as const;
 const idParamSchema = z.string().uuid();
+const updateRequiredInputSchema = z.object({ required: z.boolean() });
 
-function toPublic(row: { id: string; name: string; kind: string; createdAt: Date }): CustomFieldDefinition {
-  return { id: row.id, name: row.name, kind: row.kind as CustomFieldDefinition["kind"], createdAt: row.createdAt };
+function toPublic(row: { id: string; name: string; kind: string; required: boolean; createdAt: Date }): CustomFieldDefinition {
+  return { id: row.id, name: row.name, kind: row.kind as CustomFieldDefinition["kind"], required: row.required, createdAt: row.createdAt };
 }
 
 // Threat-Model: Ein normaler Benutzer koennte versuchen, Zusatzfelder anzulegen oder zu loeschen und damit die
@@ -49,9 +50,35 @@ customFieldDefinitionsRouter.post(
       area: "CUSTOM_FIELD",
       entityId: created.id,
       description: `${created.name} (${created.kind})`,
-      after: { name: created.name, kind: created.kind }
+      after: { name: created.name, kind: created.kind, required: created.required }
     });
     sendData(res, toPublic(created), 201);
+  })
+);
+
+// Nur "required" ist aenderbar (nicht Name/Typ - das haette Auswirkungen auf bereits gespeicherte Werte).
+// Threat-Model: wie oben (nur Admin, sonst 403); nicht existentes Feld -> 404.
+// SCOPE: global
+customFieldDefinitionsRouter.patch(
+  "/:id",
+  ...requireAdmin,
+  asyncHandler(async (req, res) => {
+    const id = idParamSchema.parse(req.params.id);
+    const input = updateRequiredInputSchema.parse(req.body);
+    const before = await prisma.customFieldDefinition.findUnique({ where: { id } });
+    if (!before) {
+      throw new AppError("NOT_FOUND", "Zusatzfeld wurde nicht gefunden.");
+    }
+    const updated = await prisma.customFieldDefinition.update({ where: { id }, data: { required: input.required } });
+    await recordUpdate({
+      actor: actorFromRequest(req),
+      area: "CUSTOM_FIELD",
+      entityId: id,
+      description: `${updated.name} (${updated.kind})`,
+      before: { name: before.name, kind: before.kind, required: before.required },
+      after: { name: updated.name, kind: updated.kind, required: updated.required }
+    });
+    sendData(res, toPublic(updated));
   })
 );
 
@@ -77,7 +104,7 @@ customFieldDefinitionsRouter.delete(
       area: "CUSTOM_FIELD",
       entityId: id,
       description: `${before.name} (${before.kind})`,
-      before: { name: before.name, kind: before.kind }
+      before: { name: before.name, kind: before.kind, required: before.required }
     });
     sendData(res, { deleted: true });
   })

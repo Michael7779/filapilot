@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/prisma.js";
-import { createLoggedInUser, resetInventoryData, type TestUser } from "../helpers/fixtures.js";
+import { createCatalogEntries, createLoggedInUser, resetInventoryData, type TestUser } from "../helpers/fixtures.js";
 
 describe("Wunschliste (instanzweit) - Negativ-Tests", () => {
   const app = createApp();
@@ -103,5 +103,28 @@ describe("Wunschliste (instanzweit) - Negativ-Tests", () => {
 
     const again = await call("delete", "/api/wishlist/done", alice);
     assert.deepEqual(again.body.data, { deleted: 0 });
+  });
+
+  it("speichert einen optionalen Verweis auf Hersteller/Material, zeigt deren Namen, und weist unbekannte IDs ab (400)", async () => {
+    const catalog = await createCatalogEntries();
+    const created = await call("post", "/api/wishlist", alice, {
+      title: "Mit Verweis",
+      manufacturerId: catalog.manufacturerId,
+      materialId: catalog.materialId
+    });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.manufacturerId, catalog.manufacturerId);
+    assert.equal(created.body.data.materialName, "Test PLA");
+
+    const unknown = await call("post", "/api/wishlist", alice, { title: "Unbekannt", manufacturerId: "00000000-0000-0000-0000-000000000000" });
+    assert.equal(unknown.status, 400);
+
+    // Aendern des Verweises ist Inhalt - nur Ersteller/Admin, wie Titel/Notiz/Menge.
+    const forbidden = await call("patch", `/api/wishlist/${created.body.data.id}`, bob, { materialId: null });
+    assert.equal(forbidden.status, 403);
+    const cleared = await call("patch", `/api/wishlist/${created.body.data.id}`, alice, { materialId: null });
+    assert.equal(cleared.status, 200);
+    assert.equal(cleared.body.data.materialId, null);
+    assert.equal(cleared.body.data.materialName, null);
   });
 });

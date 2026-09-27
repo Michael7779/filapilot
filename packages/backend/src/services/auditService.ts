@@ -1,6 +1,6 @@
 import type { Request } from "express";
 import type { Prisma } from "@prisma/client";
-import type { AuditAction, AuditArea, AuditEntry, AuditQuery, AuditListResult } from "@filapilot/shared";
+import type { AuditAction, AuditArea, AuditEntry, AuditQuery, AuditListResult, AuditPage, InventoryAuditQuery } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { logger } from "../logger.js";
 import { getAuthenticatedUser } from "../middleware/auth.js";
@@ -149,6 +149,42 @@ export async function listAudit(query: AuditQuery): Promise<AuditListResult> {
       .flatMap((row) => (row.inventoryId ? [{ id: row.inventoryId, name: row.inventoryName ?? "" }] : []))
       .sort((a, b) => a.name.localeCompare(b.name, "de"))
   };
+}
+
+// Protokoll EINES Lagers (Besitzer-Ansicht, OP-L5): dieselben Filter wie das globale Admin-Protokoll, aber
+// "inventoryId" ist serverseitig fest auf das eine Lager gesetzt (die aufrufende Route hat den Zugriff schon
+// geprueft) - ein Filter aus der Anfrage kann das nie ueberschreiben. Keine usernames/inventories-Auswahllisten,
+// die waeren admin-weite Informationen (welche Nutzer/Lager es sonst noch gibt).
+export async function listInventoryAudit(inventoryId: string, query: InventoryAuditQuery): Promise<AuditPage> {
+  const where: Prisma.AuditLogWhereInput = {
+    inventoryId,
+    ...(query.area ? { area: query.area } : {}),
+    ...(query.action ? { action: query.action } : {}),
+    ...(query.username ? { username: query.username } : {}),
+    ...(query.from || query.to
+      ? { createdAt: { ...(query.from ? { gte: new Date(query.from) } : {}), ...(query.to ? { lte: new Date(query.to) } : {}) } }
+      : {}),
+    ...(query.search
+      ? {
+          OR: [
+            { description: { contains: query.search, mode: "insensitive" } },
+            { username: { contains: query.search, mode: "insensitive" } }
+          ]
+        }
+      : {})
+  };
+
+  const [total, rows] = await Promise.all([
+    prisma.auditLog.count({ where }),
+    prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize
+    })
+  ]);
+
+  return { items: rows.map(toAuditEntry), total, page: query.page, pageSize: query.pageSize };
 }
 
 // Protokolliert eine Aenderung nur, wenn sich wirklich etwas geaendert hat (kein Eintrag fuer "Speichern ohne Aenderung").

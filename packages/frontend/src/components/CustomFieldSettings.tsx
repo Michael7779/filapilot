@@ -14,6 +14,7 @@ export function CustomFieldSettings(): React.JSX.Element {
   const [definitions, setDefinitions] = useState<CustomFieldDefinition[] | null>(null);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<CustomFieldKind>("TEXT");
+  const [required, setRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -36,8 +37,9 @@ export function CustomFieldSettings(): React.JSX.Element {
     setBusy(true);
     setError(null);
     try {
-      await apiRequest("/custom-field-definitions", { method: "POST", body: JSON.stringify({ name: name.trim(), kind }) });
+      await apiRequest("/custom-field-definitions", { method: "POST", body: JSON.stringify({ name: name.trim(), kind, required }) });
       setName("");
+      setRequired(false);
       await load();
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : t("settings.saveFailed"));
@@ -52,6 +54,18 @@ export function CustomFieldSettings(): React.JSX.Element {
     }
     await apiRequest(`/custom-field-definitions/${definition.id}`, { method: "DELETE" });
     await load();
+  }
+
+  async function toggleRequired(definition: CustomFieldDefinition): Promise<void> {
+    try {
+      await apiRequest(`/custom-field-definitions/${definition.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ required: !definition.required })
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : t("settings.saveFailed"));
+    }
   }
 
   if (!definitions) {
@@ -71,11 +85,21 @@ export function CustomFieldSettings(): React.JSX.Element {
             <li key={definition.id} className="flex items-center justify-between gap-2 border-t border-[var(--color-border)] py-2 text-sm first:border-t-0">
               <span>
                 {definition.name} <span className="text-[var(--color-text-muted)]">({t(`catalog.customFields.kind.${definition.kind}`)})</span>
+                {definition.required && (
+                  <span className="ml-2 rounded-full bg-[var(--color-bg)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)]">
+                    {t("catalog.customFields.required")}
+                  </span>
+                )}
               </span>
               {isAdmin && (
-                <button type="button" onClick={() => void handleDelete(definition)} className="text-xs font-medium text-[var(--color-danger)]">
-                  {t("common.delete")}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => void toggleRequired(definition)} className="text-xs font-medium" style={{ color: "var(--accent)" }}>
+                    {definition.required ? t("catalog.customFields.makeOptional") : t("catalog.customFields.makeRequired")}
+                  </button>
+                  <button type="button" onClick={() => void handleDelete(definition)} className="text-xs font-medium text-[var(--color-danger)]">
+                    {t("common.delete")}
+                  </button>
+                </div>
               )}
             </li>
           ))}
@@ -96,6 +120,10 @@ export function CustomFieldSettings(): React.JSX.Element {
                 </option>
               ))}
             </select>
+          </label>
+          <label className="flex items-center gap-2 pb-2 text-xs font-medium text-[var(--color-text-secondary)]">
+            <input type="checkbox" checked={required} onChange={(event) => setRequired(event.target.checked)} />
+            {t("catalog.customFields.required")}
           </label>
           <button
             type="button"

@@ -10,7 +10,9 @@ Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
 - OP-W1 ✅ (0.21.2): Kein automatisches Entfernen, aber `DELETE /api/wishlist/done` (siehe R5) entfernt alle
   erledigten Eintraege auf einmal - bewusst manuell ausgeloest statt automatisch/zeitgesteuert, damit nichts
   verschwindet, das jemand noch als Beleg braucht.
-- OP-W2: Kein Verweis von einem Wunsch auf eine konkrete Spule/einen Katalog-Eintrag (reiner Freitext-Titel).
+- OP-W2 ✅ (0.21.3): Ein Wunsch kann jetzt optional auf einen Hersteller/ein Material verweisen, siehe R6. Ein
+  Verweis auf eine konkrete Spule (statt Katalog-Eintrag) gibt es weiterhin nicht - eine Spule ist etwas Konkretes
+  im eigenen Bestand, ein Wunsch dagegen etwas, das man noch NICHT hat.
 
 ## 1.2 Anforderungen
 - **R1**: Jeder eingeloggte Nutzer kann die Liste lesen und Eintraege anlegen (anonym 401); der Ersteller wird als
@@ -21,6 +23,11 @@ Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
 - **R4**: Eingaben werden validiert (leerer Titel 400, unbekannter Status 400).
 - **R5**: Ab 0.21.2: `DELETE /api/wishlist/done` entfernt alle Eintraege mit Status "erledigt" auf einmal; darf
   jeder aktive Nutzer (wie das Setzen des Status), nicht nur die/der Ersteller:in der einzelnen Eintraege.
+- **R6**: Ab 0.21.3: `manufacturerId`/`materialId` sind optionale Verweise auf die Stammdaten (Name als Momentaufnahme
+  in der Antwort, `manufacturerName`/`materialName`); ein unbekannter Verweis wird abgelehnt (400). Der Verweis ist
+  Inhalt wie Titel/Notiz/Menge - aendern darf nur Ersteller:in oder Admin. Loeschen des verwiesenen Herstellers/
+  Materials setzt den Verweis nur zurueck (SetNull), loescht den Wunsch nicht.
+  Test: `tests/security/wishlist.test.ts`
 
 Tests: `packages/backend/tests/security/wishlist.test.ts`. Oberflaeche manuell im Browser geprueft.
 

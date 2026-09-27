@@ -73,7 +73,13 @@ export function WishlistPage(): React.JSX.Element {
     setSubmitting(true);
     setError(null);
     try {
-      const input: CreateWishlistItemInput = { title: title.trim(), note: note.trim() ? note.trim() : null, quantity: Number(quantity) || 1 };
+      const input: CreateWishlistItemInput = {
+        title: title.trim(),
+        note: note.trim() ? note.trim() : null,
+        quantity: Number(quantity) || 1,
+        manufacturerId: manufacturerId || null,
+        materialId: materialId || null
+      };
       if (editing) {
         await apiRequest(`/wishlist/${editing.id}`, { method: "PATCH", body: JSON.stringify(input) });
       } else {
@@ -98,6 +104,8 @@ export function WishlistPage(): React.JSX.Element {
     setTitle(item.title);
     setNote(item.note ?? "");
     setQuantity(String(item.quantity));
+    setManufacturerId(item.manufacturerId ?? "");
+    setMaterialId(item.materialId ?? "");
   }
 
   async function setStatus(item: WishlistItem, status: WishlistStatus): Promise<void> {
@@ -237,6 +245,11 @@ export function WishlistPage(): React.JSX.Element {
                     {t(`wishlist.status.${item.status}`)}
                   </span>
                 </div>
+                {(item.manufacturerName || item.materialName) && (
+                  <div className="text-xs text-[var(--color-text-muted)]">
+                    {[item.manufacturerName, item.materialName].filter(Boolean).join(" · ")}
+                  </div>
+                )}
                 {item.note && <div className="text-sm text-[var(--color-text-secondary)]">{item.note}</div>}
                 <div className="text-xs text-[var(--color-text-muted)]">
                   {t("wishlist.addedBy", { name: item.addedByName, date: new Date(item.createdAt).toLocaleDateString(i18n.language) })}

@@ -35,8 +35,10 @@ function validateOne(definition: Pick<CustomFieldDefinition, "kind" | "name">, v
 
 // Nur bekannte Zusatzfelder (Whitelist der Definitions-IDs) werden uebernommen, jeder Wert wird gegen den Typ
 // seiner Definition geprueft. Ein unbekannter Schluessel oder falscher Typ wirft CustomFieldValidationError.
+// "raw" ist beim Aufruf immer der vollstaendige, gewuenschte Satz (Anlegen, oder Aendern mit mitgeschicktem
+// customFields - siehe R3 in custom-fields.md), deshalb werden Pflichtfelder hier gegen das Endergebnis geprueft.
 export function validateCustomFieldValues(
-  definitions: readonly Pick<CustomFieldDefinition, "id" | "kind" | "name">[],
+  definitions: readonly Pick<CustomFieldDefinition, "id" | "kind" | "name" | "required">[],
   raw: RawCustomFieldValues
 ): CustomFieldValues {
   const byId = new Map(definitions.map((definition) => [definition.id, definition]));
@@ -47,6 +49,11 @@ export function validateCustomFieldValues(
       throw new CustomFieldValidationError(`Unbekanntes Zusatzfeld: ${key}`);
     }
     result[key] = validateOne(definition, value);
+  }
+  for (const definition of definitions) {
+    if (definition.required && (result[definition.id] === undefined || result[definition.id] === null)) {
+      throw new CustomFieldValidationError(`Zusatzfeld "${definition.name}" ist ein Pflichtfeld.`);
+    }
   }
   return result;
 }

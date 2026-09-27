@@ -61,12 +61,20 @@ export const auditQuerySchema = z.object({
 });
 export type AuditQuery = z.infer<typeof auditQuerySchema>;
 
-export interface AuditListResult {
+export interface AuditPage {
   items: AuditEntry[];
   total: number;
   page: number;
   pageSize: number;
+}
+
+export interface AuditListResult extends AuditPage {
   usernames: string[];
   // Lager, zu denen es Eintraege gibt (fuer die Filter-Auswahl; Name als Momentaufnahme)
   inventories: { id: string; name: string }[];
 }
+
+// Fuer das Protokoll EINES Lagers (Besitzer-Ansicht): dieselben Filter wie oben, aber ohne inventoryId
+// (das Lager steht schon in der Adresse) und ohne die admin-weiten Auswahllisten (usernames/inventories).
+export const inventoryAuditQuerySchema = auditQuerySchema.omit({ inventoryId: true });
+export type InventoryAuditQuery = z.infer<typeof inventoryAuditQuerySchema>;

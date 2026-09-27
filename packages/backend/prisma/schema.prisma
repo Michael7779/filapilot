@@ -87,6 +87,12 @@ model WishlistItem {
   note            String?
   quantity        Int            @default(1)
   status          WishlistStatus @default(OPEN)
+  // Optionaler Verweis auf einen Stammdaten-Eintrag (aus den Dropdowns im Formular) - der Titel bleibt aber
+  // die massgebliche, frei editierbare Anzeige; loeschen von Hersteller/Material entfernt nur den Verweis.
+  manufacturerId  String?
+  manufacturer    Manufacturer?  @relation(fields: [manufacturerId], references: [id], onDelete: SetNull)
+  materialId      String?
+  material        Material?      @relation(fields: [materialId], references: [id], onDelete: SetNull)
   addedByUserId   String?
   addedByUser     User?          @relation("WishlistAddedBy", fields: [addedByUserId], references: [id], onDelete: SetNull)
   addedByName     String
@@ -104,6 +110,9 @@ model CustomFieldDefinition {
   id        String          @id @default(uuid())
   name      String          @unique
   kind      CustomFieldKind
+  // Pflichtfeld: eine Spule kann dann ohne Wert dafuer nicht angelegt/geaendert werden. Default false, damit
+  // bestehende Felder und Spulen ohne Wert weiterhin gueltig bleiben.
+  required  Boolean         @default(false)
   createdAt DateTime        @default(now())
 
   @@map("custom_field_definitions")
@@ -234,6 +243,7 @@ model Material {
   // Durchmesser des Filaments in mm (fast immer 1,75, selten 2,85) - fuer die Restlaengen-Naeherung der Spule.
   filamentDiameterMm Float @default(1.75)
   spools         Spool[]
+  wishlistItems  WishlistItem[]
   createdAt      DateTime      @default(now())
 
   @@unique([manufacturerId, name])
@@ -245,6 +255,7 @@ model Manufacturer {
   name      String     @unique
   spools    Spool[]
   materials Material[]
+  wishlistItems WishlistItem[]
   createdAt DateTime   @default(now())
 
   @@map("manufacturers")
@@ -333,6 +344,11 @@ model Printer {
   createdAt           DateTime            @default(now())
   printJobs           PrintJob[]
   amsSlots            AmsSlotAssignment[]
+  // Zwischenstand der automatischen Verbrauchserfassung (printJobTracker.ts), in der DB statt nur im Arbeitsspeicher,
+  // damit ein Server-Neustart mitten im Druck die Erkennung fuer den laufenden Auftrag nicht verliert.
+  lastKnownPrintState String?
+  activeJobName        String?
+  activeJobStartedAt   DateTime?
 
   @@index([inventoryId])
   @@map("printers")

@@ -48,6 +48,22 @@ describe("Zusatzfeld-Definitionen - Negativ-Tests", () => {
     assert.equal((await call("post", "/api/custom-field-definitions", admin, { name: "Sonstiges", kind: "TABELLE" })).status, 400);
   });
 
+  it("kann als Pflichtfeld angelegt werden (Standard: nein) und die Pflicht laesst sich umschalten", async () => {
+    const created = await call("post", "/api/custom-field-definitions", admin, { name: "Pflicht-Feld", kind: "TEXT", required: true });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.required, true);
+
+    const withoutFlag = await call("post", "/api/custom-field-definitions", admin, { name: "Optional-Feld", kind: "TEXT" });
+    assert.equal(withoutFlag.body.data.required, false);
+
+    const id = created.body.data.id;
+    assert.equal((await call("patch", `/api/custom-field-definitions/${id}`, user, { required: false })).status, 403);
+    const toggled = await call("patch", `/api/custom-field-definitions/${id}`, admin, { required: false });
+    assert.equal(toggled.status, 200);
+    assert.equal(toggled.body.data.required, false);
+    assert.equal((await call("patch", "/api/custom-field-definitions/00000000-0000-0000-0000-000000000000", admin, { required: true })).status, 404);
+  });
+
   it("nur Admin darf loeschen (403 fuer USER), danach ist sie weg", async () => {
     const created = await call("post", "/api/custom-field-definitions", admin, { name: "Bewertung", kind: "NUMBER" });
     const id = created.body.data.id;

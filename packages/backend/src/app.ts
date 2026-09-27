@@ -22,6 +22,7 @@ import { spoolPhotosRouter } from "./routes/spoolPhotos.js";
 import { spoolDryingRouter } from "./routes/spoolDrying.js";
 import { spoolWeighRouter } from "./routes/spoolWeigh.js";
 import { spoolmanImportRouter } from "./routes/spoolmanImport.js";
+import { inventoryAuditRouter } from "./routes/inventoryAudit.js";
 import { printersRouter } from "./routes/printers.js";
 import { printJobsRouter } from "./routes/printJobs.js";
 import { customFieldDefinitionsRouter } from "./routes/customFieldDefinitions.js";
@@ -55,6 +56,7 @@ export function createApp() {
   app.use("/api/inventories/:id/bambu-import", bambuConnectionRouter);
   app.use("/api/inventories/:id/bambu-import", bambuImportRouter);
   app.use("/api/inventories/:id/spoolman-import", spoolmanImportRouter);
+  app.use("/api/inventories/:id/audit-log", inventoryAuditRouter);
   app.use("/api/inventories", inventoriesRouter);
   app.use("/api/stats", statsRouter);
   app.use("/api/spools", spoolPhotosRouter);

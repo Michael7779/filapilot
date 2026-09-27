@@ -27,7 +27,9 @@ Design: `docs/design/lager.md` (abgestimmt 2026-09-26). Umgesetzt in Version 0.1
 - OP-L2: `inventoryId` ist in der Datenbank noch optional (`String?`); auf Pflicht stellen, sobald alle Installationen migriert sind.
 - OP-L3: Ein Drucker laesst sich nicht in ein anderes Lager verschieben (bewusst: loeschen und neu anlegen).
 - OP-L4: Beim Loeschen eines Benutzers werden seine Mitgliedschaften entfernt; ein Lager ohne Besitzer bleibt nur fuer Admins verwaltbar.
-- OP-L5: Sichtbarkeit: Lager-Besitzer sehen das Protokoll nicht (nur Admins); ein Lager-Protokoll fuer Besitzer waere eine Erweiterung.
+- OP-L5 ✅ (0.21.3): `GET /api/inventories/:id/audit-log` (Rolle `OWNER`) zeigt das Protokoll dieses einen Lagers -
+  serverseitig fest auf dessen `inventoryId` begrenzt (kein Filter kann das umgehen), ohne die admin-weiten
+  Auswahllisten (welche Nutzer/Lager es sonst noch gibt). Siehe R13.
 
 ## 1.2 Anforderungen
 - **R1** ✅ Zugriff auf ein Lager nur fuer Mitglieder und Admins; ohne Zugriff 404 (Lager, Mitglieder, Spulen, Fotos, Drucker, Status).
@@ -55,3 +57,7 @@ Design: `docs/design/lager.md` (abgestimmt 2026-09-26). Umgesetzt in Version 0.1
 - **R12** ✅ Ab 0.15.0: `POST /api/inventories/:id/move-spools` verschiebt alle Spulen (auch archivierte) samt Gewichtsverlauf: `OWNER` in der Quelle, `EDITOR` im Ziel,
   Quelle = Ziel 400, Fremde 404, anonym 401; wird protokolliert. Beim Verschieben einer einzelnen Spule zieht deren Verlauf mit. Test: `tests/security/moveSpools.test.ts`
   Offen (OP-L3): Cloud-verknuepfte Spulen behalten ihre Bambu-ID; ein Abgleich im Ziel-Lager mit einem anderen Bambu-Konto wuerde sie als "in der Cloud entfernt" archivieren.
+- **R13** ✅ Ab 0.21.3: Protokoll eines einzelnen Lagers fuer dessen Besitzer (nicht nur Admins): `GET /api/inventories/:id/audit-log`,
+  Rolle `OWNER` (Fremde 404, Bearbeiter/Betrachter 403); Filter (Bereich/Aktion/Zeitraum/Suche) wie beim admin-weiten
+  Protokoll, aber `inventoryId` ist serverseitig fest gesetzt. Oberflaeche: "Verlauf"-Knopf bei Einstellungen -> Lager
+  (`components/InventoryAuditModal.tsx`). Test: `tests/security/inventoryAudit.test.ts`
