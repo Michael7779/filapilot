@@ -1,6 +1,6 @@
 import type { Request } from "express";
 import type { Prisma } from "@prisma/client";
-import type { AuditAction, AuditArea, AuditQuery, AuditListResult } from "@filapilot/shared";
+import type { AuditAction, AuditArea, AuditEntry, AuditQuery, AuditListResult } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { logger } from "../logger.js";
 import { getAuthenticatedUser } from "../middleware/auth.js";
@@ -60,6 +60,48 @@ export async function recordAudit(input: AuditEntryInput): Promise<void> {
   }
 }
 
+interface AuditRow {
+  id: string;
+  createdAt: Date;
+  username: string;
+  action: AuditAction;
+  area: AuditArea;
+  entityId: string | null;
+  inventoryId: string | null;
+  inventoryName: string | null;
+  description: string;
+  before: Prisma.JsonValue;
+  after: Prisma.JsonValue;
+}
+
+function toAuditEntry(row: AuditRow): AuditEntry {
+  return {
+    id: row.id,
+    createdAt: row.createdAt,
+    username: row.username,
+    action: row.action,
+    area: row.area,
+    entityId: row.entityId,
+    inventoryId: row.inventoryId,
+    inventoryName: row.inventoryName,
+    description: row.description,
+    before: (row.before as Snapshot | null) ?? null,
+    after: (row.after as Snapshot | null) ?? null
+  };
+}
+
+// Protokoll EINES Objekts (z.B. einer Spule) - anders als listAudit nicht admin-only, sondern von der aufrufenden
+// Route auf den Zugriff des Benutzers auf genau dieses Objekt begrenzt. Feste Obergrenze statt Seiten, weil sie
+// per Definition auf ein einzelnes Objekt beschraenkt ist (keine offene Liste).
+export async function listEntityHistory(area: AuditArea, entityId: string, limit = 100): Promise<AuditEntry[]> {
+  const rows = await prisma.auditLog.findMany({
+    where: { area, entityId },
+    orderBy: { createdAt: "desc" },
+    take: limit
+  });
+  return rows.map(toAuditEntry);
+}
+
 export async function listAudit(query: AuditQuery): Promise<AuditListResult> {
   const where: Prisma.AuditLogWhereInput = {
     ...(query.area ? { area: query.area } : {}),
@@ -98,19 +140,7 @@ export async function listAudit(query: AuditQuery): Promise<AuditListResult> {
   ]);
 
   return {
-    items: rows.map((row) => ({
-      id: row.id,
-      createdAt: row.createdAt,
-      username: row.username,
-      action: row.action,
-      area: row.area,
-      entityId: row.entityId,
-      inventoryId: row.inventoryId,
-      inventoryName: row.inventoryName,
-      description: row.description,
-      before: (row.before as Snapshot | null) ?? null,
-      after: (row.after as Snapshot | null) ?? null
-    })),
+    items: rows.map(toAuditEntry),
     total,
     page: query.page,
     pageSize: query.pageSize,

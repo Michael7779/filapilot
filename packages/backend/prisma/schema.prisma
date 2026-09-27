@@ -36,6 +36,19 @@ enum PrinterSyncMode {
   PERIODIC
 }
 
+enum CustomFieldKind {
+  TEXT
+  NUMBER
+  DATE
+  BOOLEAN
+}
+
+enum WishlistStatus {
+  OPEN
+  ORDERED
+  DONE
+}
+
 model User {
   id                  String    @id @default(uuid())
   username            String    @unique
@@ -55,8 +68,41 @@ model User {
   updatedAt           DateTime  @updatedAt
   sessions            Session[]
   inventoryMemberships InventoryMember[]
+  wishlistItemsAdded   WishlistItem[] @relation("WishlistAddedBy")
+  wishlistItemsUpdated WishlistItem[] @relation("WishlistUpdatedBy")
 
   @@map("users")
+}
+
+// Instanzweite Wunschliste (nicht pro Lager) fuer eine Sammelbestellung: jeder eingeloggte Nutzer sieht und ergaenzt
+// sie, damit klar ist, wer was braucht. userId ist bewusst optional (SetNull) und der Name eine Momentaufnahme -
+// der Eintrag bleibt lesbar, auch wenn der Benutzer geloescht wird.
+model WishlistItem {
+  id              String         @id @default(uuid())
+  title           String
+  note            String?
+  quantity        Int            @default(1)
+  status          WishlistStatus @default(OPEN)
+  addedByUserId   String?
+  addedByUser     User?          @relation("WishlistAddedBy", fields: [addedByUserId], references: [id], onDelete: SetNull)
+  addedByName     String
+  createdAt       DateTime       @default(now())
+  updatedByUserId String?
+  updatedByUser   User?          @relation("WishlistUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  updatedByName   String?
+  updatedAt       DateTime       @updatedAt
+
+  @@map("wishlist_items")
+}
+
+// Vom Admin definierte Zusatzfelder (Name + Typ), deren Werte Spulen dynamisch befuellen (Spool.customFields).
+model CustomFieldDefinition {
+  id        String          @id @default(uuid())
+  name      String          @unique
+  kind      CustomFieldKind
+  createdAt DateTime        @default(now())
+
+  @@map("custom_field_definitions")
 }
 
 enum AuditAction {
@@ -75,6 +121,8 @@ enum AuditArea {
   SETTINGS
   BACKUP
   INVENTORY
+  WISHLIST
+  CUSTOM_FIELD
 }
 
 // Aenderungsprotokoll: wer hat wann was angelegt/geaendert/geloescht. userId ist bewusst KEINE Relation und
@@ -177,6 +225,8 @@ model Material {
   bedTempC       Int?
   // Fuer die ungefaehre Restlaengen-Anzeige der Spule (g/cm3); optional, typische Herstellerangabe.
   densityGCm3    Float?
+  // Durchmesser des Filaments in mm (fast immer 1,75, selten 2,85) - fuer die Restlaengen-Naeherung der Spule.
+  filamentDiameterMm Float @default(1.75)
   spools         Spool[]
   createdAt      DateTime      @default(now())
 
@@ -202,9 +252,16 @@ model Spool {
   manufacturer        Manufacturer @relation(fields: [manufacturerId], references: [id])
   colorName           String
   colorHex            String?
+  // Zweite Farbe fuer zweifarbiges Filament (z.B. Bambu Dual-Color); null = einfarbig.
+  colorHex2           String?
   initialWeightG      Int
   remainingWeightG    Int
   photoUrl            String?
+  // Freie Notiz (z.B. Charge, Eindruck beim Drucken).
+  note                String?
+  // Werte der Admin-definierten Zusatzfelder, Schluessel = CustomFieldDefinition.id. Nie blind vom Client
+  // uebernommen - die Route validiert jeden Schluessel/Wert gegen die bekannten Definitionen (siehe customFields.ts).
+  customFields        Json       @default("{}")
   purchasePriceCents  Int?
   purchasedAt         DateTime?
   location            String?

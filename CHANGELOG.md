@@ -8,6 +8,19 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.19.0] - 2026-09-27
+
+### Hinzugefuegt
+- Wunschliste (neuer Menüpunkt): eine Liste für die ganze Installation, gedacht für eine Sammelbestellung. Jeder sieht, wer was hinzugefügt hat und wann. Titel, Notiz und Menge ändern oder löschen darf nur, wer den Eintrag angelegt hat, oder ein Admin – den Status (offen/bestellt/erledigt) darf aber jeder setzen, damit alle mitwirken können.
+- Zusatzfelder: Unter Einstellungen → Filamente lassen sich frei eigene Felder anlegen (z.B. "Charge", "Bewertung", Text/Zahl/Datum/Ja-Nein). Sie erscheinen dann im Formular jeder Spule.
+- Zweifarbiges Filament: Beim Anlegen einer Spule lässt sich eine zweite Farbe angeben, die Farbanzeige zeigt dann beide Farben.
+- Filament-Durchmesser: Materialien können auf 2,85mm gestellt werden (Standard weiter 1,75mm); die Restlängen-Anzeige rechnet damit.
+- Notiz pro Spule (z.B. Eindruck beim Drucken) und ein "Verlauf"-Knopf, der das Änderungsprotokoll genau dieser Spule zeigt.
+- Export des Filament-Bestands als CSV oder JSON-Datei (Links auf der Spulen-Seite), inklusive Restlänge.
+
+### Behoben
+- Der CSV-Export öffnete sich in Excel mit deutscher Spracheinstellung als eine einzige Spalte statt in Spalten aufgeteilt. Er trennt jetzt mit Semikolon statt Komma, wie es deutsches Excel per Doppelklick erwartet.
+
 ## [0.18.0] - 2026-09-27
 
 ### Hinzugefuegt

@@ -9,7 +9,9 @@ export const materialSchema = z.object({
   printTempMaxC: z.number().int().min(0).max(400),
   bedTempC: z.number().int().min(0).max(150).nullable(),
   // g/cm3, fuer die ungefaehre Restlaengen-Anzeige der Spule; typische Herstellerangabe, keine garantierte Messung.
-  densityGCm3: z.number().positive().max(10).nullable()
+  densityGCm3: z.number().positive().max(10).nullable(),
+  // mm, fast immer 1,75 (selten 2,85) - ebenfalls fuer die Restlaengen-Naeherung.
+  filamentDiameterMm: z.number().positive().max(10)
 });
 export type Material = z.infer<typeof materialSchema>;
 
@@ -17,7 +19,8 @@ const materialInputBase = materialSchema.omit({ id: true });
 
 export const createMaterialInputSchema = materialInputBase.extend({
   manufacturerId: z.string().uuid().nullable().default(null),
-  densityGCm3: z.number().positive().max(10).nullable().default(null)
+  densityGCm3: z.number().positive().max(10).nullable().default(null),
+  filamentDiameterMm: z.number().positive().max(10).default(1.75)
 });
 export type CreateMaterialInput = z.infer<typeof createMaterialInputSchema>;
 

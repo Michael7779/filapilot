@@ -31,6 +31,7 @@ export async function createLoggedInUser(app: Express, username: string, role: "
 // Alle Tabellen leeren, die die Lager-Tests anfassen (Reihenfolge wegen der Fremdschluessel).
 export async function resetInventoryData(): Promise<void> {
   await prisma.auditLog.deleteMany();
+  await prisma.wishlistItem.deleteMany();
   await prisma.printJob.deleteMany();
   await prisma.amsSlotAssignment.deleteMany();
   await prisma.spool.deleteMany();

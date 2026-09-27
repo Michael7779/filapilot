@@ -17,3 +17,6 @@ export * from "./materialType.js";
 export * from "./changelog.js";
 export * from "./spoolFilter.js";
 export * from "./spoolLength.js";
+export * from "./schemas/customField.js";
+export * from "./customFields.js";
+export * from "./schemas/wishlist.js";

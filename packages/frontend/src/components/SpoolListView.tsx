@@ -21,12 +21,24 @@ function statusKey(spool: SpoolWithRelations): string {
   return spool.archiveReason === "CLOUD_REMOVED" ? "spools.archivedCloud" : "spools.archived";
 }
 
-// Liste: eine Zeile pro Spule mit ALLEN Angaben (Material, Farbe, Temperaturen, Gewicht, Lagerort, Preis, Datum).
-export function ListView({ spools, materials, isAll, ...handlers }: SpoolViewProps): React.JSX.Element {
+// Liste: eine Zeile pro Spule mit ALLEN Angaben (Material, Farbe, Temperaturen, Gewicht, Lagerort, Preis, Datum, Notiz, Zusatzfelder).
+export function ListView({ spools, materials, isAll, customFieldDefinitions, ...handlers }: SpoolViewProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const date = (value: Date | string | null): string => (value ? new Date(value).toLocaleDateString(i18n.language) : "–");
   const price = (spool: SpoolWithRelations): string =>
     spool.purchasePriceCents === null ? "–" : (spool.purchasePriceCents / 100).toLocaleString(i18n.language, { style: "currency", currency: "EUR" });
+  const customFieldSummary = (spool: SpoolWithRelations): string =>
+    customFieldDefinitions
+      .filter((definition) => spool.customFields[definition.id] != null && spool.customFields[definition.id] !== "")
+      .map((definition) => {
+        const value = spool.customFields[definition.id];
+        let display = String(value);
+        if (definition.kind === "BOOLEAN") {
+          display = value ? t("audit.yes") : t("audit.no");
+        }
+        return `${definition.name}: ${display}`;
+      })
+      .join(" · ");
 
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-white">
@@ -45,6 +57,8 @@ export function ListView({ spools, materials, isAll, ...handlers }: SpoolViewPro
             <th className={headClass}>{t("spools.filter.price")}</th>
             <th className={headClass}>{t("spools.list.purchasedAt")}</th>
             <th className={headClass}>{t("spools.list.addedAt")}</th>
+            <th className={headClass}>{t("spools.note")}</th>
+            {customFieldDefinitions.length > 0 && <th className={headClass}>{t("spools.customFields")}</th>}
             <th className={headClass}>{t("spools.list.status")}</th>
             <th className={headClass}>
               <span className="sr-only">{t("spools.actions")}</span>
@@ -59,7 +73,7 @@ export function ListView({ spools, materials, isAll, ...handlers }: SpoolViewPro
               <tr key={spool.id} className={`border-b border-[var(--color-border)] last:border-b-0 ${spool.archivedAt ? "opacity-70" : ""}`}>
                 <td className={cellClass}>
                   <span className="flex items-center gap-2">
-                    <ColorDot hex={spool.colorHex} size="h-4 w-4" />
+                    <ColorDot hex={spool.colorHex} hex2={spool.colorHex2} size="h-4 w-4" />
                     <span>
                       <span className="font-medium">{spool.colorName}</span>
                       {spool.colorHex && <span className="ml-1 text-xs text-[var(--color-text-muted)]">{spool.colorHex.toUpperCase()}</span>}
@@ -79,11 +93,21 @@ export function ListView({ spools, materials, isAll, ...handlers }: SpoolViewPro
                     </span>
                   </div>
                 </td>
-                <td className={cellClass}>{formatLength(estimateRemainingLengthM(spool.remainingWeightG, temps?.densityGCm3 ?? null), i18n.language, t)}</td>
+                <td className={cellClass}>
+                  {formatLength(estimateRemainingLengthM(spool.remainingWeightG, temps?.densityGCm3 ?? null, temps?.filamentDiameterMm), i18n.language, t)}
+                </td>
                 <td className={cellClass}>{spool.location ?? "–"}</td>
                 <td className={cellClass}>{price(spool)}</td>
                 <td className={cellClass}>{date(spool.purchasedAt)}</td>
                 <td className={cellClass}>{date(spool.createdAt)}</td>
+                <td className={`${cellClass} max-w-[160px] truncate`} title={spool.note ?? ""}>
+                  {spool.note ?? "–"}
+                </td>
+                {customFieldDefinitions.length > 0 && (
+                  <td className={`${cellClass} max-w-[200px] truncate`} title={customFieldSummary(spool)}>
+                    {customFieldSummary(spool) || "–"}
+                  </td>
+                )}
                 <td className={cellClass}>{t(statusKey(spool))}</td>
                 <td className={cellClass}>
                   <SpoolActions spool={spool} variant="inline" {...handlers} />

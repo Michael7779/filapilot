@@ -1,4 +1,5 @@
 import { spoolPageSizeSchema, spoolViewSchema } from "@filapilot/shared";
+import type { Prisma } from "@prisma/client";
 import type {
   User,
   Spool as PrismaSpool,
@@ -13,8 +14,24 @@ import type {
   Manufacturer,
   Spool,
   SpoolWithRelations,
-  PrinterPublic
+  PrinterPublic,
+  CustomFieldValues
 } from "@filapilot/shared";
+
+// Spool.customFields kommt aus der DB als Prisma.JsonValue - immer als flaches Objekt geschrieben (siehe
+// validateCustomFieldValues), aber defensiv geprueft statt blind gecastet.
+function toCustomFieldValues(json: Prisma.JsonValue): CustomFieldValues {
+  if (typeof json !== "object" || json === null || Array.isArray(json)) {
+    return {};
+  }
+  const result: CustomFieldValues = {};
+  for (const [key, value] of Object.entries(json)) {
+    if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      result[key] = value;
+    }
+  }
+  return result;
+}
 
 // Mappt explizit Feld fuer Feld - nie ein rohes Prisma-Objekt an den Client (kein passwordHash,
 // kein resetToken).
@@ -42,6 +59,7 @@ export function toPublicMaterial(material: PrismaMaterial): Material {
     printTempMaxC: material.printTempMaxC,
     bedTempC: material.bedTempC,
     densityGCm3: material.densityGCm3,
+    filamentDiameterMm: material.filamentDiameterMm,
     manufacturerId: material.manufacturerId
   };
 }
@@ -61,12 +79,15 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
     inventoryId: spool.inventoryId,
     colorName: spool.colorName,
     colorHex: spool.colorHex,
+    colorHex2: spool.colorHex2,
     initialWeightG: spool.initialWeightG,
     remainingWeightG: spool.remainingWeightG,
     photoUrl: spool.photoUrl,
     purchasePriceCents: spool.purchasePriceCents,
     purchasedAt: spool.purchasedAt,
     location: spool.location,
+    note: spool.note,
+    customFields: toCustomFieldValues(spool.customFields),
     archivedAt: spool.archivedAt,
     archiveReason: spool.archiveReason,
     createdAt: spool.createdAt

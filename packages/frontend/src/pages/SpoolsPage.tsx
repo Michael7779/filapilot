@@ -13,6 +13,7 @@ import type {
   CreateManufacturerInput,
   CreateMaterialInput,
   CreateSpoolInput,
+  CustomFieldDefinition,
   Manufacturer,
   Material,
   SpoolWithRelations
@@ -26,6 +27,7 @@ import { CompactView, StandardView, SwatchView } from "../components/SpoolViews.
 import { SpoolPager, SpoolViewSwitch } from "../components/SpoolViewControls.js";
 import { useSpoolPreferences } from "../hooks/useSpoolPreferences.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
+import { SpoolHistoryModal } from "../components/SpoolHistoryModal.js";
 import { BambuImportModal } from "../components/BambuImportModal.js";
 import type { BambuConnectionInfo, BambuSyncSummary } from "@filapilot/shared";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
@@ -53,6 +55,8 @@ export function SpoolsPage(): React.JSX.Element {
   const [editingSpool, setEditingSpool] = useState<SpoolWithRelations | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [labelSpool, setLabelSpool] = useState<SpoolWithRelations | null>(null);
+  const [historySpool, setHistorySpool] = useState<SpoolWithRelations | null>(null);
+  const [customFieldDefinitions, setCustomFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -76,16 +80,18 @@ export function SpoolsPage(): React.JSX.Element {
     }
     setLoadError(null);
     try {
-      const [spoolsData, materialsData, manufacturersData, photosEnabled] = await Promise.all([
+      const [spoolsData, materialsData, manufacturersData, customFieldsData, photosEnabled] = await Promise.all([
         apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}&archived=${showArchived ? "include" : "exclude"}`),
         apiRequest<Material[]>("/materials"),
         apiRequest<Manufacturer[]>("/manufacturers"),
+        apiRequest<CustomFieldDefinition[]>("/custom-field-definitions"),
         fetchPhotoUploadEnabled()
       ]);
       setPhotoUploadEnabled(photosEnabled);
       setSpools(spoolsData);
       setMaterials(materialsData);
       setManufacturers(manufacturersData);
+      setCustomFieldDefinitions(customFieldsData);
     } catch (err) {
       setLoadError(err instanceof ApiRequestError ? err.message : t("spools.loadFailed"));
     } finally {
@@ -288,7 +294,29 @@ export function SpoolsPage(): React.JSX.Element {
           <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
           {t("spools.showArchived")}
         </label>
-        <SpoolViewSwitch view={view} onChange={setView} />
+        <div className="flex items-center gap-3">
+          {selectedId && (
+            <span className="text-xs text-[var(--color-text-muted)]">
+              {t("spools.export.label")}{" "}
+              <a
+                href={`/api/spools/export?inventoryId=${selectedId}&archived=${showArchived ? "include" : "exclude"}&format=csv`}
+                className="font-medium"
+                style={{ color: "var(--accent)" }}
+              >
+                CSV
+              </a>
+              {" · "}
+              <a
+                href={`/api/spools/export?inventoryId=${selectedId}&archived=${showArchived ? "include" : "exclude"}&format=json`}
+                className="font-medium"
+                style={{ color: "var(--accent)" }}
+              >
+                JSON
+              </a>
+            </span>
+          )}
+          <SpoolViewSwitch view={view} onChange={setView} />
+        </div>
       </div>
 
       {notice && <p className="text-sm text-[var(--color-danger)]">{notice}</p>}
@@ -318,11 +346,13 @@ export function SpoolsPage(): React.JSX.Element {
           <SpoolViewComponent
             spools={pagedSpools}
             materials={materials}
+            customFieldDefinitions={customFieldDefinitions}
             isAll={isAll}
             canEdit={canEdit}
             onEdit={openEdit}
             onArchive={(spool, archive) => void handleArchive(spool, archive)}
             onLabel={setLabelSpool}
+            onHistory={setHistorySpool}
             onDelete={(spool) => void handleDelete(spool)}
           />
           <SpoolPager page={currentPage} pageCount={pageCount} pageSize={pageSize} total={visibleSpools.length} onPage={setPage} onPageSize={setPageSize} />
@@ -333,6 +363,7 @@ export function SpoolsPage(): React.JSX.Element {
         <SpoolFormModal
           materials={materials}
           manufacturers={manufacturers}
+          customFieldDefinitions={customFieldDefinitions}
           initialSpool={editingSpool}
           onClose={() => setModalOpen(false)}
           onCreateMaterial={handleCreateMaterial}
@@ -356,6 +387,7 @@ export function SpoolsPage(): React.JSX.Element {
       )}
 
       {labelSpool && <SpoolLabelModal spool={labelSpool} onClose={() => setLabelSpool(null)} />}
+      {historySpool && <SpoolHistoryModal spool={historySpool} onClose={() => setHistorySpool(null)} />}
     </div>
   );
 }

@@ -71,3 +71,14 @@
 - **R14**: Ab 0.16.0: Ansicht (standard/compact/list/swatch) und Seitengroesse (12/24/48/96/alle) der Spulenliste werden pro Konto gespeichert
   (`PATCH /api/users/me/preferences`, SCOPE self, nur feste Werte, fremde userId ignoriert; Browser-Merker nur als Startwert). Die Liste zeigt alle Angaben der Spule.
   Tests: `tests/security/preferences.test.ts`; die Oberflaeche wurde manuell geprueft.
+- **R15**: Ab 0.19.0: Eine Spule hat eine optionale zweite Farbe (`colorHex2`, zweifarbiges Filament), eine Notiz (max. 500 Zeichen) und
+  Werte fuer die Admin-definierten Zusatzfelder (`customFields`, siehe `custom-fields.md`); neue Felder sind beim Anlegen optional (Weglassen = kein Wert).
+  `GET /api/spools/:id/history` (VIEWER) zeigt das Aenderungsprotokoll genau dieser Spule (aus dem allgemeinen Protokoll gefiltert auf `area=SPOOL`
+  und diese `entityId`, anders als das admin-only Gesamt-Protokoll). `GET /api/spools/export?inventoryId=&format=csv|json` (VIEWER, "all" nur eigene
+  Lager) liefert den Bestand als Datei (CSV mit BOM fuer Excel, oder JSON). Loeschen von Drucker/Spule raeumt `PrintJob`-Eintraege jetzt kaskadierend
+  auf (wie der Gewichtsverlauf). Tests: `tests/security/spoolExtras.test.ts`; die Oberflaeche (Formular, Listenansicht, Verlauf, Export-Links) wurde
+  manuell im Browser geprueft.
+- **R16**: Der CSV-Export trennt Spalten mit Semikolon (nicht Komma) und beginnt mit einer UTF-8-BOM, damit Excel mit
+  deutscher Spracheinstellung die Datei per Doppelklick korrekt in Spalten aufteilt und Umlaute richtig zeigt (deutsche
+  Windows-Installationen nutzen das Semikolon als Listentrennzeichen); der Kaufpreis nutzt das Komma als Dezimaltrennzeichen.
+  Test: `tests/security/spoolExtras.test.ts`

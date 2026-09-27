@@ -11,7 +11,9 @@ export const auditAreaSchema = z.enum([
   "USER",
   "SETTINGS",
   "BACKUP",
-  "INVENTORY"
+  "INVENTORY",
+  "WISHLIST",
+  "CUSTOM_FIELD"
 ]);
 export type AuditArea = z.infer<typeof auditAreaSchema>;
 

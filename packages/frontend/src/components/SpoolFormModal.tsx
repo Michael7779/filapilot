@@ -3,27 +3,19 @@ import { useTranslation } from "react-i18next";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import type { PhotoChange } from "../lib/spoolPhoto.js";
 import { SpoolPhotoField } from "./SpoolPhotoField.js";
+import { SpoolColorFields } from "./SpoolColorFields.js";
+import { SpoolCustomFieldsFields } from "./SpoolCustomFieldsFields.js";
 import type {
   CreateManufacturerInput,
   CreateMaterialInput,
   CreateSpoolInput,
+  CustomFieldDefinition,
+  CustomFieldValues,
   Inventory,
   Manufacturer,
   Material,
   SpoolWithRelations
 } from "@filapilot/shared";
-
-const COLOR_PRESETS: { name: string; hex: string }[] = [
-  { name: "Schwarz", hex: "#1A1A1A" },
-  { name: "Weiß", hex: "#F5F5F0" },
-  { name: "Grau", hex: "#8C8C88" },
-  { name: "Rot", hex: "#D14343" },
-  { name: "Orange", hex: "#E8622C" },
-  { name: "Gelb", hex: "#F2C94C" },
-  { name: "Grün", hex: "#4C8C3C" },
-  { name: "Blau", hex: "#2F6FED" },
-  { name: "Violett", hex: "#7F56D9" }
-];
 
 const LABEL_CLASS = "flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]";
 const SELECT_CLASS =
@@ -33,6 +25,7 @@ const SMALL_INPUT_CLASS = "rounded-lg border border-[var(--color-border)] px-3 p
 interface SpoolFormModalProps {
   materials: Material[];
   manufacturers: Manufacturer[];
+  customFieldDefinitions: CustomFieldDefinition[];
   initialSpool: SpoolWithRelations | null;
   onClose: () => void;
   onCreateMaterial: (input: CreateMaterialInput) => Promise<Material>;
@@ -50,9 +43,11 @@ function toFormState(spool: SpoolWithRelations | null) {
     manufacturerId: spool?.manufacturerId ?? "",
     colorName: spool?.colorName ?? "",
     colorHex: spool?.colorHex ?? "",
+    colorHex2: spool?.colorHex2 ?? "",
     initialWeightG: spool ? String(spool.initialWeightG) : "1000",
     remainingWeightG: spool ? String(spool.remainingWeightG) : "1000",
     location: spool?.location ?? "",
+    note: spool?.note ?? "",
     purchasePriceEuro: spool?.purchasePriceCents != null ? String(spool.purchasePriceCents / 100) : ""
   };
 }
@@ -60,6 +55,7 @@ function toFormState(spool: SpoolWithRelations | null) {
 export function SpoolFormModal({
   materials,
   manufacturers,
+  customFieldDefinitions,
   initialSpool,
   onClose,
   onCreateMaterial,
@@ -71,6 +67,7 @@ export function SpoolFormModal({
 }: SpoolFormModalProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const [form, setForm] = useState(toFormState(initialSpool));
+  const [customFields, setCustomFields] = useState<CustomFieldValues>(initialSpool?.customFields ?? {});
   const [showNewMaterial, setShowNewMaterial] = useState(false);
   const [newMaterial, setNewMaterial] = useState({
     name: "",
@@ -119,62 +116,71 @@ export function SpoolFormModal({
     setForm({ ...form, manufacturerId, materialId: stillFits ? form.materialId : "" });
   }
 
+  // null = Validierung fehlgeschlagen, Fehlermeldung ist bereits gesetzt.
+  async function resolveManufacturerId(): Promise<string | null> {
+    if (!showNewManufacturer) {
+      return form.manufacturerId;
+    }
+    if (!newManufacturerName.trim()) {
+      setError(t("spools.newManufacturerName"));
+      return null;
+    }
+    const created = await onCreateManufacturer({ name: newManufacturerName.trim() });
+    return created.id;
+  }
+
+  async function resolveMaterialId(manufacturerId: string): Promise<string | null> {
+    if (!showNewMaterial) {
+      return form.materialId;
+    }
+    if (!newMaterial.name.trim()) {
+      setError(t("spools.newMaterialName"));
+      return null;
+    }
+    const created = await onCreateMaterial({
+      name: newMaterial.name.trim(),
+      manufacturerId,
+      printTempMinC: Number(newMaterial.printTempMinC) || 0,
+      printTempMaxC: Number(newMaterial.printTempMaxC) || 0,
+      bedTempC: newMaterial.bedTempC.trim() ? Number(newMaterial.bedTempC) : null,
+      // Dichte/Durchmesser gibt es hier nicht direkt ein - laesst sich unter Einstellungen -> Stammdaten nachtragen.
+      densityGCm3: null,
+      filamentDiameterMm: 1.75
+    });
+    return created.id;
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError(null);
-
-    let materialId = form.materialId;
-    let manufacturerId = form.manufacturerId;
     setSubmitting(true);
     try {
-      if (showNewManufacturer) {
-        if (!newManufacturerName.trim()) {
-          setError(t("spools.newManufacturerName"));
-          setSubmitting(false);
-          return;
-        }
-        const created = await onCreateManufacturer({ name: newManufacturerName.trim() });
-        manufacturerId = created.id;
-      }
-
-      if (showNewMaterial) {
-        if (!newMaterial.name.trim() || !manufacturerId) {
-          setError(t("spools.newMaterialName"));
-          setSubmitting(false);
-          return;
-        }
-        const created = await onCreateMaterial({
-          name: newMaterial.name.trim(),
-          manufacturerId,
-          printTempMinC: Number(newMaterial.printTempMinC) || 0,
-          printTempMaxC: Number(newMaterial.printTempMaxC) || 0,
-          bedTempC: newMaterial.bedTempC.trim() ? Number(newMaterial.bedTempC) : null,
-          // Dichte gibt es hier nicht direkt ein - laesst sich unter Einstellungen -> Stammdaten nachtragen.
-          densityGCm3: null
-        });
-        materialId = created.id;
-      }
+      const manufacturerId = await resolveManufacturerId();
+      const materialId = manufacturerId ? await resolveMaterialId(manufacturerId) : null;
 
       if (!materialId || !manufacturerId || !form.colorName.trim()) {
-        setError("Bitte alle Pflichtfelder ausfüllen.");
+        setError((prev) => prev ?? "Bitte alle Pflichtfelder ausfüllen.");
         setSubmitting(false);
         return;
       }
 
       await onSubmit(
         {
-        materialId,
-        manufacturerId,
-        inventoryId,
-        colorName: form.colorName.trim(),
-        colorHex: form.colorHex.trim() ? form.colorHex.trim() : null,
-        initialWeightG: Number(form.initialWeightG),
-        remainingWeightG: Number(form.remainingWeightG),
-        purchasePriceCents: form.purchasePriceEuro.trim()
-          ? Math.round(Number(form.purchasePriceEuro) * 100)
-          : null,
-        purchasedAt: null,
-        location: form.location.trim() ? form.location.trim() : null
+          materialId,
+          manufacturerId,
+          inventoryId,
+          colorName: form.colorName.trim(),
+          colorHex: form.colorHex.trim() ? form.colorHex.trim() : null,
+          colorHex2: form.colorHex2.trim() ? form.colorHex2.trim() : null,
+          initialWeightG: Number(form.initialWeightG),
+          remainingWeightG: Number(form.remainingWeightG),
+          purchasePriceCents: form.purchasePriceEuro.trim()
+            ? Math.round(Number(form.purchasePriceEuro) * 100)
+            : null,
+          purchasedAt: null,
+          location: form.location.trim() ? form.location.trim() : null,
+          note: form.note.trim() ? form.note.trim() : null,
+          customFields
         },
         photo
       );
@@ -322,57 +328,10 @@ export function SpoolFormModal({
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-            {t("spools.colorName")}
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {COLOR_PRESETS.map((preset) => {
-              const isActive = form.colorHex.toLowerCase() === preset.hex.toLowerCase();
-              return (
-                <button
-                  key={preset.hex}
-                  type="button"
-                  title={preset.name}
-                  aria-label={preset.name}
-                  onClick={() => setForm({ ...form, colorName: preset.name, colorHex: preset.hex })}
-                  className="h-7 w-7 shrink-0 rounded-full border"
-                  style={{
-                    backgroundColor: preset.hex,
-                    borderColor: isActive ? "var(--accent)" : "var(--color-border)",
-                    borderWidth: isActive ? 2 : 1,
-                    boxShadow: isActive ? "0 0 0 2px var(--color-accent-bg)" : "none"
-                  }}
-                />
-              );
-            })}
-          </div>
-          <div className="flex min-w-0 gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--color-border)] px-2 py-1">
-              <input
-                type="color"
-                aria-label={t("spools.colorHex")}
-                value={/^#[0-9a-fA-F]{6}$/.test(form.colorHex) ? form.colorHex : "#cccccc"}
-                onChange={(event) => setForm({ ...form, colorHex: event.target.value })}
-                className="h-7 w-7 shrink-0 cursor-pointer rounded-full border-0 bg-transparent p-0"
-              />
-              <input
-                type="text"
-                value={form.colorName}
-                onChange={(event) => setForm({ ...form, colorName: event.target.value })}
-                className="w-full min-w-0 text-[var(--color-text-primary)] focus:outline-none"
-              />
-            </div>
-            <input
-              type="text"
-              aria-label={t("spools.colorHex")}
-              placeholder="#000000"
-              value={form.colorHex}
-              onChange={(event) => setForm({ ...form, colorHex: event.target.value })}
-              className="w-28 shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]"
-            />
-          </div>
-        </div>
+        <SpoolColorFields
+          value={{ colorName: form.colorName, colorHex: form.colorHex, colorHex2: form.colorHex2 }}
+          onChange={(value) => setForm({ ...form, ...value })}
+        />
 
         <div className="flex min-w-0 gap-2">
           <label className={`min-w-0 flex-1 ${LABEL_CLASS}`}>
@@ -418,6 +377,19 @@ export function SpoolFormModal({
             className={SELECT_CLASS}
           />
         </label>
+
+        <label className={LABEL_CLASS}>
+          {t("spools.note")}
+          <textarea
+            value={form.note}
+            onChange={(event) => setForm({ ...form, note: event.target.value })}
+            rows={2}
+            maxLength={500}
+            className={SELECT_CLASS}
+          />
+        </label>
+
+        <SpoolCustomFieldsFields definitions={customFieldDefinitions} values={customFields} onChange={setCustomFields} />
 
         {photoUploadEnabled && (
           <SpoolPhotoField currentUrl={initialSpool?.photoUrl ?? null} value={photo} onChange={setPhoto} />

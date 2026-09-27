@@ -29,6 +29,11 @@ const PATHS: Record<NavKey, React.ReactNode> = {
       <path d="M19 20v-6" />
     </>
   ),
+  wunschliste: (
+    <>
+      <path d="M12 6l1.8 3.6 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4-2.9-2.8 4-.6z" />
+    </>
+  ),
   settings: (
     <>
       <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />

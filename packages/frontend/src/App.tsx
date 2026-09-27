@@ -25,6 +25,7 @@ import { SpoolsPage } from "./pages/SpoolsPage.js";
 import { SettingsPage } from "./pages/SettingsPage.js";
 import { PrintersPage } from "./pages/PrintersPage.js";
 import { StatsPage } from "./pages/StatsPage.js";
+import { WishlistPage } from "./pages/WishlistPage.js";
 import { apiRequest } from "./lib/api.js";
 import { useAuthStore } from "./stores/useAuthStore.js";
 import { useThemeStore } from "./stores/useThemeStore.js";
@@ -78,6 +79,7 @@ function AppContent(): React.JSX.Element {
       <Route path="/spools" element={<SpoolsPage />} />
       <Route path="/printers" element={<PrintersPage />} />
       <Route path="/stats" element={<StatsPage />} />
+      <Route path="/wunschliste" element={<WishlistPage />} />
       <Route path="/settings/:tab?" element={<SettingsPage />} />
     </Routes>
   );

@@ -171,6 +171,7 @@ function MaterialModal({
   const [maxC, setMaxC] = useState(initial ? String(initial.printTempMaxC) : "");
   const [bedC, setBedC] = useState(initial?.bedTempC != null ? String(initial.bedTempC) : "");
   const [density, setDensity] = useState(initial?.densityGCm3 != null ? String(initial.densityGCm3) : "");
+  const [diameter, setDiameter] = useState(String(initial?.filamentDiameterMm ?? 1.75));
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -189,7 +190,8 @@ function MaterialModal({
           printTempMinC: Number(minC),
           printTempMaxC: Number(maxC),
           bedTempC: bedC ? Number(bedC) : null,
-          densityGCm3: density ? Number(density) : null
+          densityGCm3: density ? Number(density) : null,
+          filamentDiameterMm: Number(diameter) || 1.75
         })
       });
       onSaved();
@@ -236,10 +238,19 @@ function MaterialModal({
           <input type="number" value={bedC} onChange={(e) => setBedC(e.target.value)} className={INPUT_CLASS} />
         </label>
       </div>
-      <label className={LABEL_CLASS}>
-        {t("catalog.density")}
-        <input type="number" step="0.01" min="0" value={density} onChange={(e) => setDensity(e.target.value)} className={INPUT_CLASS} />
-      </label>
+      <div className="flex gap-2">
+        <label className={`min-w-0 flex-1 ${LABEL_CLASS}`}>
+          {t("catalog.density")}
+          <input type="number" step="0.01" min="0" value={density} onChange={(e) => setDensity(e.target.value)} className={INPUT_CLASS} />
+        </label>
+        <label className={`min-w-0 flex-1 ${LABEL_CLASS}`}>
+          {t("catalog.diameter")}
+          <select value={diameter} onChange={(e) => setDiameter(e.target.value)} className={INPUT_CLASS}>
+            <option value="1.75">1,75 mm</option>
+            <option value="2.85">2,85 mm</option>
+          </select>
+        </label>
+      </div>
       <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("catalog.densityHint")}</p>
     </ModalForm>
   );
@@ -369,6 +380,7 @@ export function CatalogSection(): React.JSX.Element {
                 <td className="py-2 text-[var(--color-text-secondary)]">
                   {m.printTempMinC}–{m.printTempMaxC} °C{m.bedTempC !== null ? ` · ${m.bedTempC} °C` : ""}
                   {m.densityGCm3 !== null ? ` · ${m.densityGCm3} g/cm³` : ""}
+                  {m.filamentDiameterMm !== 1.75 ? ` · ${m.filamentDiameterMm} mm` : ""}
                 </td>
                 <td className="py-2">
                   <RowActions

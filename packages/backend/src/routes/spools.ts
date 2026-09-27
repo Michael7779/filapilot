@@ -2,8 +2,12 @@ import { Router } from "express";
 import { z } from "zod";
 import {
   createSpoolInputSchema,
+  CustomFieldValidationError,
   spoolArchiveFilterSchema,
   updateSpoolInputSchema,
+  validateCustomFieldValues,
+  type CustomFieldValues,
+  type RawCustomFieldValues,
   type SpoolArchiveFilter
 } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
@@ -13,9 +17,10 @@ import { getAuthenticatedUser, requireAuth, requirePasswordAlreadyChanged } from
 import { toPublicSpool, toPublicSpoolWithRelations } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
 import { describeSpool, spoolSnapshot } from "../lib/auditSnapshots.js";
-import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
+import { actorFromRequest, recordAudit, recordUpdate, listEntityHistory } from "../services/auditService.js";
 import { deletePhoto } from "../services/spoolPhotoService.js";
 import { recordWeightChange } from "../services/spoolWeightLog.js";
+import { spoolsToCsv } from "../services/spoolExportService.js";
 import {
   accessibleInventoryIds,
   requireAccessToObjectInventory,
@@ -69,6 +74,19 @@ function inventoryOf(spool: { inventory: { id: string; name: string } | null }):
   return spool.inventory ? { id: spool.inventory.id, name: spool.inventory.name } : null;
 }
 
+// Gegen die bekannten Zusatzfeld-Definitionen validieren (Whitelist der Schluessel + Typ je Definition).
+async function resolveCustomFields(raw: RawCustomFieldValues): Promise<CustomFieldValues> {
+  const definitions = await prisma.customFieldDefinition.findMany({ select: { id: true, kind: true, name: true } });
+  try {
+    return validateCustomFieldValues(definitions, raw);
+  } catch (err) {
+    if (err instanceof CustomFieldValidationError) {
+      throw new AppError("VALIDATION_ERROR", err.message);
+    }
+    throw err;
+  }
+}
+
 async function findSpoolOrThrow(id: string) {
   const spool = await prisma.spool.findUnique({ where: { id }, include: SPOOL_INCLUDE });
   if (!spool) {
@@ -110,6 +128,49 @@ spoolsRouter.get(
   })
 );
 
+// Export als Datei zum Herunterladen (CSV/JSON) - vor "/:id" registriert, sonst wuerde "export" als ID gelesen.
+// Threat-Model: Ein Benutzer ohne Zugriff koennte den Bestand eines fremden Lagers exportieren (Kaufpreise,
+// Lagerort). Serverseitig erzwungen: dieselbe Rechtepruefung wie beim Lesen der Liste (VIEWER, "all" nur eigene
+// Lager); die Datei enthaelt nur Felder, die der Client ohnehin ueber die Liste sehen darf.
+// Negativ-Test: fremdes Lager -> 404 (tests/security/spools.test.ts, "lehnt Export eines fremden Lagers ab").
+// SCOPE: user
+spoolsRouter.get(
+  "/export",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const { inventoryId, archived } = listQuerySchema.parse(req.query);
+    const format = z.enum(["csv", "json"]).default("csv").parse(req.query.format);
+    const user = getAuthenticatedUser(req);
+    let where: { inventoryId: string } | { inventoryId: { in: string[] } };
+    if (inventoryId === "all") {
+      where = { inventoryId: { in: await accessibleInventoryIds(user) } };
+    } else {
+      await requireInventoryRole(user, inventoryId, "VIEWER");
+      where = { inventoryId };
+    }
+    const rows = await prisma.spool.findMany({
+      where: { ...where, ...archiveWhere(archived) },
+      include: SPOOL_INCLUDE,
+      orderBy: { createdAt: "desc" }
+    });
+    const spools = rows.map((spool) => toPublicSpoolWithRelations(spool));
+    const materials = await prisma.material.findMany({ select: { id: true, densityGCm3: true, filamentDiameterMm: true } });
+    const densityByMaterialId = new Map(materials.map((material) => [material.id, material.densityGCm3]));
+    const diameterByMaterialId = new Map(materials.map((material) => [material.id, material.filamentDiameterMm]));
+
+    const filename = `filapilot-spulen-${new Date().toISOString().slice(0, 10)}.${format}`;
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    if (format === "json") {
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.send(JSON.stringify(spools, null, 2));
+    } else {
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      // BOM voranstellen, damit Excel Umlaute korrekt als UTF-8 erkennt statt als Windows-1252 zu raten.
+      res.send("﻿" + spoolsToCsv(spools, densityByMaterialId, diameterByMaterialId));
+    }
+  })
+);
+
 // SCOPE: user
 spoolsRouter.get(
   "/:id",
@@ -118,6 +179,23 @@ spoolsRouter.get(
     const spool = await findSpoolOrThrow(idParamSchema.parse(req.params.id));
     await requireAccessToObjectInventory(getAuthenticatedUser(req), spool.inventoryId, "VIEWER");
     sendData(res, toPublicSpoolWithRelations(spool));
+  })
+);
+
+// Protokoll dieser einen Spule (aus dem allgemeinen Aenderungsverlauf, nur die Eintraege dieser Spule).
+// Threat-Model: Ein Benutzer ohne Zugriff auf das Lager der Spule koennte ihre Historie einsehen (Kaufpreis,
+// wer sie wann geaendert hat). Serverseitig erzwungen: dieselbe VIEWER-Pruefung wie beim Lesen der Spule selbst;
+// die Abfrage filtert serverseitig fest auf area=SPOOL und diese eine entityId (nie andere Bereiche/Objekte).
+// Negativ-Test: fremde Spule -> 404 (tests/security/spools.test.ts).
+// SCOPE: user
+spoolsRouter.get(
+  "/:id/history",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const id = idParamSchema.parse(req.params.id);
+    const spool = await findSpoolOrThrow(id);
+    await requireAccessToObjectInventory(getAuthenticatedUser(req), spool.inventoryId, "VIEWER");
+    sendData(res, await listEntityHistory("SPOOL", id));
   })
 );
 
@@ -131,7 +209,8 @@ spoolsRouter.post(
     await assertMaterialExists(input.materialId);
     await assertManufacturerExists(input.manufacturerId);
     await assertMaterialMatchesManufacturer(input.materialId, input.manufacturerId);
-    const created = await prisma.spool.create({ data: input, include: SPOOL_INCLUDE });
+    const customFields = await resolveCustomFields(input.customFields);
+    const created = await prisma.spool.create({ data: { ...input, customFields }, include: SPOOL_INCLUDE });
     await recordAudit({
       actor: actorFromRequest(req),
       action: "CREATE",
@@ -173,8 +252,9 @@ spoolsRouter.patch(
       );
     }
 
+    const customFields = input.customFields !== undefined ? await resolveCustomFields(input.customFields) : undefined;
     const updated = await prisma.spool
-      .update({ where: { id }, data: omitUndefined(input), include: SPOOL_INCLUDE })
+      .update({ where: { id }, data: omitUndefined({ ...input, customFields }), include: SPOOL_INCLUDE })
       .catch((err: unknown) => {
         if (err instanceof Error && err.message.includes("Record to update not found")) {
           throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");

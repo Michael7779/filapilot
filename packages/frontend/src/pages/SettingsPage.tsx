@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { CatalogSection } from "../components/CatalogSettings.js";
+import { CustomFieldSettings } from "../components/CustomFieldSettings.js";
 import { EditUserModal } from "../components/EditUserModal.js";
 import { BackupManager } from "../components/BackupManager.js";
 import { AuditLogView } from "../components/AuditLogView.js";
@@ -802,7 +803,12 @@ export function SettingsPage(): React.JSX.Element {
       {active.key === "konto" && <OwnAccountSection />}
       {active.key === "lager" && <InventorySettings />}
       {active.key === "benutzer" && <UserManagementSection />}
-      {active.key === "filamente" && <CatalogSection />}
+      {active.key === "filamente" && (
+        <div className="flex flex-col gap-4">
+          <CatalogSection />
+          <CustomFieldSettings />
+        </div>
+      )}
       {active.key === "protokoll" && <AuditLogView />}
       {active.key === "system" && (
         <>

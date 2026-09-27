@@ -21,6 +21,8 @@ import { spoolsRouter } from "./routes/spools.js";
 import { spoolPhotosRouter } from "./routes/spoolPhotos.js";
 import { printersRouter } from "./routes/printers.js";
 import { printJobsRouter } from "./routes/printJobs.js";
+import { customFieldDefinitionsRouter } from "./routes/customFieldDefinitions.js";
+import { wishlistRouter } from "./routes/wishlist.js";
 import { sendData } from "./lib/apiResult.js";
 
 export function createApp() {
@@ -55,6 +57,8 @@ export function createApp() {
   app.use("/api/spools", spoolsRouter);
   app.use("/api/printers", printersRouter);
   app.use("/api/print-jobs", printJobsRouter);
+  app.use("/api/custom-field-definitions", customFieldDefinitionsRouter);
+  app.use("/api/wishlist", wishlistRouter);
 
   app.use(errorHandler);
 

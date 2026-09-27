@@ -3,6 +3,7 @@ export const NAV_ITEMS = [
   { key: "spools", href: "/spools", enabled: true },
   { key: "printers", href: "/printers", enabled: true },
   { key: "stats", href: "/stats", enabled: true },
+  { key: "wunschliste", href: "/wunschliste", enabled: true },
   { key: "settings", href: "/settings", enabled: true }
 ] as const;
 

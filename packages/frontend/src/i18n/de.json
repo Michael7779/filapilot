@@ -7,7 +7,24 @@
     "spools": "Spulen",
     "printers": "Drucker",
     "stats": "Statistik",
+    "wunschliste": "Wunschliste",
     "settings": "Einstellungen"
+  },
+  "wishlist": {
+    "title": "Wunschliste",
+    "hint": "Instanzweite Liste für eine Sammelbestellung – jeder sieht, wer was hinzugefügt hat.",
+    "itemTitle": "Was brauchst du?",
+    "quantity": "Menge",
+    "note": "Notiz (optional)",
+    "add": "Hinzufügen",
+    "empty": "Die Wunschliste ist noch leer.",
+    "loadFailed": "Wunschliste konnte nicht geladen werden.",
+    "saveFailed": "Speichern fehlgeschlagen.",
+    "titleRequired": "Bitte einen Titel eingeben.",
+    "confirmDelete": "„{{title}}“ wirklich von der Wunschliste entfernen?",
+    "addedBy": "Hinzugefügt von {{name}} am {{date}}",
+    "updatedBy": "zuletzt geändert von {{name}}",
+    "status": { "OPEN": "Offen", "ORDERED": "Bestellt", "DONE": "Erledigt" }
   },
   "dashboard": {
     "perInventory": "Lager im Vergleich",
@@ -158,7 +175,9 @@
       "USER": "Benutzer",
       "SETTINGS": "Einstellungen",
       "BACKUP": "Sicherung",
-      "INVENTORY": "Lager"
+      "INVENTORY": "Lager",
+      "WISHLIST": "Wunschliste",
+      "CUSTOM_FIELD": "Zusatzfeld"
     },
     "values": {
       "ADMIN": "Admin",
@@ -349,6 +368,17 @@
     "remainingWeight": "Restgewicht (g)",
     "location": "Lagerort (optional)",
     "purchasePrice": "Kaufpreis in Euro (optional)",
+    "note": "Notiz (optional)",
+    "twoTone": "Zweifarbig (zweite Farbe)",
+    "colorHex2": "Zweite Farbe",
+    "customFields": "Zusatzfelder",
+    "export": { "label": "Exportieren:" },
+    "history": {
+      "action": "Verlauf",
+      "title": "Verlauf: {{name}}",
+      "empty": "Noch kein Eintrag im Protokoll.",
+      "loadFailed": "Verlauf konnte nicht geladen werden."
+    },
     "confirmDelete": "Diese Spule wirklich löschen? Ihr Verbrauch verschwindet dann aus der Statistik. Wenn sie nur leer ist, archiviere sie besser.",
     "sort": { "added": "Zuletzt hinzugefügt", "manufacturer": "Hersteller", "name": "Material und Farbe", "price": "Kaufpreis", "remaining": "Restgewicht" },
     "filter": {
@@ -481,6 +511,17 @@
     "nozzleMax": "Düse max. (°C)",
     "bed": "Bett (°C)",
     "density": "Dichte in g/cm³ (optional)",
+    "diameter": "Filament-Durchmesser",
+    "customFields": {
+      "title": "Zusatzfelder",
+      "hint": "Frei definierbare Felder (z.B. Charge, Bewertung), die im Formular jeder Spule erscheinen.",
+      "empty": "Noch kein Zusatzfeld angelegt.",
+      "name": "Name",
+      "kindLabel": "Typ",
+      "kind": { "TEXT": "Text", "NUMBER": "Zahl", "DATE": "Datum", "BOOLEAN": "Ja/Nein" },
+      "add": "Hinzufügen",
+      "confirmDelete": "Zusatzfeld „{{name}}“ wirklich löschen? Werte, die Spulen dafür haben, verschwinden dann aus der Anzeige."
+    },
     "densityHint": "Für die ungefähre Restlängen-Anzeige der Spule. Typische Werte: PLA 1,24 · PETG 1,27 · ABS 1,04 · TPU 1,21.",
     "nameRequired": "Bitte einen Namen eingeben.",
     "materialFieldsRequired": "Bitte Name und beide Düsentemperaturen ausfüllen.",

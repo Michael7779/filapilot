@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { rawCustomFieldValuesSchema } from "./customField.js";
+
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 
 export const spoolSchema = z.object({
   id: z.string().uuid(),
@@ -7,10 +10,9 @@ export const spoolSchema = z.object({
   // Lager der Spule (in der Datenbank nur wegen der Datenuebernahme optional).
   inventoryId: z.string().uuid().nullable(),
   colorName: z.string().min(1).max(60),
-  colorHex: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/)
-    .nullable(),
+  colorHex: hexColor.nullable(),
+  // Zweite Farbe bei zweifarbigem Filament (z.B. Bambu Dual-Color); null = einfarbig.
+  colorHex2: hexColor.nullable(),
   initialWeightG: z.number().int().positive(),
   remainingWeightG: z.number().int().min(0),
   // Vom Server verwaltet (Upload ueber PUT /api/spools/:id/photo), nie vom Client frei setzbar.
@@ -18,6 +20,9 @@ export const spoolSchema = z.object({
   purchasePriceCents: z.number().int().min(0).nullable(),
   purchasedAt: z.coerce.date().nullable(),
   location: z.string().max(60).nullable(),
+  note: z.string().max(500).nullable(),
+  // Werte der Admin-definierten Zusatzfelder (Schluessel = Definitions-ID), bereits gegen die Definitionen geprueft.
+  customFields: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
   // Archiviert = nicht mehr im Bestand, aber im Verbrauch weiter gezaehlt. Nur ueber die Archiv-Routen aenderbar.
   archivedAt: z.coerce.date().nullable(),
   archiveReason: z.enum(["MANUAL", "CLOUD_REMOVED"]).nullable(),
@@ -25,10 +30,28 @@ export const spoolSchema = z.object({
 });
 export type Spool = z.infer<typeof spoolSchema>;
 
-// Beim Anlegen ist das Lager Pflicht; beim Aendern optional (Angabe = in dieses Lager verschieben).
+// Beim Anlegen ist das Lager Pflicht; beim Aendern optional (Angabe = in dieses Lager verschieben). customFields
+// ist hier nur roh (unbekannte Schluessel erlaubt) - die Route validiert es gegen die bekannten Definitionen
+// (Whitelist, siehe validateCustomFieldValues) und macht daraus die geprueften Werte oben.
 export const createSpoolInputSchema = spoolSchema
-  .omit({ id: true, createdAt: true, photoUrl: true, inventoryId: true, archivedAt: true, archiveReason: true })
-  .extend({ inventoryId: z.string().uuid() });
+  .omit({
+    id: true,
+    createdAt: true,
+    photoUrl: true,
+    inventoryId: true,
+    archivedAt: true,
+    archiveReason: true,
+    customFields: true,
+    colorHex2: true,
+    note: true
+  })
+  .extend({
+    inventoryId: z.string().uuid(),
+    // Neuere, optionale Felder: weglassen ist gleichbedeutend mit "kein Wert" (Abwaertskompatibilitaet).
+    colorHex2: hexColor.nullable().optional().default(null),
+    note: z.string().trim().max(500).nullable().optional().default(null),
+    customFields: rawCustomFieldValuesSchema.optional().default({})
+  });
 export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;
 
 export const updateSpoolInputSchema = createSpoolInputSchema.partial();

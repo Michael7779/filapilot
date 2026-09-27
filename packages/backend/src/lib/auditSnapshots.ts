@@ -21,9 +21,11 @@ export function spoolSnapshot(
     materialName: spool.material.name,
     colorName: spool.colorName,
     colorHex: spool.colorHex,
+    colorHex2: spool.colorHex2,
     initialWeightG: spool.initialWeightG,
     remainingWeightG: spool.remainingWeightG,
     location: spool.location,
+    note: spool.note,
     purchasePriceCents: spool.purchasePriceCents
   };
 }
@@ -41,7 +43,8 @@ export function materialSnapshot(material: PrismaMaterial, manufacturerName: str
     printTempMinC: material.printTempMinC,
     printTempMaxC: material.printTempMaxC,
     bedTempC: material.bedTempC,
-    densityGCm3: material.densityGCm3
+    densityGCm3: material.densityGCm3,
+    filamentDiameterMm: material.filamentDiameterMm
   };
 }
 

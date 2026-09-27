@@ -123,6 +123,24 @@ describe("Materials - Negativ-Tests", () => {
     }
   });
 
+  it("speichert den Filament-Durchmesser mit Standardwert 1.75mm und weist ungueltige Werte ab (400)", async () => {
+    const created = await request(app).post("/api/materials").set("Cookie", activeUserCookie).send({ ...sample, name: "Durchmesser Standard" });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.filamentDiameterMm, 1.75);
+
+    const custom = await request(app)
+      .post("/api/materials")
+      .set("Cookie", activeUserCookie)
+      .send({ ...sample, name: "Durchmesser 2.85", filamentDiameterMm: 2.85 });
+    assert.equal(custom.status, 201);
+    assert.equal(custom.body.data.filamentDiameterMm, 2.85);
+
+    for (const bad of [0, -1, 11]) {
+      const res = await request(app).post("/api/materials").set("Cookie", activeUserCookie).send({ ...sample, name: "Durchmesser Ungueltig " + bad, filamentDiameterMm: bad });
+      assert.equal(res.status, 400, String(bad));
+    }
+  });
+
   it("lehnt Loeschen eines Materials ab, das noch von Spulen genutzt wird (409)", async () => {
     const manufacturer = await prisma.manufacturer.create({ data: { name: "Mat Test Hersteller" } });
     const material = await prisma.material.create({ data: { name: "Benutzt Test", printTempMinC: 1, printTempMaxC: 2 } });

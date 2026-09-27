@@ -1,19 +1,23 @@
 import { useTranslation } from "react-i18next";
-import { LOW_STOCK_THRESHOLD_RATIO, type Material, type SpoolWithRelations } from "@filapilot/shared";
+import { LOW_STOCK_THRESHOLD_RATIO, type CustomFieldDefinition, type Material, type SpoolWithRelations } from "@filapilot/shared";
 import { SpoolActions, type SpoolHandlers } from "./SpoolActions.js";
 
 export interface SpoolViewProps extends SpoolHandlers {
   spools: readonly SpoolWithRelations[];
   materials: readonly Material[];
   isAll: boolean;
+  // Nur von ListView genutzt (Spalte "Zusatzfelder"); die anderen Ansichten reichen es ungenutzt durch.
+  customFieldDefinitions: readonly CustomFieldDefinition[];
 }
 
 function isLow(spool: SpoolWithRelations): boolean {
   return spool.remainingWeightG / spool.initialWeightG <= LOW_STOCK_THRESHOLD_RATIO;
 }
 
-export function ColorDot({ hex, size = "h-5 w-5" }: { hex: string | null; size?: string }): React.JSX.Element {
-  return <div className={`${size} shrink-0 rounded-full border border-[var(--color-border)]`} style={{ backgroundColor: hex ?? "#cccccc" }} aria-hidden="true" />;
+// Zweifarbig (colorHex2 gesetzt): zwei Haelften statt einer Flaeche.
+export function ColorDot({ hex, hex2 = null, size = "h-5 w-5" }: { hex: string | null; hex2?: string | null; size?: string }): React.JSX.Element {
+  const background = hex2 ? `linear-gradient(90deg, ${hex ?? "#cccccc"} 50%, ${hex2} 50%)` : (hex ?? "#cccccc");
+  return <div className={`${size} shrink-0 rounded-full border border-[var(--color-border)]`} style={{ background }} aria-hidden="true" />;
 }
 
 export function WeightBar({ spool }: { spool: SpoolWithRelations }): React.JSX.Element {
@@ -60,7 +64,7 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
               <img src={spool.photoUrl} alt="" loading="lazy" className="mb-3 h-32 w-full rounded-lg border border-[var(--color-border)] object-cover" />
             )}
             <div className="mb-2 flex items-center gap-2">
-              <ColorDot hex={spool.colorHex} />
+              <ColorDot hex={spool.colorHex} hex2={spool.colorHex2} />
               <div className="text-sm font-semibold">
                 {spool.materialName} {spool.colorName}
               </div>
@@ -100,7 +104,7 @@ export function CompactView({ spools, isAll, ...handlers }: SpoolViewProps): Rea
       {spools.map((spool) => (
         <div key={spool.id} className={`rounded-xl border border-[var(--color-border)] bg-white p-3 ${spool.archivedAt ? "opacity-70" : ""}`}>
           <div className="mb-1 flex items-center gap-2">
-            <ColorDot hex={spool.colorHex} size="h-3.5 w-3.5" />
+            <ColorDot hex={spool.colorHex} hex2={spool.colorHex2} size="h-3.5 w-3.5" />
             <div className="min-w-0 flex-1 truncate text-sm font-semibold">{spool.colorName}</div>
             <SpoolActions spool={spool} variant="menu" {...handlers} />
           </div>
@@ -125,7 +129,7 @@ export function SwatchView({ spools, ...handlers }: SpoolViewProps): React.JSX.E
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
       {spools.map((spool) => (
         <div key={spool.id} className={`overflow-hidden rounded-xl border border-[var(--color-border)] bg-white ${spool.archivedAt ? "opacity-70" : ""}`}>
-          <div className="relative h-20 border-b border-[var(--color-border)]" style={{ backgroundColor: spool.colorHex ?? "#cccccc" }}>
+          <div className="relative h-20 border-b border-[var(--color-border)]" style={{ background: spool.colorHex2 ? `linear-gradient(90deg, ${spool.colorHex ?? "#cccccc"} 50%, ${spool.colorHex2} 50%)` : (spool.colorHex ?? "#cccccc") }}>
             <div className="absolute right-1 top-1 rounded-md bg-white/85">
               <SpoolActions spool={spool} variant="menu" {...handlers} />
             </div>

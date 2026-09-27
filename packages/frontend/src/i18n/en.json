@@ -7,7 +7,24 @@
     "spools": "Spools",
     "printers": "Printers",
     "stats": "Statistics",
+    "wunschliste": "Wishlist",
     "settings": "Settings"
+  },
+  "wishlist": {
+    "title": "Wishlist",
+    "hint": "Instance-wide list for a group order – everyone sees who added what.",
+    "itemTitle": "What do you need?",
+    "quantity": "Quantity",
+    "note": "Note (optional)",
+    "add": "Add",
+    "empty": "The wishlist is still empty.",
+    "loadFailed": "Couldn't load the wishlist.",
+    "saveFailed": "Couldn't save.",
+    "titleRequired": "Please enter a title.",
+    "confirmDelete": "Really remove \"{{title}}\" from the wishlist?",
+    "addedBy": "Added by {{name}} on {{date}}",
+    "updatedBy": "last changed by {{name}}",
+    "status": { "OPEN": "Open", "ORDERED": "Ordered", "DONE": "Done" }
   },
   "dashboard": {
     "perInventory": "Inventories compared",
@@ -158,7 +175,9 @@
       "USER": "User",
       "SETTINGS": "Settings",
       "BACKUP": "Backup",
-      "INVENTORY": "Inventory"
+      "INVENTORY": "Inventory",
+      "WISHLIST": "Wishlist",
+      "CUSTOM_FIELD": "Custom field"
     },
     "values": {
       "ADMIN": "Admin",
@@ -349,6 +368,17 @@
     "remainingWeight": "Remaining weight (g)",
     "location": "Location (optional)",
     "purchasePrice": "Purchase price in euros (optional)",
+    "note": "Note (optional)",
+    "twoTone": "Two-tone (second color)",
+    "colorHex2": "Second color",
+    "customFields": "Custom fields",
+    "export": { "label": "Export:" },
+    "history": {
+      "action": "History",
+      "title": "History: {{name}}",
+      "empty": "No entry in the log yet.",
+      "loadFailed": "Couldn't load the history."
+    },
     "confirmDelete": "Really delete this spool? Its consumption will disappear from the statistics. If it's just empty, archive it instead.",
     "sort": { "added": "Recently added", "manufacturer": "Manufacturer", "name": "Material and color", "price": "Purchase price", "remaining": "Remaining weight" },
     "filter": {
@@ -481,6 +511,17 @@
     "nozzleMax": "Nozzle max (°C)",
     "bed": "Bed (°C)",
     "density": "Density in g/cm³ (optional)",
+    "diameter": "Filament diameter",
+    "customFields": {
+      "title": "Custom fields",
+      "hint": "Freely defined fields (e.g. batch, rating) that appear in every spool's form.",
+      "empty": "No custom field defined yet.",
+      "name": "Name",
+      "kindLabel": "Type",
+      "kind": { "TEXT": "Text", "NUMBER": "Number", "DATE": "Date", "BOOLEAN": "Yes/No" },
+      "add": "Add",
+      "confirmDelete": "Really delete the custom field \"{{name}}\"? Values spools have for it will then disappear from view."
+    },
     "densityHint": "For the spool's estimated remaining length. Typical values: PLA 1.24 · PETG 1.27 · ABS 1.04 · TPU 1.21.",
     "nameRequired": "Please enter a name.",
     "materialFieldsRequired": "Please fill in the name and both nozzle temperatures.",
