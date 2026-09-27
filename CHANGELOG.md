@@ -8,6 +8,15 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.21.1] - 2026-09-27
+
+### Behoben
+- Auf dem Handy überlappten sich in der Wunschliste die Beschriftungen "Hersteller" und "Material" beim Formular unlesbar. Das Formular ordnet die Felder auf schmalen Bildschirmen jetzt in zwei Spalten an.
+- Die Spulen-Liste zeigte je Spule eine unübersichtliche Reihe einzelner Text-Links (Bearbeiten, Archivieren, QR-Label, Verlauf, Trocknen protokollieren, Zur Wunschliste, Löschen), die auf dem Handy und in der Listenansicht über mehrere Zeilen umbrach. Alle Ansichten zeigen die Aktionen jetzt einheitlich über ein Drei-Punkte-Menü.
+
+### Geändert
+- Die Filter der Spulen-Seite (Hersteller, Material, Farbe, Lagerort, Restgewicht, Kaufpreis, Sortierung) sind jetzt hinter einem "Filter"-Knopf eingeklappt, statt permanent fast die halbe Seite einzunehmen. Die Suche bleibt immer sichtbar.
+
 ## [0.21.0] - 2026-09-27
 
 ### Hinzugefuegt

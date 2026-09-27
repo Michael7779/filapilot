@@ -402,6 +402,7 @@
     "filter": {
       "search": "Search spools",
       "searchPlaceholder": "Search by manufacturer, material, color, location …",
+      "toggle": "Filter",
       "all": "All",
       "location": "Location",
       "remaining": "Remaining weight",

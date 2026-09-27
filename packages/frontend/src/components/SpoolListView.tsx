@@ -110,7 +110,7 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, ...
                 )}
                 <td className={cellClass}>{t(statusKey(spool))}</td>
                 <td className={cellClass}>
-                  <SpoolActions spool={spool} variant="inline" {...handlers} />
+                  <SpoolActions spool={spool} {...handlers} />
                 </td>
               </tr>
             );

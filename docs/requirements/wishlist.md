@@ -25,3 +25,8 @@ Tests: `packages/backend/tests/security/wishlist.test.ts`. Oberflaeche manuell i
   (wie im "Neue Spule"-Dialog); eine Auswahl befuellt den freien Titel, der weiter frei editierbar bleibt.
 - Auf der Spulen-Seite legt die Aktion "Zur Wunschliste" (jede Spule, jede Ansicht) einen Wunsch mit dem Titel
   "{Hersteller} {Material} {Farbe}" an - praktisch zum Nachbestellen einer Spule, die zur Neige geht.
+
+## 1.4 Aenderungen ab 0.21.1
+- Fehler behoben: Auf schmalen Bildschirmen (Handy) ueberlappten sich die Beschriftungen "Hersteller" und "Material"
+  im Formular unlesbar (zu viele `flex-1`-Spalten in einer Zeile, unbrechbare Woerter liefen visuell ineinander).
+  Das Formular ordnet die Felder unter `sm:` als 2-Spalten-Grid an, ab `sm:` wie bisher als Zeile.

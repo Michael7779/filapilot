@@ -126,8 +126,11 @@ export function WishlistPage(): React.JSX.Element {
         <p className="text-sm text-[var(--color-text-secondary)]">{t("wishlist.hint")}</p>
       </div>
 
-      <form onSubmit={(event) => void handleAdd(event)} className="flex flex-wrap items-end gap-2 rounded-xl border border-[var(--color-border)] bg-white p-4">
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+      <form
+        onSubmit={(event) => void handleAdd(event)}
+        className="grid grid-cols-2 gap-2 rounded-xl border border-[var(--color-border)] bg-white p-4 sm:flex sm:flex-wrap sm:items-end"
+      >
+        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
           {t("spools.manufacturer")}
           <select
             value={manufacturerId}
@@ -145,7 +148,7 @@ export function WishlistPage(): React.JSX.Element {
             ))}
           </select>
         </label>
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
           {t("spools.material")}
           <select
             value={materialId}
@@ -163,22 +166,22 @@ export function WishlistPage(): React.JSX.Element {
             ))}
           </select>
         </label>
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+        <label className="col-span-2 flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
           {t("wishlist.itemTitle")}
           <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT_CLASS} />
         </label>
-        <label className="flex w-20 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:w-20">
           {t("wishlist.quantity")}
           <input type="number" min={1} value={quantity} onChange={(event) => setQuantity(event.target.value)} className={INPUT_CLASS} />
         </label>
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
+        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
           {t("wishlist.note")}
           <input type="text" value={note} onChange={(event) => setNote(event.target.value)} className={INPUT_CLASS} />
         </label>
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="col-span-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 sm:col-auto"
           style={{ backgroundColor: "var(--accent)" }}
         >
           {editing ? t("common.save") : t("wishlist.add")}
@@ -194,7 +197,7 @@ export function WishlistPage(): React.JSX.Element {
               setNote("");
               setQuantity("1");
             }}
-            className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
+            className="col-span-2 rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium sm:col-auto"
           >
             {t("common.cancel")}
           </button>

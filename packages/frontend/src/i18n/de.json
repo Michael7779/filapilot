@@ -402,6 +402,7 @@
     "filter": {
       "search": "Spulen durchsuchen",
       "searchPlaceholder": "Suchen nach Hersteller, Material, Farbe, Lagerort …",
+      "toggle": "Filter",
       "all": "Alle",
       "location": "Lagerort",
       "remaining": "Restgewicht",

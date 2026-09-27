@@ -68,8 +68,9 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
               <div className="text-sm font-semibold">
                 {spool.materialName} {spool.colorName}
               </div>
-              <span className="ml-auto">
+              <span className="ml-auto flex items-center gap-1">
                 <StatusBadge spool={spool} />
+                <SpoolActions spool={spool} {...handlers} />
               </span>
             </div>
             <div className="mb-2 text-xs text-[var(--color-text-muted)]">
@@ -86,10 +87,9 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
             <div className="mb-1">
               <WeightBar spool={spool} />
             </div>
-            <div className="mb-3 text-xs text-[var(--color-text-secondary)]">
+            <div className="text-xs text-[var(--color-text-secondary)]">
               {spool.remainingWeightG} g / {spool.initialWeightG} g
             </div>
-            <SpoolActions spool={spool} variant="inline" {...handlers} />
           </div>
         );
       })}
@@ -106,7 +106,7 @@ export function CompactView({ spools, isAll, ...handlers }: SpoolViewProps): Rea
           <div className="mb-1 flex items-center gap-2">
             <ColorDot hex={spool.colorHex} hex2={spool.colorHex2} size="h-3.5 w-3.5" />
             <div className="min-w-0 flex-1 truncate text-sm font-semibold">{spool.colorName}</div>
-            <SpoolActions spool={spool} variant="menu" {...handlers} />
+            <SpoolActions spool={spool} {...handlers} />
           </div>
           <div className="mb-2 truncate text-xs text-[var(--color-text-muted)]" title={`${spool.manufacturerName} ${spool.materialName}`}>
             {isAll && spool.inventoryName ? `${spool.inventoryName} · ` : ""}
@@ -131,7 +131,7 @@ export function SwatchView({ spools, ...handlers }: SpoolViewProps): React.JSX.E
         <div key={spool.id} className={`overflow-hidden rounded-xl border border-[var(--color-border)] bg-white ${spool.archivedAt ? "opacity-70" : ""}`}>
           <div className="relative h-20 border-b border-[var(--color-border)]" style={{ background: spool.colorHex2 ? `linear-gradient(90deg, ${spool.colorHex ?? "#cccccc"} 50%, ${spool.colorHex2} 50%)` : (spool.colorHex ?? "#cccccc") }}>
             <div className="absolute right-1 top-1 rounded-md bg-white/85">
-              <SpoolActions spool={spool} variant="menu" {...handlers} />
+              <SpoolActions spool={spool} {...handlers} />
             </div>
           </div>
           <div className="p-2.5">

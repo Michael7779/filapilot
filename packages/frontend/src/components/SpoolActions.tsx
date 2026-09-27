@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { SpoolWithRelations } from "@filapilot/shared";
 
@@ -15,8 +16,6 @@ export interface SpoolHandlers {
 
 interface SpoolActionsProps extends SpoolHandlers {
   spool: SpoolWithRelations;
-  // inline = Textknoepfe nebeneinander, menu = Drei-Punkte-Menue (platzsparend)
-  variant: "inline" | "menu";
 }
 
 interface ActionItem {
@@ -26,31 +25,59 @@ interface ActionItem {
   run: () => void;
 }
 
-// Aktionen einer Spule; Betrachter sehen nur das QR-Label.
-export function SpoolActions({ spool, variant, canEdit, onEdit, onArchive, onLabel, onDelete, onHistory, onAddToWishlist, onDrying }: SpoolActionsProps): React.JSX.Element {
+const MENU_WIDTH = 180;
+
+// Aktionen einer Spule (Drei-Punkte-Menue); Betrachter sehen nur das QR-Label.
+export function SpoolActions({ spool, canEdit, onEdit, onArchive, onLabel, onDelete, onHistory, onAddToWishlist, onDrying }: SpoolActionsProps): React.JSX.Element {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
   useEffect(() => {
     if (!open) {
+      setMenuPos(null);
       return;
     }
+    // Feste Position statt "absolute": das Menue wird ans Ende von <body> gerendert, damit es nie von einem
+    // scrollenden Vorfahren (z.B. der seitlich scrollenden Tabelle in der Listenansicht) abgeschnitten wird.
+    function place(): void {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return;
+      }
+      setMenuPos({ top: rect.bottom + 4, left: Math.max(8, rect.right - MENU_WIDTH) });
+    }
+    place();
     function onKey(event: KeyboardEvent): void {
       if (event.key === "Escape") {
         setOpen(false);
       }
     }
     function onPointer(event: MouseEvent): void {
-      if (rootRef.current && event.target instanceof Node && !rootRef.current.contains(event.target)) {
+      const target = event.target;
+      const insideRoot = rootRef.current && target instanceof Node && rootRef.current.contains(target);
+      const insideMenu = menuRef.current && target instanceof Node && menuRef.current.contains(target);
+      if (!insideRoot && !insideMenu) {
         setOpen(false);
       }
     }
+    // Bei Scroll/Resize schliessen statt der Position nachzufuehren (einfacher, und das Menue ist ohnehin kurzlebig).
+    // "true" (capture) faengt auch das Scrollen eines inneren Containers ab (z.B. der Tabelle), das sonst nicht bis zum Fenster durchreicht.
+    function onDismiss(): void {
+      setOpen(false);
+    }
     window.addEventListener("keydown", onKey);
     window.addEventListener("mousedown", onPointer);
+    window.addEventListener("scroll", onDismiss, true);
+    window.addEventListener("resize", onDismiss);
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("scroll", onDismiss, true);
+      window.removeEventListener("resize", onDismiss);
     };
   }, [open]);
 
@@ -71,27 +98,10 @@ export function SpoolActions({ spool, variant, canEdit, onEdit, onArchive, onLab
     items.push({ key: "delete", label: t("common.delete"), danger: true, run: () => onDelete(spool) });
   }
 
-  if (variant === "inline") {
-    return (
-      <div className="flex flex-wrap gap-x-3 gap-y-1">
-        {items.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={item.run}
-            className={`text-xs font-medium ${item.danger ? "text-[var(--color-danger)]" : ""}`}
-            style={item.danger ? undefined : { color: "var(--accent)" }}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         aria-label={t("spools.actions")}
         aria-expanded={open}
@@ -104,24 +114,31 @@ export function SpoolActions({ spool, variant, canEdit, onEdit, onArchive, onLab
           <circle cx="12" cy="19" r="1.8" />
         </svg>
       </button>
-      {open && (
-        <ul className="absolute right-0 z-20 mt-1 min-w-[140px] rounded-lg border border-[var(--color-border)] bg-white py-1 text-sm">
-          {items.map((item) => (
-            <li key={item.key}>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  item.run();
-                }}
-                className={`block w-full px-3 py-1.5 text-left hover:bg-[var(--color-bg)] ${item.danger ? "text-[var(--color-danger)]" : ""}`}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {open &&
+        menuPos &&
+        createPortal(
+          <ul
+            ref={menuRef}
+            className="fixed z-50 rounded-lg border border-[var(--color-border)] bg-white py-1 text-sm shadow-lg"
+            style={{ top: menuPos.top, left: menuPos.left, width: MENU_WIDTH }}
+          >
+            {items.map((item) => (
+              <li key={item.key}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    item.run();
+                  }}
+                  className={`block w-full px-3 py-1.5 text-left hover:bg-[var(--color-bg)] ${item.danger ? "text-[var(--color-danger)]" : ""}`}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>,
+          document.body
+        )}
     </div>
   );
 }

@@ -96,3 +96,9 @@
   `components/SpoolHistoryModal.tsx` zeigt Temperatur/Dauer/Notiz direkt in der Liste). Aktion "Trocknen
   protokollieren" bei jeder Spule (`components/SpoolActions.tsx`, `components/SpoolDryingModal.tsx`).
   Test: `tests/security/spoolDrying.test.ts`.
+- **R19**: Ab 0.21.1: Die Filter der Spulen-Seite sind hinter einem "Filter"-Knopf eingeklappt (`components/SpoolFilterBar.tsx`,
+  ein Punkt am Knopf zeigt aktive Filter auch eingeklappt an); die Suche bleibt immer sichtbar. Alle vier Ansichten
+  (Standard/Kompakt/Liste/Farbkacheln) zeigen die Aktionen einer Spule einheitlich ueber ein Drei-Punkte-Menue
+  (`components/SpoolActions.tsx`), das per React-Portal an `<body>` gerendert wird, damit es nie von einem
+  scrollenden Vorfahren (z.B. der seitlich scrollenden Tabelle der Listenansicht) abgeschnitten wird. Oberflaeche
+  manuell auf Mobil- und Desktop-Breite geprueft.
