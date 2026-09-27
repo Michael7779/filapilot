@@ -37,6 +37,13 @@
     "byMaterialType": "Verbrauch nach Material-Typ",
     "byMaterial": "Verbrauch nach Material",
     "byManufacturer": "Verbrauch nach Hersteller",
+    "jobs": {
+      "title": "Letzte Druckaufträge",
+      "empty": "Noch kein automatisch erfasster Druckauftrag.",
+      "failed": "Fehlgeschlagen",
+      "more": "Weitere laden",
+      "loadFailed": "Druckaufträge konnten nicht geladen werden."
+    },
     "noConsumption": "Noch kein Verbrauch erfasst.",
     "loadFailed": "Statistik konnte nicht geladen werden."
   },
@@ -497,6 +504,14 @@
     "connected": "Verbunden",
     "disconnected": "Getrennt",
     "printing": "Druckt",
+    "ams": {
+      "title": "AMS-Zuordnung",
+      "slot": "Slot {{index}}",
+      "external": "Extern",
+      "none": "Keine Spule",
+      "loadFailed": "AMS-Zuordnung konnte nicht geladen werden.",
+      "assignFailed": "Zuordnung konnte nicht gespeichert werden."
+    },
     "showGuide": "Wie verbinde ich einen Bambu-Lab-Drucker? (Anleitung anzeigen)",
     "hideGuide": "Anleitung ausblenden",
     "guideStep1": "Am Drucker-Display: Einstellungen → WLAN/Netzwerk öffnen und die angezeigte IP-Adresse notieren.",

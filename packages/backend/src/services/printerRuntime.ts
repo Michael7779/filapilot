@@ -5,6 +5,7 @@ import { connectToBambuPrinter } from "./bambuConnector.js";
 import { broadcastPrinterStatus } from "../socket.js";
 import { prisma } from "../prisma.js";
 import { logger } from "../logger.js";
+import { processPrinterStatus } from "./printJobTracker.js";
 
 // Haelt pro Drucker die aktive MQTT-Verbindung, den zuletzt bekannten Status und (bei
 // SyncMode PERIODIC) den Broadcast-Timer. Bewusst In-Memory statt DB - das ist Laufzeitzustand,
@@ -18,6 +19,7 @@ function disconnectedStatus(printerId: string): PrinterLiveStatus {
     printerId,
     connected: false,
     printing: false,
+    printState: "unknown",
     currentJobName: null,
     progressPercent: null,
     remainingSeconds: null,
@@ -44,6 +46,8 @@ export function connectPrinter(printer: Printer): void {
       if (printer.syncMode === "LIVE") {
         broadcastPrinterStatus(status, printer.inventoryId);
       }
+      // Verbrauchserkennung laeuft unabhaengig vom Sync-Modus - der Server bekommt bei beiden laufend Reports.
+      void processPrinterStatus({ id: printer.id, inventoryId: printer.inventoryId }, status);
     }
   );
   activeConnections.set(printer.id, client);

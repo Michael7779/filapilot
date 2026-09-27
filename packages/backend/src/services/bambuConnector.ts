@@ -1,5 +1,5 @@
 import mqtt, { type MqttClient } from "mqtt";
-import type { PrinterLiveStatus } from "@filapilot/shared";
+import { EXTERNAL_AMS_SLOT_INDEX, type AmsSlotStatus, type PrinterLiveStatus, type PrintState } from "@filapilot/shared";
 import { logger } from "../logger.js";
 
 // Bambu-Lab-Drucker exponieren lokal einen MQTT-Broker auf Port 8883 (TLS, selbstsigniert),
@@ -53,8 +53,79 @@ export function connectToBambuPrinter(
   return client;
 }
 
+const GCODE_STATE_MAP: Record<string, PrintState> = {
+  RUNNING: "running",
+  PREPARE: "running",
+  SLICING: "running",
+  PAUSE: "paused",
+  FINISH: "finished",
+  FAILED: "failed",
+  IDLE: "idle"
+};
+
+function toPrintState(value: unknown): PrintState {
+  return (typeof value === "string" ? GCODE_STATE_MAP[value] : undefined) ?? "unknown";
+}
+
+// "FFFFFFFF" (RRGGBBAA, wie vom Drucker gemeldet) zu "#RRGGBB" - ohne Alpha-Kanal, den FilaPilot nicht nutzt.
+function toColorHex(value: unknown): string | null {
+  return typeof value === "string" && /^[0-9a-fA-F]{6,8}$/.test(value) ? `#${value.slice(0, 6).toUpperCase()}` : null;
+}
+
+// -1 (bzw. jeder Wert ausserhalb 0-100) heisst beim Drucker "nicht kalibriert/unbekannt".
+function toRemainPercent(value: unknown): number | null {
+  return typeof value === "number" && value >= 0 && value <= 100 ? value : null;
+}
+
+// Eine AMS-Kammer oder die externe Spule ("vt_tray") aus dem rohen Report-Objekt.
+function parseTray(raw: unknown, slotIndex: number): AmsSlotStatus | null {
+  if (typeof raw !== "object" || raw === null) {
+    return null;
+  }
+  const tray = raw as Record<string, unknown>;
+  return {
+    slotIndex,
+    reportedMaterial: typeof tray.tray_type === "string" && tray.tray_type !== "" ? tray.tray_type : null,
+    reportedColorHex: toColorHex(tray.tray_color),
+    remainingPercent: toRemainPercent(tray.remain)
+  };
+}
+
+// Die AMS-Kammer meldet ihren Index als String-"id" ("0".."3"); alles andere ist kein gueltiger Slot.
+function trayIndex(tray: unknown): number | null {
+  const id = typeof tray === "object" && tray !== null ? (tray as { id?: unknown }).id : undefined;
+  const index = typeof id === "string" ? Number(id) : NaN;
+  return Number.isInteger(index) && index >= 0 && index <= 3 ? index : null;
+}
+
+// Nur die erste AMS-Einheit (typisches Ein-AMS-Setup); mehrere AMS-Einheiten in Reihe werden nicht unterschieden.
+function firstAmsTrays(print: Record<string, unknown>): unknown[] {
+  const ams = print.ams as { ams?: unknown[] } | undefined;
+  const firstUnit = Array.isArray(ams?.ams) ? ams.ams[0] : null;
+  const trays = firstUnit && typeof firstUnit === "object" ? (firstUnit as { tray?: unknown[] }).tray : undefined;
+  return Array.isArray(trays) ? trays : [];
+}
+
+function parseAmsSlots(print: Record<string, unknown>): AmsSlotStatus[] {
+  const slots: AmsSlotStatus[] = [];
+  for (const tray of firstAmsTrays(print)) {
+    const index = trayIndex(tray);
+    const parsed = index === null ? null : parseTray(tray, index);
+    if (parsed) {
+      slots.push(parsed);
+    }
+  }
+  const external = parseTray(print.vt_tray, EXTERNAL_AMS_SLOT_INDEX);
+  if (external) {
+    slots.push(external);
+  }
+  return slots;
+}
+
 // Isoliert vom MQTT-Transport gehalten, damit es mit einem Mock-Payload unit-testbar ist
-// (siehe tests/unit/bambuConnector.test.ts) - ohne echten Drucker oder echte Verbindung.
+// (siehe tests/unit/bambuConnector.test.ts) - ohne echten Drucker oder echte Verbindung. Die Feld-Zuordnung
+// (auch fuer AMS/vt_tray) stammt aus oeffentlich dokumentiertem Reverse-Engineering des Bambu-Reports, nicht
+// von einem echten Drucker verifiziert - siehe Kommentar oben.
 export function parseBambuReport(printerId: string, raw: unknown): PrinterLiveStatus | null {
   if (typeof raw !== "object" || raw === null || !("print" in raw)) {
     return null;
@@ -63,15 +134,17 @@ export function parseBambuReport(printerId: string, raw: unknown): PrinterLiveSt
   if (!print) {
     return null;
   }
+  const printState = toPrintState(print.gcode_state);
 
   return {
     printerId,
     connected: true,
-    printing: print.gcode_state === "RUNNING",
+    printing: printState === "running",
+    printState,
     currentJobName: typeof print.subtask_name === "string" ? print.subtask_name : null,
     progressPercent: typeof print.mc_percent === "number" ? print.mc_percent : null,
     remainingSeconds:
       typeof print.mc_remaining_time === "number" ? print.mc_remaining_time * 60 : null,
-    amsSlots: []
+    amsSlots: parseAmsSlots(print)
   };
 }

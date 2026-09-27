@@ -37,6 +37,13 @@
     "byMaterialType": "Consumption by material type",
     "byMaterial": "Consumption by material",
     "byManufacturer": "Consumption by manufacturer",
+    "jobs": {
+      "title": "Recent print jobs",
+      "empty": "No print job has been recorded automatically yet.",
+      "failed": "Failed",
+      "more": "Load more",
+      "loadFailed": "Couldn't load the print jobs."
+    },
     "noConsumption": "No consumption recorded yet.",
     "loadFailed": "Couldn't load statistics."
   },
@@ -497,6 +504,14 @@
     "connected": "Connected",
     "disconnected": "Disconnected",
     "printing": "Printing",
+    "ams": {
+      "title": "AMS assignment",
+      "slot": "Slot {{index}}",
+      "external": "External",
+      "none": "No spool",
+      "loadFailed": "Couldn't load the AMS assignment.",
+      "assignFailed": "Couldn't save the assignment."
+    },
     "showGuide": "How do I connect a Bambu Lab printer? (show guide)",
     "hideGuide": "Hide guide",
     "guideStep1": "On the printer's touchscreen: open Settings → WiFi/Network and note the displayed IP address.",

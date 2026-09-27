@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createPrinterInputSchema, updatePrinterInputSchema } from "@filapilot/shared";
+import { assignAmsSlotInputSchema, createPrinterInputSchema, EXTERNAL_AMS_SLOT_INDEX, updatePrinterInputSchema } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { printerSnapshot } from "../lib/auditSnapshots.js";
@@ -10,6 +10,7 @@ import { getAuthenticatedUser, requireAuth, requirePasswordAlreadyChanged } from
 import { toPublicPrinter } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
 import { connectPrinter, disconnectPrinter, getLatestStatus } from "../services/printerRuntime.js";
+import { assignAmsSlot, listAmsSlots } from "../services/amsSlotService.js";
 import {
   accessibleInventoryIds,
   requireAccessToObjectInventory,
@@ -21,6 +22,10 @@ export const printersRouter = Router();
 const requireActiveUser = [requireAuth, requirePasswordAlreadyChanged] as const;
 const idParamSchema = z.string().uuid();
 const listQuerySchema = z.object({ inventoryId: z.union([z.literal("all"), z.string().uuid()]) });
+const slotIndexParamSchema = z.coerce
+  .number()
+  .int()
+  .refine((value) => (value >= 0 && value <= 3) || value === EXTERNAL_AMS_SLOT_INDEX, "Ungueltiger Slot");
 
 async function findPrinterOrThrow(id: string) {
   const printer = await prisma.printer.findUnique({ where: { id }, include: { inventory: true } });
@@ -71,6 +76,46 @@ printersRouter.get(
     const printer = await findPrinterOrThrow(id);
     await requireAccessToObjectInventory(getAuthenticatedUser(req), printer.inventoryId, "VIEWER");
     sendData(res, getLatestStatus(id));
+  })
+);
+
+// Threat-Model: Ein Benutzer ohne Zugriff aufs Lager des Druckers koennte fremde AMS-Slots einer fremden Spule
+// zuordnen und so Verbrauch fremder Drucker gegen fremde Spulen buchen lassen. Serverseitig erzwungen: Lesen
+// braucht VIEWER, Zuordnen EDITOR im Lager des Druckers, und die Spule muss serverseitig geprueft im selben
+// Lager wie der Drucker liegen (sonst 400) - Zuordnen ist Tagesgeschaeft (wie Spule bearbeiten), kein Besitzer-Vorgang.
+// Negativ-Tests: kein Cookie 401, Fremder 404, Betrachter 403, Spule aus anderem Lager 400, ungueltiger Slot 400.
+// SCOPE: user
+printersRouter.get(
+  "/:id/ams-slots",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const id = idParamSchema.parse(req.params.id);
+    const printer = await findPrinterOrThrow(id);
+    await requireAccessToObjectInventory(getAuthenticatedUser(req), printer.inventoryId, "VIEWER");
+    sendData(res, await listAmsSlots(id, getLatestStatus(id).amsSlots));
+  })
+);
+
+// SCOPE: user
+printersRouter.put(
+  "/:id/ams-slots/:slotIndex",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const id = idParamSchema.parse(req.params.id);
+    const slotIndex = slotIndexParamSchema.parse(req.params.slotIndex);
+    const input = assignAmsSlotInputSchema.parse(req.body);
+    const printer = await findPrinterOrThrow(id);
+    await requireAccessToObjectInventory(getAuthenticatedUser(req), printer.inventoryId, "EDITOR");
+    await assignAmsSlot(id, printer.inventoryId, slotIndex, input.spoolId);
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "EVENT",
+      area: "PRINTER",
+      entityId: id,
+      inventory: inventoryOf(printer),
+      description: `${printer.name}: Slot ${slotIndex} ${input.spoolId ? "zugeordnet" : "geleert"}`
+    });
+    sendData(res, await listAmsSlots(id, getLatestStatus(id).amsSlots));
   })
 );
 

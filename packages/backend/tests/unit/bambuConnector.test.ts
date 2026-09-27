@@ -32,5 +32,49 @@ describe("parseBambuReport", () => {
     const status = parseBambuReport("printer-1", raw);
     assert.ok(status);
     assert.equal(status.printing, false);
+    assert.equal(status.printState, "idle");
+  });
+
+  it("erkennt fertig/fehlgeschlagen als eigenen Status (nicht mehr 'printing')", () => {
+    assert.equal(parseBambuReport("p", { print: { gcode_state: "FINISH" } })?.printState, "finished");
+    assert.equal(parseBambuReport("p", { print: { gcode_state: "FAILED" } })?.printState, "failed");
+    assert.equal(parseBambuReport("p", { print: { gcode_state: "PAUSE" } })?.printState, "paused");
+    assert.equal(parseBambuReport("p", { print: { gcode_state: "PAUSE" } })?.printing, false);
+    assert.equal(parseBambuReport("p", { print: { gcode_state: "irgendwas" } })?.printState, "unknown");
+  });
+
+  it("liest AMS-Kammern (Farbe/Material/Fuellstand) und die externe Spule (vt_tray)", () => {
+    const raw = {
+      print: {
+        gcode_state: "RUNNING",
+        ams: {
+          ams: [
+            {
+              tray: [
+                { id: "0", tray_type: "PLA", tray_color: "FFFFFFFF", remain: 80 },
+                { id: "1", tray_type: "PETG", tray_color: "D14343FF", remain: -1 },
+                { id: "2" },
+                { id: "3", tray_type: "", tray_color: "000000FF", remain: 12 }
+              ]
+            }
+          ]
+        },
+        vt_tray: { tray_type: "TPU", tray_color: "0B2A4AFF", remain: 45 }
+      }
+    };
+    const status = parseBambuReport("printer-1", raw);
+    assert.ok(status);
+    assert.deepEqual(status.amsSlots, [
+      { slotIndex: 0, reportedMaterial: "PLA", reportedColorHex: "#FFFFFF", remainingPercent: 80 },
+      { slotIndex: 1, reportedMaterial: "PETG", reportedColorHex: "#D14343", remainingPercent: null },
+      { slotIndex: 2, reportedMaterial: null, reportedColorHex: null, remainingPercent: null },
+      { slotIndex: 3, reportedMaterial: null, reportedColorHex: "#000000", remainingPercent: 12 },
+      { slotIndex: 254, reportedMaterial: "TPU", reportedColorHex: "#0B2A4A", remainingPercent: 45 }
+    ]);
+  });
+
+  it("liefert eine leere AMS-Liste ohne AMS/vt_tray im Report (kein Absturz)", () => {
+    const status = parseBambuReport("printer-1", { print: { gcode_state: "IDLE" } });
+    assert.deepEqual(status?.amsSlots, []);
   });
 });

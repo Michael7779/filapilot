@@ -5,6 +5,7 @@ import { LOW_STOCK_THRESHOLD_RATIO, materialTypeOf } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 import { ConsumptionChart } from "../components/ConsumptionChart.js";
+import { PrintJobHistory } from "../components/PrintJobHistory.js";
 
 interface StatCardProps {
   label: string;
@@ -140,6 +141,8 @@ export function StatsPage(): React.JSX.Element {
       </div>
 
       {selectedId && <ConsumptionChart inventoryId={selectedId} />}
+
+      {selectedId && <PrintJobHistory inventoryId={selectedId} isAll={selectedId === "all"} />}
 
       <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
         <BreakdownList

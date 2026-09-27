@@ -30,18 +30,19 @@
   Minute werden bestehende Verbindungen erneut geprueft, damit Abmelden/Widerruf sie beendet.
 
 ## 1.1 Offene Punkte
-- OP-P1: **AMS-Fach-Parsing ist noch nicht implementiert** (`amsSlots` liefert immer `[]`) - das
-  exakte Feld-Layout der Bambu-MQTT-`report`-Nachricht fuer AMS-Daten (Fach-Index, Material,
-  Farbe, Restmenge) ist ohne Zugriff auf einen echten Drucker nicht zuverlaessig verifizierbar.
-  Die bereits geparsten Top-Level-Felder (`gcode_state`, `subtask_name`, `mc_percent`,
-  `mc_remaining_time`) sind gut dokumentierte, oeffentlich bekannte Bambu-MQTT-Felder - die
-  AMS-Struktur ist komplexer/nicht so einheitlich dokumentiert. Muss gegen einen echten Drucker
-  verifiziert und dann in `bambuConnector.ts::parseBambuReport` ergaenzt werden.
-- OP-P2: Kein automatisches Verknuepfen von AMS-Faechern zu Spulen (`AmsSlotAssignment`-Tabelle
-  existiert im Schema, wird aber noch nirgends befuellt) - haengt an OP-P1.
-- OP-P4: Keine Loesch-Sperre, wenn ein Drucker noch in `PrintJob` referenziert wird (kein
-  `onDelete`-Verhalten definiert) - relevant erst, sobald PrintJob-Erfassung existiert (siehe
-  `stats.md`).
+- OP-P1 ✅ (0.17.0): AMS-Fach-Parsing (`bambuConnector.ts::parseAmsSlots`) liest `ams.ams[0].tray[]` (Material,
+  Farbe, Restprozent) und `vt_tray` (externe Spule, Slot 254). Die Feld-Namen stammen aus oeffentlich dokumentiertem
+  Reverse-Engineering des Bambu-Reports, nicht von einem echten Drucker verifiziert - muss nach dem Update geprueft
+  werden. Nur die erste AMS-Einheit wird ausgewertet (mehrere AMS in Reihe werden nicht unterschieden).
+- OP-P2 ✅ (0.17.0): Zuordnung Spule ↔ AMS-Slot ueber `GET/PUT /api/printers/:id/ams-slots(/:slotIndex)`, siehe R6.
+- OP-P4 ✅ (0.17.0): `PrintJob.printer`/`PrintJob.spool` loeschen jetzt kaskadierend (wie `SpoolWeightLog`) - kein
+  Datenbank-Fehler mehr beim Loeschen eines Druckers/einer Spule mit Auftrags-Verlauf.
+- OP-P5: Der AMS-Fuellstand-Prozentwert bezieht sich auf das Gewicht, das der Drucker/Bambu Studio fuer die Spule
+  kennt - nicht zwingend das in FilaPilot hinterlegte Ursprungsgewicht. Die automatische Gramm-Berechnung ist deshalb
+  eine Naeherung.
+- OP-P6: Ein Serverneustart waehrend eines laufenden Drucks verliert die Erkennung fuer genau diesen einen Auftrag
+  (In-Memory-Zustand); der naechste Auftrag wird wieder normal erfasst.
+- OP-P7: Mehrere AMS-Einheiten in Reihe an einem Drucker werden nicht unterschieden (nur die erste wird gelesen).
 
 ## 1.2 Anforderungen
 - **R1**: Jeder eingeloggte Nutzer kann die Drucker-Liste und den Live-Status lesen, aber nie den
@@ -54,3 +55,22 @@
   offener Passwortwechsel -> abgelehnt). Test: `tests/realtime/socketAuth.test.ts`
 - **R5**: Ab 0.13.0: Drucker-Rechte im Lager (Fremde 404, Betrachter/Bearbeiter 403 beim Schreiben, Besitzer und Admin duerfen),
   der accessCode verlaesst den Server nie, das Lager eines Druckers laesst sich nicht aendern. Test: `tests/security/printers.test.ts`
+
+## 1.3 Automatischer Verbrauch pro Druck und Kosten (ab 0.17.0)
+- **R6**: `GET /api/printers/:id/ams-slots` (VIEWER) zeigt je Slot (0-3, plus 254 = externe Spule) die Rohangaben des Druckers
+  (Material, Farbe, Fuellstand) und die zugeordnete Spule; `PUT /api/printers/:id/ams-slots/:slotIndex` (EDITOR) ordnet zu
+  oder loest (`spoolId: null`). Die Spule muss serverseitig geprueft im selben Lager wie der Drucker liegen (sonst 400),
+  darf nicht archiviert sein (400); Fremde 404, Betrachter 403, anonym 401, ungueltiger Slot 400.
+  Test: `tests/security/amsSlots.test.ts`
+- **R7**: `services/printJobTracker.ts` bucht bei jedem MQTT-Status eines Druckers (unabhaengig vom Sync-Modus)
+  automatisch Verbrauch: Beginnt ein Druck (Status laeuft/pausiert), wird je zugeordnetem Slot mit bekanntem
+  Fuellstand ein Kalibrierungspunkt gesetzt; endet er (fertig/fehlgeschlagen/Leerlauf), wird die Differenz in Gramm
+  gebucht (`SpoolWeightLog`, Quelle `PRINT`), ein `PrintJob` mit Kosten (Momentaufnahme des Kaufpreises) und
+  Erfolg/Misserfolg angelegt, und die Kalibrierung aufgefrischt. Pause/Fortsetzen beendet keinen Auftrag. Ohne
+  Zuordnung, ohne bekannten Fuellstand oder wenn die Spule inzwischen in einem anderen Lager liegt, wird nichts
+  gebucht. Ein Fehler hier darf die Status-Anzeige nie stoeren (nur geloggt).
+  Tests: `tests/unit/printJobTracker.test.ts` (reine Logik), `tests/integration/printJobTracker.test.ts` (mit DB)
+- **R8**: `GET /api/print-jobs?inventoryId=<uuid|all>&printerId=&spoolId=&limit=&cursor=` (VIEWER, cursor-basierte
+  Seiten à max. 50) zeigt den Auftrags-Verlauf mit Anzeigenamen; "all" nur eigene Lager, ein fremder Drucker/Spule-Filter
+  404. Auf der Statistik-Seite als "Letzte Druckaufträge" (`PrintJobHistory.tsx`) und in den Drucker-Einstellungen als
+  AMS-Zuordnung (`AmsSlotsPanel.tsx`). Test: `tests/security/printJobs.test.ts`

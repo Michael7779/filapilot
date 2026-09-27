@@ -5,6 +5,7 @@ import type { CreatePrinterInput, PrinterLiveStatus, PrinterPublic } from "@fila
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { getSocket } from "../lib/socket.js";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
+import { AmsSlotsPanel } from "../components/AmsSlotsPanel.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 
 function MqttSetupGuide(): React.JSX.Element {
@@ -194,10 +195,12 @@ function NewPrinterModal({
 
 function PrinterCard({
   printer,
-  status
+  status,
+  canEdit
 }: {
   printer: PrinterPublic;
   status: PrinterLiveStatus | null;
+  canEdit: boolean;
 }): React.JSX.Element {
   const { t } = useTranslation();
   const connected = status?.connected ?? false;
@@ -240,13 +243,14 @@ function PrinterCard({
         {t("printers.syncMode")}:{" "}
         {printer.syncMode === "LIVE" ? t("printers.syncModeLive") : t("printers.syncModePeriodic")}
       </div>
+      {printer.inventoryId && <AmsSlotsPanel printerId={printer.id} inventoryId={printer.inventoryId} canEdit={canEdit} />}
     </div>
   );
 }
 
 export function PrintersPage(): React.JSX.Element {
   const { t } = useTranslation();
-  const { selectedId, isAll, isOwner } = useCurrentInventory();
+  const { selectedId, isAll, isOwner, canEdit } = useCurrentInventory();
   const inventories = useInventoryStore((state) => state.inventories);
   const [printers, setPrinters] = useState<PrinterPublic[]>([]);
   const [statusByPrinter, setStatusByPrinter] = useState<Record<string, PrinterLiveStatus>>({});
@@ -342,7 +346,7 @@ export function PrintersPage(): React.JSX.Element {
                   {inventories.find((inventory) => inventory.id === printer.inventoryId)?.name ?? ""}
                 </span>
               )}
-              <PrinterCard printer={printer} status={statusByPrinter[printer.id] ?? null} />
+              <PrinterCard printer={printer} status={statusByPrinter[printer.id] ?? null} canEdit={canEdit} />
             </div>
           ))}
         </div>

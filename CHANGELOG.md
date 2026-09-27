@@ -8,6 +8,17 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.17.0] - 2026-09-27
+
+### Hinzugefügt
+- Automatischer Verbrauch pro Druck: In den Drucker-Einstellungen ordnest du jedem AMS-Slot (und der extern eingelegten Spule) eine Spule aus FilaPilot zu. Beginnt und endet ein Druck, bucht FilaPilot automatisch den Verbrauch anhand des AMS-Füllstands, legt einen Druckauftrag mit Gewicht und Kosten an und aktualisiert das Restgewicht. Fehlgeschlagene Drucke werden als solche markiert, der Verbrauch aber trotzdem gebucht.
+- Statistik-Seite zeigt "Letzte Druckaufträge" mit Drucker, Spule, Gewicht, Kosten und Datum.
+
+### Bekannte Einschränkungen
+- Die AMS-Feldnamen im Drucker-Status stammen aus öffentlich bekannter Dokumentation, nicht von einem echten Drucker verifiziert.
+- Der AMS-Füllstand in Prozent bezieht sich auf das Gewicht, das der Drucker kennt, nicht zwingend auf das in FilaPilot hinterlegte Ursprungsgewicht - die Gramm-Angabe ist eine Näherung.
+- Ein Serverneustart während eines laufenden Drucks verliert die Erkennung für diesen einen Auftrag.
+
 ## [0.16.0] - 2026-09-27
 
 ### Hinzugefügt

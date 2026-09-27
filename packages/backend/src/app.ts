@@ -20,6 +20,7 @@ import { statsRouter } from "./routes/stats.js";
 import { spoolsRouter } from "./routes/spools.js";
 import { spoolPhotosRouter } from "./routes/spoolPhotos.js";
 import { printersRouter } from "./routes/printers.js";
+import { printJobsRouter } from "./routes/printJobs.js";
 import { sendData } from "./lib/apiResult.js";
 
 export function createApp() {
@@ -53,6 +54,7 @@ export function createApp() {
   app.use("/api/spools", spoolPhotosRouter);
   app.use("/api/spools", spoolsRouter);
   app.use("/api/printers", printersRouter);
+  app.use("/api/print-jobs", printJobsRouter);
 
   app.use(errorHandler);
 

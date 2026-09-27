@@ -19,6 +19,7 @@ enum SpoolArchiveReason {
 }
 
 enum WeightLogSource {
+  PRINT
   MANUAL
   CLOUD_IMPORT
   CLOUD_SYNC
@@ -267,12 +268,16 @@ model Printer {
 }
 
 model AmsSlotAssignment {
-  id        String  @id @default(uuid())
+  id        String    @id @default(uuid())
   printerId String
-  printer   Printer @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  printer   Printer   @relation(fields: [printerId], references: [id], onDelete: Cascade)
   slotIndex Int
   spoolId   String?
-  spool     Spool?  @relation(fields: [spoolId], references: [id])
+  spool     Spool?    @relation(fields: [spoolId], references: [id])
+  // Kalibrierung beim Zuordnen: Restgewicht/AMS-Fuellstand zu diesem Zeitpunkt, Basis der Verbrauchsberechnung
+  assignedAt          DateTime?
+  baselineRemainingG  Int?
+  baselineRemainPercent Float?
 
   @@unique([printerId, slotIndex])
   @@map("ams_slot_assignments")
@@ -281,11 +286,14 @@ model AmsSlotAssignment {
 model PrintJob {
   id            String    @id @default(uuid())
   printerId     String
-  printer       Printer   @relation(fields: [printerId], references: [id])
+  // Loeschen von Drucker oder Spule raeumt die zugehoerigen Auftraege mit auf (wie beim Gewichtsverlauf einer Spule).
+  printer       Printer   @relation(fields: [printerId], references: [id], onDelete: Cascade)
   spoolId       String
-  spool         Spool     @relation(fields: [spoolId], references: [id])
+  spool         Spool     @relation(fields: [spoolId], references: [id], onDelete: Cascade)
   name          String
   filamentUsedG Float
+  costCents     Int?
+  succeeded     Boolean   @default(true)
   startedAt     DateTime
   finishedAt    DateTime?
 
