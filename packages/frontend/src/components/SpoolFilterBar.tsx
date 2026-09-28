@@ -159,6 +159,10 @@ export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortCha
             <input type="checkbox" checked={filter.lowStockOnly} onChange={(event) => set({ lowStockOnly: event.target.checked })} />
             {t("spools.filter.lowStockOnly")}
           </label>
+          <label className="flex items-center gap-2 pb-2 text-sm text-[var(--color-text-secondary)]">
+            <input type="checkbox" checked={filter.unopenedOnly} onChange={(event) => set({ unopenedOnly: event.target.checked })} />
+            {t("spools.filter.unopenedOnly")}
+          </label>
           {active && (
             <button
               type="button"

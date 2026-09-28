@@ -2,17 +2,19 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { backupTimestampSchema, type BackupInfo } from "@filapilot/shared";
 
-const FILE_PATTERN = /^filapilot-(db|settings|uploads)-(.+)\.(sql|json|tar\.gz)$/;
+const FILE_PATTERN = /^filapilot-(db|settings|uploads|version)-(.+)\.(sql|json|tar\.gz|txt)$/;
 
 export function backupFileNames(timestamp: string): {
   database: string;
   settings: string;
   uploads: string;
+  version: string;
 } {
   return {
     database: `filapilot-db-${timestamp}.sql`,
     settings: `filapilot-settings-${timestamp}.json`,
-    uploads: `filapilot-uploads-${timestamp}.tar.gz`
+    uploads: `filapilot-uploads-${timestamp}.tar.gz`,
+    version: `filapilot-version-${timestamp}.txt`
   };
 }
 
@@ -25,6 +27,13 @@ async function fileSize(filePath: string): Promise<number | null> {
   // filePath entsteht aus dem Admin-Backup-Ordner und einem per Regex geprueften Dateinamen.
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   return fs.stat(filePath).then((stat) => stat.size, () => null);
+}
+
+// Sicherungen vor 0.22.0 haben keine Versions-Datei - dann null (keine Warnung, statt einer falschen Vermutung).
+async function readVersion(filePath: string): Promise<string | null> {
+  // filePath entsteht aus dem Admin-Backup-Ordner und einem per Regex geprueften Dateinamen.
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  return fs.readFile(filePath, "utf8").then((text) => text.trim() || null, () => null);
 }
 
 // Listet nur wiederherstellbare Saetze (mit Datenbank-Dump), neueste zuerst.
@@ -49,11 +58,14 @@ export async function listBackups(folder: string): Promise<BackupInfo[]> {
     }
     const settingsSize = await fileSize(path.join(folder, names.settings));
     const uploadsSize = await fileSize(path.join(folder, names.uploads));
+    const versionFilePath = path.join(folder, names.version);
+    const [appVersion, versionSize] = await Promise.all([readVersion(versionFilePath), fileSize(versionFilePath)]);
     infos.push({
       timestamp,
       createdAt: timestampToIso(timestamp),
       hasUploads: uploadsSize !== null,
-      sizeBytes: databaseSize + (settingsSize ?? 0) + (uploadsSize ?? 0)
+      sizeBytes: databaseSize + (settingsSize ?? 0) + (uploadsSize ?? 0) + (versionSize ?? 0),
+      appVersion
     });
   }
   return infos.sort((a, b) => b.timestamp.localeCompare(a.timestamp));

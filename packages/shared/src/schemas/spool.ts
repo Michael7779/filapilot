@@ -26,6 +26,8 @@ export const spoolSchema = z.object({
   note: z.string().max(500).nullable(),
   // Werte der Admin-definierten Zusatzfelder (Schluessel = Definitions-ID), bereits gegen die Definitionen geprueft.
   customFields: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
+  // null = ungeoeffnet (siehe schema.prisma-Kommentar auf Spool.openedAt fuer die Ausloeser).
+  openedAt: z.coerce.date().nullable(),
   // Archiviert = nicht mehr im Bestand, aber im Verbrauch weiter gezaehlt. Nur ueber die Archiv-Routen aenderbar.
   archivedAt: z.coerce.date().nullable(),
   archiveReason: z.enum(["MANUAL", "CLOUD_REMOVED"]).nullable(),
@@ -47,7 +49,8 @@ export const createSpoolInputSchema = spoolSchema
     customFields: true,
     colorHex2: true,
     note: true,
-    tareWeightG: true
+    tareWeightG: true,
+    openedAt: true
   })
   .extend({
     inventoryId: z.string().uuid(),
@@ -55,11 +58,14 @@ export const createSpoolInputSchema = spoolSchema
     colorHex2: hexColor.nullable().optional().default(null),
     note: z.string().trim().max(500).nullable().optional().default(null),
     tareWeightG: z.number().int().min(0).nullable().optional().default(null),
-    customFields: rawCustomFieldValuesSchema.optional().default({})
+    customFields: rawCustomFieldValuesSchema.optional().default({}),
+    // Eine manuell angelegte Spule ist standardmaessig ungeoeffnet; true = diese Spule ist schon angebrochen
+    // (z.B. bestehender Lagerbestand wird nur nachgetragen). Kein echtes Spool-Feld - die Route macht daraus openedAt.
+    alreadyOpened: z.boolean().optional().default(false)
   });
 export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;
 
-export const updateSpoolInputSchema = createSpoolInputSchema.partial();
+export const updateSpoolInputSchema = createSpoolInputSchema.omit({ alreadyOpened: true }).partial();
 export type UpdateSpoolInput = z.infer<typeof updateSpoolInputSchema>;
 
 export const spoolWithRelationsSchema = spoolSchema.extend({

@@ -2,7 +2,7 @@ import type { BambuSpool, BambuSyncSummary } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import {
   buildImportContext,
-  createSpoolFromCloud,
+  createOrAutoLinkSpoolFromCloud,
   flushAuditEvents,
   mapBambuSpool,
   type ImportContext,
@@ -43,8 +43,12 @@ async function syncOne(
       summary.skipped += 1;
       return;
     }
-    await createSpoolFromCloud(context, spool);
-    summary.created += 1;
+    const outcome = await createOrAutoLinkSpoolFromCloud(context, spool);
+    if (outcome === "linked") {
+      summary.linked += 1;
+    } else {
+      summary.created += 1;
+    }
     return;
   }
   // Von Hand archivierte Spulen bleiben unangetastet.
@@ -132,7 +136,8 @@ export async function syncInventoryFromCloud(
     skipped: 0,
     archiveBlocked: false,
     manufacturersCreated: 0,
-    materialsCreated: 0
+    materialsCreated: 0,
+    linked: 0
   };
   let auditEvents: SpoolAuditEvent[] = [];
 
@@ -156,8 +161,8 @@ export async function syncInventoryFromCloud(
       const context = await buildImportContext(tx, {
         inventoryId,
         inventoryName: inventory.name,
-        input: { cloudIds: [], updateExisting: true },
-        summary: { created: 0, updated: 0, skipped: 0, manufacturersCreated: 0, materialsCreated: 0 },
+        input: { cloudIds: [], updateExisting: true, linkToSpoolId: {} },
+        summary: { created: 0, updated: 0, skipped: 0, manufacturersCreated: 0, materialsCreated: 0, linked: 0 },
         existing: new Map()
       });
       for (const spool of mapped) {
@@ -176,6 +181,9 @@ export async function syncInventoryFromCloud(
 
 export function describeSync(summary: BambuSyncSummary): string {
   const parts = [`${summary.created} neu`, `${summary.updated} aktualisiert`, `${summary.archived} archiviert`];
+  if (summary.linked > 0) {
+    parts.push(`${summary.linked} mit vorhandener ungeoeffneter Spule verknuepft`);
+  }
   if (summary.restored > 0) {
     parts.push(`${summary.restored} wiederhergestellt`);
   }

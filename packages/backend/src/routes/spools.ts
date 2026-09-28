@@ -207,13 +207,16 @@ spoolsRouter.post(
   "/",
   ...requireActiveUser,
   asyncHandler(async (req, res) => {
-    const input = createSpoolInputSchema.parse(req.body);
+    const { alreadyOpened, ...input } = createSpoolInputSchema.parse(req.body);
     await requireInventoryRole(getAuthenticatedUser(req), input.inventoryId, "EDITOR");
     await assertMaterialExists(input.materialId);
     await assertManufacturerExists(input.manufacturerId);
     await assertMaterialMatchesManufacturer(input.materialId, input.manufacturerId);
     const customFields = await resolveCustomFields(input.customFields);
-    const created = await prisma.spool.create({ data: { ...input, customFields }, include: SPOOL_INCLUDE });
+    const created = await prisma.spool.create({
+      data: { ...input, customFields, openedAt: alreadyOpened ? new Date() : null },
+      include: SPOOL_INCLUDE
+    });
     await recordAudit({
       actor: actorFromRequest(req),
       action: "CREATE",
@@ -269,7 +272,7 @@ spoolsRouter.patch(
       await prisma.spoolWeightLog.updateMany({ where: { spoolId: id }, data: { inventoryId: input.inventoryId } });
     }
     // Aenderung des Restgewichts fuer die Zeit-Statistik festhalten (nur bei echter Aenderung)
-    await recordWeightChange({
+    const openedAt = await recordWeightChange({
       spoolId: id,
       inventoryId: updated.inventoryId,
       before: before.remainingWeightG,
@@ -285,7 +288,7 @@ spoolsRouter.patch(
       before: spoolSnapshot(before),
       after: spoolSnapshot(updated)
     });
-    sendData(res, toPublicSpool(updated));
+    sendData(res, toPublicSpool(openedAt ? { ...updated, openedAt } : updated));
   })
 );
 
@@ -336,6 +339,33 @@ spoolsRouter.post(
         entityId: spool.id,
         inventory: inventoryOf(updated),
         description: `${describeSpool(updated)}: wiederhergestellt`
+      });
+    }
+    sendData(res, toPublicSpool(updated));
+  })
+);
+
+// Manuelles Umschalten auf "geoeffnet" (z.B. wenn die automatische Erkennung - Gewichtsaenderung/AMS-Zuordnung -
+// noch nicht gegriffen hat, die Spule aber schon angebrochen ist). Kein Weg zurueck auf "ungeoeffnet" - das waere
+// nur ueber ein Bearbeiten der Rohdaten sinnvoll, nicht als eigene Aktion.
+// SCOPE: user
+spoolsRouter.post(
+  "/:id/mark-opened",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const spool = await findSpoolOrThrow(idParamSchema.parse(req.params.id));
+    await requireAccessToObjectInventory(getAuthenticatedUser(req), spool.inventoryId, "EDITOR");
+    const updated = spool.openedAt
+      ? spool
+      : await prisma.spool.update({ where: { id: spool.id }, data: { openedAt: new Date() }, include: SPOOL_INCLUDE });
+    if (!spool.openedAt) {
+      await recordAudit({
+        actor: actorFromRequest(req),
+        action: "EVENT",
+        area: "SPOOL",
+        entityId: spool.id,
+        inventory: inventoryOf(updated),
+        description: `${describeSpool(updated)}: als geoeffnet markiert`
       });
     }
     sendData(res, toPublicSpool(updated));

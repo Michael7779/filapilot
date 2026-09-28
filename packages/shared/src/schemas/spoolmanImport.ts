@@ -49,4 +49,7 @@ export interface SpoolmanImportSummary {
   skipped: number;
   manufacturersCreated: number;
   materialsCreated: number;
+  // Mit einer bestehenden ungeoeffneten Spule verknuepft statt neu angelegt (siehe BambuSyncSummary.linked) -
+  // Spoolman-Import hat keine Auswahl/Rueckfrage, darum still bei eindeutigem Treffer.
+  linked: number;
 }

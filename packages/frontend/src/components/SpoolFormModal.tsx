@@ -83,6 +83,8 @@ export function SpoolFormModal({
   const [submitting, setSubmitting] = useState(false);
   const [photo, setPhoto] = useState<PhotoChange>({ kind: "none" });
   const [inventoryId, setInventoryId] = useState(initialSpool?.inventoryId ?? defaultInventoryId);
+  // Nur beim Neuanlegen relevant - eine neue Spule ist standardmaessig ungeoeffnet (siehe schema.prisma Spool.openedAt).
+  const [alreadyOpened, setAlreadyOpened] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -185,7 +187,8 @@ export function SpoolFormModal({
           purchasedAt: null,
           location: form.location.trim() ? form.location.trim() : null,
           note: form.note.trim() ? form.note.trim() : null,
-          customFields
+          customFields,
+          alreadyOpened
         },
         photo
       );
@@ -403,6 +406,13 @@ export function SpoolFormModal({
             className={SELECT_CLASS}
           />
         </label>
+
+        {!initialSpool && (
+          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+            <input type="checkbox" checked={alreadyOpened} onChange={(event) => setAlreadyOpened(event.target.checked)} />
+            {t("spools.alreadyOpened")}
+          </label>
+        )}
 
         <SpoolCustomFieldsFields definitions={customFieldDefinitions} values={customFields} onChange={setCustomFields} />
 

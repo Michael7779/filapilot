@@ -100,6 +100,10 @@ export function DashboardPage(): React.JSX.Element {
           label={t("dashboard.materialTypes")}
           value={materials ? String(materials.length) : "…"}
         />
+        <StatCard
+          label={t("dashboard.unopened")}
+          value={spools ? String(spools.filter((spool) => !spool.openedAt).length) : "…"}
+        />
       </div>
       {isAll && spools && <InventoryComparison spools={spools} />}
     </div>

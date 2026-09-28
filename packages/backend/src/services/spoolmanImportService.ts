@@ -9,6 +9,7 @@ import {
 import { prisma } from "../prisma.js";
 import { flushAuditEvents, MATERIAL_SELECT, type CatalogMaterial, type SpoolAuditEvent, type Tx } from "./bambuImportService.js";
 import { recordWeightChange } from "./spoolWeightLog.js";
+import { findUnopenedMatch } from "./unopenedSpoolMatch.js";
 import type { AuditActor } from "./auditService.js";
 
 const DEFAULT_TOTAL_G = 1000;
@@ -181,10 +182,47 @@ async function ensureSpoolmanMaterial(context: SpoolmanImportContext, spool: Map
   return created;
 }
 
-// Neue Spule aus Spoolman-Daten anlegen (Hersteller/Material bei Bedarf mit anlegen).
+// Statt neu anzulegen: eine bereits vorhandene, eindeutig passende ungeoeffnete Spule mit der Spoolman-ID
+// verknuepfen (kein Benutzer da, um nachzufragen - Import laeuft ohne Auswahl, siehe importSpoolmanEntries).
+async function linkExistingUnopenedSpoolmanSpool(
+  context: SpoolmanImportContext,
+  spool: MappedSpoolmanSpool,
+  targetSpoolId: string,
+  materialName: string
+): Promise<void> {
+  const target = await context.tx.spool.findUnique({
+    where: { id: targetSpoolId },
+    select: { id: true, remainingWeightG: true, initialWeightG: true }
+  });
+  if (!target) {
+    return createSpoolmanSpool(context, spool);
+  }
+  const remaining = Math.min(spool.remainingG, target.initialWeightG);
+  await context.tx.spool.update({
+    where: { id: target.id },
+    data: { spoolmanId: spool.spoolmanId, openedAt: new Date(), remainingWeightG: remaining }
+  });
+  await recordWeightChange(
+    { spoolId: target.id, inventoryId: context.inventoryId, before: target.remainingWeightG, after: remaining, source: "SPOOLMAN_IMPORT" },
+    context.tx
+  );
+  context.auditEvents.push({
+    spoolId: target.id,
+    action: "EVENT",
+    description: `${describeSpoolman(spool, materialName)}: mit Spoolman-Spule verknuepft statt neu angelegt`
+  });
+  context.summary.linked += 1;
+}
+
+// Neue Spule aus Spoolman-Daten anlegen (Hersteller/Material bei Bedarf mit anlegen). Eine Spule, die Spoolman
+// bekannt ist, gilt als bereits geoeffnet/in Benutzung.
 async function createSpoolmanSpool(context: SpoolmanImportContext, spool: MappedSpoolmanSpool): Promise<void> {
   const manufacturerId = await ensureSpoolmanManufacturer(context, spool);
   const material = await ensureSpoolmanMaterial(context, spool, manufacturerId);
+  const match = await findUnopenedMatch(context.tx, context.inventoryId, manufacturerId, material.id, spool.colorHex);
+  if (match) {
+    return linkExistingUnopenedSpoolmanSpool(context, spool, match.id, material.name);
+  }
   const created = await context.tx.spool.create({
     data: {
       materialId: material.id,
@@ -197,7 +235,8 @@ async function createSpoolmanSpool(context: SpoolmanImportContext, spool: Mapped
       tareWeightG: spool.tareWeightG,
       note: spool.note,
       location: spool.location,
-      spoolmanId: spool.spoolmanId
+      spoolmanId: spool.spoolmanId,
+      openedAt: new Date()
     }
   });
   context.auditEvents.push({
@@ -241,7 +280,7 @@ export async function importSpoolmanEntries(
   inventory: { id: string; name: string }
 ): Promise<SpoolmanImportSummary> {
   const mapped = entries.map(mapSpoolmanSpool);
-  const summary: SpoolmanImportSummary = { created: 0, updated: 0, skipped: 0, manufacturersCreated: 0, materialsCreated: 0 };
+  const summary: SpoolmanImportSummary = { created: 0, updated: 0, skipped: 0, manufacturersCreated: 0, materialsCreated: 0, linked: 0 };
   let auditEvents: SpoolAuditEvent[] = [];
 
   await prisma.$transaction(

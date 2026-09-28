@@ -30,7 +30,10 @@ export type BambuFileInput = z.infer<typeof bambuFileInputSchema>;
 
 export const bambuImportInputSchema = z.object({
   cloudIds: z.array(z.string().min(1).max(64)).min(1).max(BAMBU_MAX_IMPORT),
-  updateExisting: z.boolean().default(false)
+  updateExisting: z.boolean().default(false),
+  // cloudId -> Id einer bereits vorhandenen, ungeoeffneten Spule, die der Benutzer statt Neuanlegen verknuepfen moechte
+  // (siehe BambuPreviewRow.suggestedMatch). Nicht angegeben = normal neu anlegen.
+  linkToSpoolId: z.record(z.string().min(1).max(64), z.string().uuid()).optional().default({})
 });
 export type BambuImportInput = z.infer<typeof bambuImportInputSchema>;
 
@@ -76,6 +79,9 @@ export interface BambuSyncSummary {
   archiveBlocked: boolean;
   manufacturersCreated: number;
   materialsCreated: number;
+  // Statt neu angelegt: mit einer bereits vorhandenen, eindeutig passenden ungeoeffneten Spule verknuepft
+  // (gleicher Hersteller/Material/Farbe) - verhindert doppelten Bestand ohne Rueckfrage (Sync laeuft unbeaufsichtigt).
+  linked: number;
 }
 
 export interface BambuLoginResult {
@@ -97,6 +103,10 @@ export interface BambuPreviewRow {
   alreadyImported: boolean;
   manufacturerExists: boolean;
   materialExists: boolean;
+  // Eine bereits vorhandene, ungeoeffnete Spule mit exakt gleichem Hersteller/Material/Farbe im selben Lager -
+  // vermutlich dieselbe physische Spule, die noch nicht ins AMS/die Cloud eingebucht war. Vorschlag zum Verknuepfen
+  // statt Neuanlegen (siehe BambuImportInput.linkToSpoolId), damit der Bestand nicht doppelt gezaehlt wird.
+  suggestedMatch: { spoolId: string; label: string } | null;
 }
 
 export interface BambuPreview {
@@ -111,4 +121,6 @@ export interface BambuImportSummary {
   skipped: number;
   manufacturersCreated: number;
   materialsCreated: number;
+  // Mit einer bestehenden ungeoeffneten Spule verknuepft statt neu angelegt (siehe BambuSyncSummary.linked).
+  linked: number;
 }

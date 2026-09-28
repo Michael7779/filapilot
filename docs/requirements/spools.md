@@ -114,3 +114,26 @@
   gueltigen Eintraege werden auf einmal uebernommen. Offener Punkt (OP-SM1): Die Feldnamen stammen aus der
   oeffentlichen Spoolman-API-Dokumentation, sind aber nicht gegen eine echte Spoolman-Installation geprueft (wie
   OP-B1 beim Bambu-Import). Test: `tests/security/spoolmanImport.test.ts`.
+- **R22**: Ab 0.22.0: Eine Spule hat `openedAt` (null = ungeoeffnet). Manuell angelegte Spulen sind standardmaessig
+  ungeoeffnet (`alreadyOpened: true` im Anlege-Formular legt sie sofort als geoeffnet an); Cloud-/Spoolman-Import
+  legen neue Spulen immer als geoeffnet an (dem Drucker/Dienst bereits bekannt). Automatisch geoeffnet wird eine
+  Spule bei der ersten echten Restgewicht-Aenderung (manuell, Wiegen, Druckverbrauch - zentral in
+  `recordWeightChange()`) oder der ersten AMS-Zuordnung; `POST /api/spools/:id/mark-opened` (EDITOR im Lager)
+  markiert sie auch von Hand (kein Weg zurueck). Die Spulen-Seite gruppiert den Bestand in "Ungeoeffnet"/"Angefangen"
+  (nur wenn beide nicht leer sind, sonst normale Liste), mit dezenter Kennzeichnung je Karte/Zeile in allen vier
+  Ansichten; Filter `unopenedOnly` und Dashboard-/Statistik-Kachel ergaenzen das. Kein Weg zurueck auf "ungeoeffnet".
+  Bestehende Spulen aus Installationen vor 0.22.0 haben `openedAt` zunaechst leer (neue, nullable Spalte) - ein
+  einmaliger Nachtrag beim ersten Start nach dem Update (`services/openedAtBackfill.ts`, ueber `Settings.openedAtBackfilled`
+  abgesichert wie `ensureDefaultInventory`) setzt `openedAt` auf das Anlage-Datum, damit sie nicht faelschlich als
+  neuer, ungeoeffneter Bestand erscheinen.
+  Tests: `tests/security/spoolOpened.test.ts`, `tests/security/spoolWeigh.test.ts`, `tests/security/amsSlots.test.ts`,
+  `tests/integration/openedAtBackfill.test.ts`.
+- **R23**: Ab 0.22.0: Bambu-Cloud- und Spoolman-Import erkennen, wenn eine "neue" externe Spule vermutlich bereits als
+  ungeoeffnete Spule im Bestand liegt (exakt gleicher Hersteller, gleiches Material, gleiche Farbe (`colorHex`),
+  im selben Lager, noch nicht extern verknuepft) - sonst wuerde der Bestand doppelt gezaehlt. Beim interaktiven
+  Bambu-Import zeigt die Vorschau einen Vorschlag (`BambuPreviewRow.suggestedMatch`) mit Verknuepfen/Neu-anlegen-Wahl
+  (`BambuImportInput.linkToSpoolId`, serverseitig erneut geprueft - der Vorschlag der Vorschau kann inzwischen
+  ueberholt sein). Beim unbeaufsichtigten automatischen Bambu-Abgleich und beim Spoolman-Import (kein Benutzer da,
+  um zu bestaetigen) wird bei einem eindeutigen Treffer still verknuepft statt neu angelegt (`summary.linked`,
+  sichtbar im Protokoll der Spule). Mehrdeutige Treffer (mehr als eine passende ungeoeffnete Spule) werden nicht
+  vorgeschlagen. Tests: `tests/security/bambuImport.test.ts`, `tests/security/spoolmanImport.test.ts`.

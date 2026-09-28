@@ -90,6 +90,8 @@ describe("AMS-Slot-Zuordnung - Negativ-Tests", () => {
     const slot0 = assign.body.data.find((s: { slotIndex: number }) => s.slotIndex === 0);
     assert.equal(slot0.spoolId, spoolId);
     assert.ok(slot0.spoolLabel.includes("Blau"));
+    // Eine Spule im AMS gilt ab sofort als geoeffnet, auch ohne bisherige Gewichtsaenderung
+    assert.ok((await prisma.spool.findUniqueOrThrow({ where: { id: spoolId } })).openedAt !== null);
 
     const cleared = await put(owner, 0, null);
     assert.equal(cleared.status, 200);

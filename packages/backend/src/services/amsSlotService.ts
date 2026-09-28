@@ -63,4 +63,6 @@ export async function assignAmsSlot(
     create: { printerId, slotIndex, spoolId, assignedAt: new Date() },
     update: { spoolId, baselineRemainPercent: null, baselineRemainingG: null, assignedAt: new Date() }
   });
+  // Eine Spule, die im AMS liegt, ist damit nachweislich in Benutzung - auch ohne bisherige Gewichtsaenderung.
+  await prisma.spool.updateMany({ where: { id: spoolId, openedAt: null }, data: { openedAt: new Date() } });
 }

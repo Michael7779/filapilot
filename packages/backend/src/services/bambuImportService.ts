@@ -15,6 +15,7 @@ import { prisma } from "../prisma.js";
 import { BambuCloudError } from "./bambuCloudClient.js";
 import type { ImportSession } from "./bambuImportSessions.js";
 import { recordAudit, type AuditActor, type Snapshot } from "./auditService.js";
+import { findUnopenedMatch } from "./unopenedSpoolMatch.js";
 
 const DEFAULT_TOTAL_G = 1000;
 const DEFAULT_TEMPS = { min: 190, max: 230, bed: 60 } as const;
@@ -146,35 +147,43 @@ export async function buildPreview(inventoryId: string, session: ImportSession):
   const [imported, manufacturers, materials] = await Promise.all([
     prisma.spool.findMany({ where: { inventoryId, bambuCloudId: { not: null } }, select: { bambuCloudId: true } }),
     prisma.manufacturer.findMany({ select: { id: true, name: true } }),
-    prisma.material.findMany({ select: { name: true, manufacturerId: true } })
+    prisma.material.findMany({ select: { id: true, name: true, manufacturerId: true } })
   ]);
   const importedIds = new Set(imported.map((spool) => spool.bambuCloudId));
   const manufacturerByName = new Map(manufacturers.map((manufacturer) => [key(manufacturer.name), manufacturer.id]));
 
-  const rows: BambuPreviewRow[] = spools.map((spool) => {
-    const mapped = mapBambuSpool(spool);
-    const manufacturerId = manufacturerByName.get(key(mapped.vendor)) ?? null;
-    const materialExists = materials.some(
-      (material) =>
-        key(material.name) === key(mapped.materialName) &&
-        (material.manufacturerId === null || (manufacturerId !== null && material.manufacturerId === manufacturerId))
-    );
-    return {
-      cloudId: mapped.cloudId,
-      vendor: mapped.vendor,
-      materialName: mapped.materialName,
-      colorHex: mapped.colorHex,
-      colorName: mapped.colorName,
-      remainingG: mapped.remainingG,
-      totalG: mapped.totalG,
-      status: mapped.status,
-      inPrinter: mapped.inPrinter,
-      deviceName: mapped.deviceName,
-      alreadyImported: importedIds.has(mapped.cloudId),
-      manufacturerExists: manufacturerId !== null,
-      materialExists
-    };
-  });
+  const rows: BambuPreviewRow[] = await Promise.all(
+    spools.map(async (spool) => {
+      const mapped = mapBambuSpool(spool);
+      const manufacturerId = manufacturerByName.get(key(mapped.vendor)) ?? null;
+      const material = materials.find(
+        (entry) =>
+          key(entry.name) === key(mapped.materialName) &&
+          (entry.manufacturerId === null || (manufacturerId !== null && entry.manufacturerId === manufacturerId))
+      );
+      const alreadyImported = importedIds.has(mapped.cloudId);
+      const match =
+        !alreadyImported && manufacturerId && material
+          ? await findUnopenedMatch(prisma, inventoryId, manufacturerId, material.id, mapped.colorHex)
+          : null;
+      return {
+        cloudId: mapped.cloudId,
+        vendor: mapped.vendor,
+        materialName: mapped.materialName,
+        colorHex: mapped.colorHex,
+        colorName: mapped.colorName,
+        remainingG: mapped.remainingG,
+        totalG: mapped.totalG,
+        status: mapped.status,
+        inPrinter: mapped.inPrinter,
+        deviceName: mapped.deviceName,
+        alreadyImported,
+        manufacturerExists: manufacturerId !== null,
+        materialExists: material !== undefined,
+        suggestedMatch: match ? { spoolId: match.id, label: `${mapped.vendor} ${mapped.materialName} ${mapped.colorName}` } : null
+      };
+    })
+  );
   return { rows, skipped: session.skipped };
 }
 
@@ -263,11 +272,48 @@ async function importOne(context: ImportContext, spool: MappedSpool): Promise<vo
     }
     return;
   }
+  const linkTargetId = context.input.linkToSpoolId?.[spool.cloudId];
+  if (linkTargetId) {
+    await linkExistingUnopenedSpool(context, spool, linkTargetId);
+    return;
+  }
   await createSpoolFromCloud(context, spool);
   context.summary.created += 1;
 }
 
-// Legt eine Spule aus den Daten der Cloud an (Hersteller und Material werden bei Bedarf angelegt).
+// Verknuepft eine bereits im Bestand liegende, ungeoeffnete Spule mit der Cloud-ID, statt eine neue anzulegen
+// (Vorschlag aus buildPreview bzw. bei automatischem Abgleich ein eindeutiger Treffer) - so zaehlt der Bestand
+// nicht doppelt. Die Ziel-Spule wird serverseitig erneut geprueft (Lager, ungeoeffnet, noch nicht verknuepft) -
+// der Vorschlag aus der Vorschau koennte inzwischen ueberholt sein.
+async function linkExistingUnopenedSpool(context: ImportContext, spool: MappedSpool, targetSpoolId: string): Promise<void> {
+  const target = await context.tx.spool.findUnique({
+    where: { id: targetSpoolId },
+    select: { id: true, inventoryId: true, openedAt: true, bambuCloudId: true, spoolmanId: true, remainingWeightG: true, initialWeightG: true }
+  });
+  if (!target || target.inventoryId !== context.inventoryId || target.openedAt || target.bambuCloudId || target.spoolmanId) {
+    await createSpoolFromCloud(context, spool);
+    context.summary.created += 1;
+    return;
+  }
+  const remaining = Math.min(spool.remainingG, target.initialWeightG);
+  await context.tx.spool.update({
+    where: { id: target.id },
+    data: { bambuCloudId: spool.cloudId, openedAt: new Date(), remainingWeightG: remaining }
+  });
+  await recordWeightChange(
+    { spoolId: target.id, inventoryId: context.inventoryId, before: target.remainingWeightG, after: remaining, source: "CLOUD_IMPORT" },
+    context.tx
+  );
+  context.auditEvents.push({
+    spoolId: target.id,
+    action: "EVENT",
+    description: `${spool.vendor} ${spool.materialName} ${spool.colorName}: mit Bambu-Cloud-Spule verknuepft statt neu angelegt`
+  });
+  context.summary.linked += 1;
+}
+
+// Legt eine Spule aus den Daten der Cloud an (Hersteller und Material werden bei Bedarf angelegt). Eine Spule, die
+// der Cloud bekannt ist, gilt als bereits geoeffnet/in Benutzung.
 export async function createSpoolFromCloud(context: ImportContext, spool: MappedSpool): Promise<void> {
   const manufacturerId = await ensureManufacturer(context, spool);
   const material = await ensureMaterial(context, spool, manufacturerId);
@@ -281,7 +327,8 @@ export async function createSpoolFromCloud(context: ImportContext, spool: Mapped
       initialWeightG: spool.totalG,
       remainingWeightG: spool.remainingG,
       location: spool.inPrinter ? spool.deviceName : null,
-      bambuCloudId: spool.cloudId
+      bambuCloudId: spool.cloudId,
+      openedAt: new Date()
     }
   });
   context.auditEvents.push({
@@ -290,6 +337,20 @@ export async function createSpoolFromCloud(context: ImportContext, spool: Mapped
     description: `${spool.vendor} ${material.name} ${spool.colorName}`,
     after: cloudSpoolSnapshot(context.inventoryName, spool, material.name, spool.remainingG)
   });
+}
+
+// Fuer den unbeaufsichtigten automatischen Abgleich (kein Benutzer da, um einen Vorschlag zu bestaetigen): bei
+// einem eindeutigen Treffer wird still verknuepft statt neu angelegt - sichtbar im Protokoll, nicht rueckfragbar.
+export async function createOrAutoLinkSpoolFromCloud(context: ImportContext, spool: MappedSpool): Promise<"created" | "linked"> {
+  const manufacturerId = await ensureManufacturer(context, spool);
+  const material = await ensureMaterial(context, spool, manufacturerId);
+  const match = await findUnopenedMatch(context.tx, context.inventoryId, manufacturerId, material.id, spool.colorHex);
+  if (match) {
+    await linkExistingUnopenedSpool(context, spool, match.id);
+    return "linked";
+  }
+  await createSpoolFromCloud(context, spool);
+  return "created";
 }
 
 // Laedt Hersteller und Materialien fuer einen Lauf (Import oder Abgleich).
@@ -338,7 +399,8 @@ export async function importSelected(
     updated: 0,
     skipped: input.cloudIds.length - selected.length,
     manufacturersCreated: 0,
-    materialsCreated: 0
+    materialsCreated: 0,
+    linked: 0
   };
   let auditEvents: SpoolAuditEvent[] = [];
 

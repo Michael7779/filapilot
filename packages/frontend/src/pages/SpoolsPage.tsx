@@ -251,6 +251,15 @@ export function SpoolsPage(): React.JSX.Element {
     await load(true);
   }
 
+  async function handleMarkOpened(spool: SpoolWithRelations): Promise<void> {
+    try {
+      await apiRequest(`/spools/${spool.id}/mark-opened`, { method: "POST" });
+      await load(true);
+    } catch (err) {
+      setActionNotice(err instanceof ApiRequestError ? err.message : t("spools.markOpenedFailed"));
+    }
+  }
+
   async function handleDelete(spool: SpoolWithRelations): Promise<void> {
     if (!window.confirm(t("spools.confirmDelete"))) {
       return;
@@ -259,10 +268,15 @@ export function SpoolsPage(): React.JSX.Element {
     await load();
   }
 
-  const visibleSpools = useMemo(
-    () => sortSpools(filterSpools(spools, filter, LOW_STOCK_THRESHOLD_RATIO), sort, i18n.language),
-    [spools, filter, sort, i18n.language]
-  );
+  // Ungeoeffnete Spulen zuerst geclustert (innerhalb jeder Gruppe bleibt die gewaehlte Sortierung erhalten) -
+  // Grundlage fuer die zwei Abschnitte "Ungeoeffnet"/"Angefangen" im Standard-Bestand.
+  const visibleSpools = useMemo(() => {
+    const sorted = sortSpools(filterSpools(spools, filter, LOW_STOCK_THRESHOLD_RATIO), sort, i18n.language);
+    return [...sorted.filter((spool) => !spool.openedAt), ...sorted.filter((spool) => spool.openedAt)];
+  }, [spools, filter, sort, i18n.language]);
+  const unopenedVisible = visibleSpools.filter((spool) => !spool.openedAt);
+  const startedVisible = visibleSpools.filter((spool) => spool.openedAt);
+  const showOpenedGroups = unopenedVisible.length > 0 && startedVisible.length > 0;
   let emptyText = "";
   if (spools.length === 0) {
     emptyText = t("spools.empty");
@@ -274,6 +288,24 @@ export function SpoolsPage(): React.JSX.Element {
   const currentPage = Math.min(page, pageCount);
   const pagedSpools = pageSize === 0 ? visibleSpools : visibleSpools.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const SpoolViewComponent = { standard: StandardView, compact: CompactView, list: ListView, swatch: SwatchView }[view];
+  const renderSpoolView = (viewSpools: SpoolWithRelations[]): React.JSX.Element => (
+    <SpoolViewComponent
+      spools={viewSpools}
+      materials={materials}
+      customFieldDefinitions={customFieldDefinitions}
+      isAll={isAll}
+      canEdit={canEdit}
+      onEdit={openEdit}
+      onArchive={(spool, archive) => void handleArchive(spool, archive)}
+      onLabel={setLabelSpool}
+      onHistory={setHistorySpool}
+      onDrying={setDryingSpool}
+      onWeigh={setWeighSpool}
+      onMarkOpened={(spool) => void handleMarkOpened(spool)}
+      onAddToWishlist={(spool) => void handleAddToWishlist(spool)}
+      onDelete={(spool) => void handleDelete(spool)}
+    />
+  );
   const archivedCount = spools.filter((spool) => spool.archivedAt).length;
   const totalRemainingG = visibleSpools.reduce((sum, spool) => sum + spool.remainingWeightG, 0);
   const formatWeight = (grams: number): string =>
@@ -397,21 +429,32 @@ export function SpoolsPage(): React.JSX.Element {
         <p className="text-sm text-[var(--color-text-secondary)]">{emptyText}</p>
       ) : (
         <>
-          <SpoolViewComponent
-            spools={pagedSpools}
-            materials={materials}
-            customFieldDefinitions={customFieldDefinitions}
-            isAll={isAll}
-            canEdit={canEdit}
-            onEdit={openEdit}
-            onArchive={(spool, archive) => void handleArchive(spool, archive)}
-            onLabel={setLabelSpool}
-            onHistory={setHistorySpool}
-            onDrying={setDryingSpool}
-            onWeigh={setWeighSpool}
-            onAddToWishlist={(spool) => void handleAddToWishlist(spool)}
-            onDelete={(spool) => void handleDelete(spool)}
-          />
+          {showOpenedGroups
+            ? ([
+                ["unopened", unopenedVisible] as const,
+                ["started", startedVisible] as const
+              ] as const).map(([key, groupSpools]) => {
+                const pageIds = new Set(pagedSpools.map((spool) => spool.id));
+                const onPage = groupSpools.filter((spool) => pageIds.has(spool.id));
+                if (onPage.length === 0) {
+                  return null;
+                }
+                const weight = groupSpools.reduce((sum, spool) => sum + spool.remainingWeightG, 0);
+                return (
+                  <div key={key} className="flex flex-col gap-2">
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="text-sm font-semibold" style={key === "unopened" ? { color: "var(--accent)" } : undefined}>
+                        {t(`spools.groups.${key}`)}
+                      </h3>
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        {t("spools.groups.summary", { count: groupSpools.length, weight: formatWeight(weight) })}
+                      </span>
+                    </div>
+                    {renderSpoolView(onPage)}
+                  </div>
+                );
+              })
+            : renderSpoolView(pagedSpools)}
           <SpoolPager page={currentPage} pageCount={pageCount} pageSize={pageSize} total={visibleSpools.length} onPage={setPage} onPageSize={setPageSize} />
         </>
       )}

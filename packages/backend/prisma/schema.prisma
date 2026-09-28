@@ -295,6 +295,10 @@ model Spool {
   // Spulen-ID aus Spoolman beim Import (erkennt schon importierte Spulen je Lager, wie bambuCloudId). Bewusst
   // KEINE Datenbank-Eindeutigkeit, aus demselben Grund wie bei bambuCloudId (siehe dort).
   spoolmanId          String?
+  // null = noch ungeoeffnet/unbenutzt (z.B. frisch manuell angelegt, noch nie gewogen/verbraucht/im AMS erkannt).
+  // Gesetzt bei: Cloud-/Spoolman-Import (dem Drucker/Dienst bereits bekannt), erster echter Gewichtsaenderung
+  // (Druck, Wiegen, manuelle Bearbeitung), erster AMS-Zuordnung, oder manuell ueber "Als geoeffnet markieren".
+  openedAt            DateTime?
   // Archivierte Spulen zaehlen im Verbrauch weiter mit, nicht mehr im Restbestand.
   archivedAt          DateTime?
   archiveReason       SpoolArchiveReason?
@@ -310,6 +314,7 @@ model Spool {
   @@index([inventoryId, bambuCloudId])
   @@index([inventoryId, spoolmanId])
   @@index([inventoryId, archivedAt])
+  @@index([inventoryId, openedAt])
   @@map("spools")
 }
 
@@ -414,6 +419,9 @@ model Settings {
   sessionExpiryDays                  Int      @default(30)
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt.
   licenseKey                         String?
+  // Einmaliger Nachtrag beim Update auf 0.22.0 (openedAt): true = schon erledigt, nie erneut ausfuehren - sonst
+  // wuerden auch echte neue ungeoeffnete Spulen faelschlich als "schon immer geoeffnet" markiert. Siehe openedAtBackfill.ts.
+  openedAtBackfilled                 Boolean  @default(false)
   updatedAt                          DateTime @updatedAt
 
   @@map("settings")

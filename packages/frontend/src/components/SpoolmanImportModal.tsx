@@ -114,6 +114,7 @@ export function SpoolmanImportModal({ inventoryId, inventoryName, onClose, onImp
             {t("spoolman.result", { created: summary.created, updated: summary.updated, skipped: summary.skipped })}
           </p>
         )}
+        {summary && summary.linked > 0 && <p className="text-xs text-[var(--color-text-secondary)]">{t("spoolman.linked", { count: summary.linked })}</p>}
         {summary && (summary.manufacturersCreated > 0 || summary.materialsCreated > 0) && (
           <p className="text-xs text-[var(--color-text-muted)]">
             {t("bambu.createdCatalog", { manufacturers: summary.manufacturersCreated, materials: summary.materialsCreated })}

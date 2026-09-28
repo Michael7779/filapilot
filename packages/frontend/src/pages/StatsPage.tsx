@@ -120,6 +120,7 @@ export function StatsPage(): React.JSX.Element {
   const lowStockCount = active.filter(
     (spool) => spool.remainingWeightG / spool.initialWeightG <= LOW_STOCK_THRESHOLD_RATIO
   ).length;
+  const unopenedCount = active.filter((spool) => !spool.openedAt).length;
 
   const byMaterialType = groupConsumption(spools, (spool) => materialTypeOf(spool.materialName));
   const byMaterial = groupConsumption(spools, (spool) => spool.materialName);
@@ -138,6 +139,7 @@ export function StatsPage(): React.JSX.Element {
           value={`${(totalRemainingG / 1000).toFixed(1)} kg`}
         />
         <StatCard label={t("stats.lowStock")} value={String(lowStockCount)} />
+        <StatCard label={t("stats.unopened")} value={String(unopenedCount)} />
       </div>
 
       {selectedId && <ConsumptionChart inventoryId={selectedId} />}

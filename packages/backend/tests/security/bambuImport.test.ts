@@ -225,7 +225,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     await get(`${base()}/${sessionId}/preview`, editor);
     const imported = await post(`${base()}/${sessionId}/import`, editor, { cloudIds: ["101", "102", "999"] });
     assert.equal(imported.status, 200);
-    assert.deepEqual(imported.body.data, { created: 2, updated: 0, skipped: 1, manufacturersCreated: 2, materialsCreated: 2 });
+    assert.deepEqual(imported.body.data, { created: 2, updated: 0, skipped: 1, manufacturersCreated: 2, materialsCreated: 2, linked: 0 });
 
     const spools = await prisma.spool.findMany({ where: { inventoryId: lagerId }, include: { material: true, manufacturer: true }, orderBy: { bambuCloudId: "asc" } });
     assert.equal(spools.length, 2);
@@ -256,7 +256,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     const flags = Object.fromEntries(preview.body.data.rows.map((row: { cloudId: string; alreadyImported: boolean }) => [row.cloudId, row.alreadyImported]));
     assert.deepEqual(flags, { 101: true, 102: true, 103: false });
     const again = await post(`${base()}/${second}/import`, editor, { cloudIds: ["101", "102"] });
-    assert.deepEqual(again.body.data, { created: 0, updated: 0, skipped: 2, manufacturersCreated: 0, materialsCreated: 0 });
+    assert.deepEqual(again.body.data, { created: 0, updated: 0, skipped: 2, manufacturersCreated: 0, materialsCreated: 0, linked: 0 });
     assert.equal(await prisma.spool.count({ where: { inventoryId: lagerId } }), 2);
     // "skipped" (nicht updateExisting): kein weiterer Verlauf-Eintrag, da nichts geaendert wurde
     assert.equal(await prisma.auditLog.count({ where: { area: "SPOOL", entityId: white.id } }), 1);
@@ -314,6 +314,45 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     const audit = JSON.stringify(await prisma.auditLog.findMany());
     assert.ok(!audit.includes(SECRET_TOKEN) && !audit.includes(SECRET_PASSWORD));
     assert.ok(audit.includes("Import aus Bambu-Cloud"));
+  });
+
+  it("schlaegt eine vorhandene ungeoeffnete Spule zum Verknuepfen vor und verknuepft sie auf Wunsch statt neu anzulegen", async () => {
+    const linkUser = await createLoggedInUser(app, "bblinkuser");
+    const linkLagerId = (await createInventoryWithMembers("Verknuepf-Lager", [{ userId: linkUser.id, role: "EDITOR" }])).id;
+    const manufacturer = await prisma.manufacturer.findFirstOrThrow({ where: { name: "Bambu Lab" } });
+    const material = await prisma.material.findFirstOrThrow({ where: { name: "PLA Basic" } });
+    const existing = await prisma.spool.create({
+      data: {
+        materialId: material.id,
+        manufacturerId: manufacturer.id,
+        inventoryId: linkLagerId,
+        colorName: "Weiss (eigener Bestand)",
+        colorHex: "#FFFFFF",
+        initialWeightG: 1000,
+        remainingWeightG: 1000
+      }
+    });
+    assert.equal(existing.openedAt, null);
+
+    const session = (await post(`${base(linkLagerId)}/file`, linkUser, { hits: HITS })).body.data.sessionId as string;
+    const preview = await get(`${base(linkLagerId)}/${session}/preview`, linkUser);
+    const row101 = preview.body.data.rows.find((r: { cloudId: string }) => r.cloudId === "101");
+    assert.deepEqual(row101.suggestedMatch, { spoolId: existing.id, label: "Bambu Lab PLA Basic Weiß" });
+    const row102 = preview.body.data.rows.find((r: { cloudId: string }) => r.cloudId === "102");
+    assert.equal(row102.suggestedMatch, null);
+
+    const imported = await post(`${base(linkLagerId)}/${session}/import`, linkUser, {
+      cloudIds: ["101"],
+      linkToSpoolId: { 101: existing.id }
+    });
+    assert.equal(imported.status, 200);
+    assert.deepEqual(imported.body.data, { created: 0, updated: 0, skipped: 0, manufacturersCreated: 0, materialsCreated: 0, linked: 1 });
+    assert.equal(await prisma.spool.count({ where: { inventoryId: linkLagerId } }), 1);
+
+    const updated = await prisma.spool.findUniqueOrThrow({ where: { id: existing.id } });
+    assert.equal(updated.bambuCloudId, "101");
+    assert.equal(updated.remainingWeightG, 931);
+    assert.ok(updated.openedAt !== null);
   });
 
   it("bricht ab und verwirft die Sitzung (DELETE)", async () => {

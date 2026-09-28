@@ -16,6 +16,7 @@ describe("Backup-Katalog", () => {
     await write("filapilot-settings-2026-09-23T01-00-00-021Z.json", 10);
     await write("filapilot-uploads-2026-09-23T01-00-00-021Z.tar.gz", 50);
     await write("filapilot-db-2026-09-24T01-00-00-008Z.sql", 200);
+    await fs.writeFile(path.join(folder, "filapilot-version-2026-09-24T01-00-00-008Z.txt"), "0.22.0-test\n");
     // Satz ohne Datenbank-Dump: nicht wiederherstellbar, darf nicht erscheinen
     await write("filapilot-uploads-2026-09-22T01-00-00-007Z.tar.gz", 50);
     // Fremde Dateien und ungueltige Zeitstempel werden ignoriert
@@ -33,10 +34,13 @@ describe("Backup-Katalog", () => {
       list.map((b) => b.timestamp),
       ["2026-09-24T01-00-00-008Z", "2026-09-23T01-00-00-021Z"]
     );
-    assert.equal(list[0]?.sizeBytes, 200);
+    assert.equal(list[0]?.sizeBytes, 212);
     assert.equal(list[0]?.hasUploads, false);
+    assert.equal(list[0]?.appVersion, "0.22.0-test");
     assert.equal(list[1]?.sizeBytes, 160);
     assert.equal(list[1]?.hasUploads, true);
+    // Sicherung ohne Versions-Datei (vor 0.22.0 erstellt): appVersion ist null, keine falsche Warnung
+    assert.equal(list[1]?.appVersion, null);
   });
 
   it("liefert eine leere Liste, wenn der Ordner nicht existiert", async () => {

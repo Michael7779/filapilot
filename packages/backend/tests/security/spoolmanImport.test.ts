@@ -95,7 +95,7 @@ describe("Spoolman-Import - Negativ-Tests und Ablauf", () => {
   it("importiert gueltige Eintraege, ueberspringt kaputte, legt Hersteller/Material an", async () => {
     const res = await post(`${base()}/file`, editor, { spools: SPOOLS });
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body.data, { created: 2, updated: 0, skipped: 2, manufacturersCreated: 1, materialsCreated: 2 });
+    assert.deepEqual(res.body.data, { created: 2, updated: 0, skipped: 2, manufacturersCreated: 1, materialsCreated: 2, linked: 0 });
 
     const spools = await prisma.spool.findMany({
       where: { inventoryId: lagerId },
@@ -114,7 +114,7 @@ describe("Spoolman-Import - Negativ-Tests und Ablauf", () => {
     await prisma.spool.updateMany({ where: { inventoryId: lagerId, remainingWeightG: 780 }, data: { remainingWeightG: 300 } });
     const res = await post(`${base()}/file`, editor, { spools: SPOOLS });
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body.data, { created: 0, updated: 1, skipped: 3, manufacturersCreated: 0, materialsCreated: 0 });
+    assert.deepEqual(res.body.data, { created: 0, updated: 1, skipped: 3, manufacturersCreated: 0, materialsCreated: 0, linked: 0 });
     assert.equal(await prisma.spool.count({ where: { inventoryId: lagerId } }), 2);
   });
 
@@ -124,6 +124,34 @@ describe("Spoolman-Import - Negativ-Tests und Ablauf", () => {
     assert.equal(res.status, 200);
     assert.equal(res.body.data.created, 2);
     assert.equal(await prisma.spool.count({ where: { inventoryId: otherLagerId } }), 2);
+  });
+
+  it("verknuepft eine vorhandene ungeoeffnete Spule statt sie doppelt anzulegen (kein Vorschlag moeglich - Import laeuft ohne Auswahl)", async () => {
+    const linkUser = await createLoggedInUser(app, "smlinkuser");
+    const linkLagerId = (await createInventoryWithMembers("Spoolman-Verknuepf-Lager", [{ userId: linkUser.id, role: "EDITOR" }])).id;
+    const manufacturer = await prisma.manufacturer.findFirstOrThrow({ where: { name: "Spoolman-Test-Hersteller" } });
+    const material = await prisma.material.findFirstOrThrow({ where: { name: "PLA", manufacturerId: manufacturer.id } });
+    const existing = await prisma.spool.create({
+      data: {
+        materialId: material.id,
+        manufacturerId: manufacturer.id,
+        inventoryId: linkLagerId,
+        colorName: "Rot (eigener Bestand)",
+        colorHex: "#D14343",
+        initialWeightG: 1000,
+        remainingWeightG: 1000
+      }
+    });
+
+    const res = await post(`${base(linkLagerId)}/file`, linkUser, { spools: [SPOOLS[0]] });
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.data, { created: 0, updated: 0, skipped: 0, manufacturersCreated: 0, materialsCreated: 0, linked: 1 });
+    assert.equal(await prisma.spool.count({ where: { inventoryId: linkLagerId } }), 1);
+
+    const updated = await prisma.spool.findUniqueOrThrow({ where: { id: existing.id } });
+    assert.equal(updated.spoolmanId, "501");
+    assert.equal(updated.remainingWeightG, 780);
+    assert.ok(updated.openedAt !== null);
   });
 
   it("legt einen Verlauf-Eintrag je angelegter Spule an", async () => {

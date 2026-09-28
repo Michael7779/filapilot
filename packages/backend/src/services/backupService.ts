@@ -7,6 +7,7 @@ import { getSettings } from "./settingsService.js";
 import { logger } from "../logger.js";
 import { runExclusive } from "./backupLock.js";
 import { backupFileNames, pruneBackups } from "./backupCatalog.js";
+import { APP_VERSION } from "../lib/appVersion.js";
 
 const exec = promisify(execCallback);
 
@@ -37,10 +38,13 @@ export async function createBackupUnlocked(options: CreateBackupOptions = {}): P
   const dumpPath = path.join(targetFolder, names.database);
   const settingsPath = path.join(targetFolder, names.settings);
   const filesArchivePath = path.join(targetFolder, names.uploads);
+  const versionPath = path.join(targetFolder, names.version);
 
   await exec(`pg_dump "${databaseUrl}" --no-owner --file="${dumpPath}"`);
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), "utf8");
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  await fs.writeFile(versionPath, APP_VERSION, "utf8");
 
   const uploadsExist = await fs
     .access(uploadsFolder)

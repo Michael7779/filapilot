@@ -9,7 +9,10 @@ export const backupInfoSchema = z.object({
   timestamp: backupTimestampSchema,
   createdAt: z.string(),
   hasUploads: z.boolean(),
-  sizeBytes: z.number().int().min(0)
+  sizeBytes: z.number().int().min(0),
+  // App-Version zum Zeitpunkt der Sicherung (SemVer aus der Root-package.json) - null bei Sicherungen vor 0.22.0,
+  // als die Version noch nicht mitgeschrieben wurde. Grundlage fuer die Warnung bei abweichender Version beim Wiederherstellen.
+  appVersion: z.string().nullable()
 });
 export type BackupInfo = z.infer<typeof backupInfoSchema>;
 

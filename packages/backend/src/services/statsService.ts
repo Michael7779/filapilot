@@ -24,9 +24,26 @@ function add(map: Map<string, number>, key: string, value: number): void {
   map.set(key, (map.get(key) ?? 0) + value);
 }
 
+// Summe von Verbrauch und Kosten in einem Zeitraum, ohne Aufschluesselung - fuer den Vergleich mit dem Vorzeitraum.
+async function sumConsumption(scope: { inventoryId: { in: string[] } }, from: Date, to: Date): Promise<{ consumedG: number; costCents: number }> {
+  const logs = await prisma.spoolWeightLog.findMany({
+    where: { ...scope, at: { gte: from, lt: to }, deltaG: { gt: 0 } },
+    select: { deltaG: true, spool: { select: { initialWeightG: true, purchasePriceCents: true } } },
+    take: MAX_LOG_ROWS
+  });
+  let consumedG = 0;
+  let costCents = 0;
+  for (const log of logs) {
+    consumedG += log.deltaG;
+    costCents += log.spool.purchasePriceCents === null ? 0 : Math.round((log.deltaG * log.spool.purchasePriceCents) / log.spool.initialWeightG);
+  }
+  return { consumedG, costCents };
+}
+
 // Verbrauch ueber die Zeit aus dem Gewichtsverlauf: Summe der positiven Aenderungen je Zeitabschnitt (Erhoehungen des Gewichts
-// zaehlen nicht als negativer Verbrauch), aufgeteilt nach Material-Typ und Hersteller, mit Kosten aus Kaufpreis / Ursprungsgewicht.
-// Archivierte Spulen zaehlen mit, geloeschte nicht (ihr Verlauf wurde mit geloescht).
+// zaehlen nicht als negativer Verbrauch), aufgeteilt nach Material-Typ, Hersteller und Drucker (aus PrintJob, da SpoolWeightLog
+// keinen Drucker kennt), mit Kosten aus Kaufpreis / Ursprungsgewicht. Archivierte Spulen zaehlen mit, geloeschte nicht (ihr
+// Verlauf wurde mit geloescht). "previousTotals" ist der gleich lange Zeitraum unmittelbar vor "from" (Vergleichswert).
 export async function computeConsumption(
   inventoryIds: string[],
   query: Pick<ConsumptionQuery, "period" | "from" | "to" | "timeZone">,
@@ -38,9 +55,10 @@ export async function computeConsumption(
   if (keys.length > STATS_MAX_BUCKETS) {
     throw new AppError("VALIDATION_ERROR", `Der Zeitraum ist zu groß (höchstens ${STATS_MAX_BUCKETS} Abschnitte).`);
   }
+  const previousFrom = new Date(from.getTime() - (to.getTime() - from.getTime()));
 
   const scope = { inventoryId: { in: inventoryIds } };
-  const [logs, first] = await Promise.all([
+  const [logs, first, previousTotals, printJobs] = await Promise.all([
     prisma.spoolWeightLog.findMany({
       where: { ...scope, at: { gte: from, lte: to }, deltaG: { gt: 0 } },
       select: {
@@ -58,7 +76,13 @@ export async function computeConsumption(
       orderBy: { at: "asc" },
       take: MAX_LOG_ROWS
     }),
-    prisma.spoolWeightLog.aggregate({ where: scope, _min: { at: true } })
+    prisma.spoolWeightLog.aggregate({ where: scope, _min: { at: true } }),
+    sumConsumption(scope, previousFrom, from),
+    prisma.printJob.findMany({
+      where: { printer: { inventoryId: { in: inventoryIds } }, startedAt: { gte: from, lte: to } },
+      select: { filamentUsedG: true, printer: { select: { name: true } } },
+      take: MAX_LOG_ROWS
+    })
   ]);
 
   const buckets = new Map(keys.map((key) => [key, { key, consumedG: 0, costCents: 0 }]));
@@ -78,6 +102,10 @@ export async function computeConsumption(
     consumedG += log.deltaG;
     costCents += cost;
   }
+  const byPrinter = new Map<string, number>();
+  for (const job of printJobs) {
+    add(byPrinter, job.printer.name, job.filamentUsedG);
+  }
 
   return {
     period: query.period,
@@ -86,8 +114,10 @@ export async function computeConsumption(
     timeZone: query.timeZone,
     buckets: [...buckets.values()],
     totals: { consumedG, costCents },
+    previousTotals,
     byType: sortedBreakdown(byType),
     byManufacturer: sortedBreakdown(byManufacturer),
+    byPrinter: sortedBreakdown(byPrinter),
     trackingSince: first._min.at?.toISOString() ?? null
   };
 }

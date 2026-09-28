@@ -91,6 +91,7 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
     location: spool.location,
     note: spool.note,
     customFields: toCustomFieldValues(spool.customFields),
+    openedAt: spool.openedAt,
     archivedAt: spool.archivedAt,
     archiveReason: spool.archiveReason,
     createdAt: spool.createdAt

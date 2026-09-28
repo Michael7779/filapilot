@@ -47,7 +47,7 @@ spoolWeighRouter.post(
     }
     const remaining = Math.max(0, input.measuredWeightG - before.tareWeightG);
     const updated = await prisma.spool.update({ where: { id }, data: { remainingWeightG: remaining }, include: SPOOL_INCLUDE });
-    await recordWeightChange({ spoolId: id, inventoryId: updated.inventoryId, before: before.remainingWeightG, after: remaining, source: "WEIGHED" });
+    const openedAt = await recordWeightChange({ spoolId: id, inventoryId: updated.inventoryId, before: before.remainingWeightG, after: remaining, source: "WEIGHED" });
     await recordUpdate({
       actor: actorFromRequest(req),
       area: "SPOOL",
@@ -57,6 +57,6 @@ spoolWeighRouter.post(
       before: spoolSnapshot(before),
       after: spoolSnapshot(updated)
     });
-    sendData(res, toPublicSpool(updated));
+    sendData(res, toPublicSpool(openedAt ? { ...updated, openedAt } : updated));
   })
 );

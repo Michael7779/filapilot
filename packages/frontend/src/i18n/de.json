@@ -36,13 +36,15 @@
     "totalSpools": "Spulen gesamt",
     "totalWeight": "Gesamtgewicht",
     "activePrints": "Aktive Drucke",
-    "materialTypes": "Material-Arten"
+    "materialTypes": "Material-Arten",
+    "unopened": "Ungeöffnet"
   },
   "stats": {
     "totalSpools": "Spulen gesamt",
     "totalConsumed": "Verbraucht gesamt",
     "totalRemaining": "Restbestand gesamt",
     "lowStock": "Niedriger Bestand",
+    "unopened": "Ungeöffnet",
     "time": {
       "title": "Verbrauch über die Zeit",
       "period": { "day": "Tag", "week": "Woche", "month": "Monat", "year": "Jahr" },
@@ -50,6 +52,11 @@
       "cost": "Kosten",
       "byType": "Nach Material-Typ",
       "byManufacturer": "Nach Hersteller",
+      "byPrinter": "Nach Drucker",
+      "noBreakdown": "Keine Zuordnung im Zeitraum.",
+      "vsPrevious": "ggü. Vorzeitraum",
+      "exportCsv": "CSV exportieren",
+      "exportFailed": "Der Export ist fehlgeschlagen.",
       "empty": "Im gewählten Zeitraum wurde noch kein Verbrauch erfasst. Ändere das Restgewicht einer Spule oder gleiche mit der Bambu-Cloud ab, dann erscheint er hier.",
       "since": "Der Verbrauch wird seit {{date}} erfasst. Früherer Verbrauch hat kein Datum und steht nur in den Gesamtwerten unten. Der Tag zählt, an dem das Gewicht geändert oder abgeglichen wurde.",
       "notTracked": "Es wurde noch keine Änderung des Restgewichts erfasst.",
@@ -107,6 +114,9 @@
     "contents": "Inhalt",
     "contentsDatabase": "Datenbank",
     "contentsWithUploads": "Datenbank und Dateien",
+    "version": "Version",
+    "versionUnknown": "unbekannt",
+    "versionMismatch": "Diese Sicherung stammt von FilaPilot v{{backupVersion}}, diese Installation läuft aber auf v{{currentVersion}}. Nach dem Wiederherstellen können Datenbank-Schema und App-Version auseinanderlaufen - danach ggf. „Jetzt aktualisieren“ ausführen.",
     "size": "Größe",
     "restore": "Wiederherstellen",
     "download": "Herunterladen",
@@ -296,7 +306,10 @@
     "syncHint": "Der Abgleich übernimmt das Restgewicht aller Spulen aus der Cloud, legt neue Spulen an und archiviert Spulen, die in der Cloud entfernt wurden. Bei Spulen aus der Cloud gewinnt die Cloud.",
     "syncResult": "Abgleich fertig: {{created}} neu, {{updated}} aktualisiert, {{archived}} archiviert, {{restored}} wiederhergestellt.",
     "syncBlocked": "Ungewöhnlich viele Spulen fehlten in der Cloud, deshalb wurde nichts archiviert. Bitte prüfen.",
-    "failed": "Der Import ist fehlgeschlagen."
+    "failed": "Der Import ist fehlgeschlagen.",
+    "suggestedMatch": "Vermutlich schon im Bestand als ungeöffnete Spule „{{label}}“.",
+    "linkExisting": "Vorhandene Spule verknüpfen statt neu anlegen",
+    "linked": "{{count}} mit vorhandener ungeöffneter Spule verknüpft."
   },
   "spoolman": {
     "open": "Aus Spoolman importieren",
@@ -306,7 +319,8 @@
     "chooseFile": "Datei auswählen",
     "fileInvalid": "Die Datei enthält keine Spoolman-Spulenliste im erwarteten Format.",
     "importFailed": "Der Import ist fehlgeschlagen.",
-    "result": "{{created}} neu angelegt, {{updated}} aktualisiert, {{skipped}} übersprungen."
+    "result": "{{created}} neu angelegt, {{updated}} aktualisiert, {{skipped}} übersprungen.",
+    "linked": "{{count}} mit vorhandener ungeöffneter Spule verknüpft (statt neu angelegt)."
   },
   "inventory": {
     "all": "Alle Lager",
@@ -399,6 +413,11 @@
     "twoTone": "Zweifarbig (zweite Farbe)",
     "colorHex2": "Zweite Farbe",
     "customFields": "Zusatzfelder",
+    "alreadyOpened": "Diese Spule ist schon angebrochen",
+    "unopened": "Ungeöffnet",
+    "markOpened": "Als geöffnet markieren",
+    "markOpenedFailed": "Konnte nicht markiert werden.",
+    "groups": { "unopened": "Ungeöffnet", "started": "Angefangen", "summary": "{{count}} Spulen · {{weight}}" },
     "export": { "label": "Exportieren:", "csv": "CSV", "json": "JSON", "xlsx": "Excel", "failed": "Export fehlgeschlagen." },
     "addToWishlist": "Zur Wunschliste",
     "addedToWishlist": "Zur Wunschliste hinzugefügt.",
@@ -443,6 +462,7 @@
       "max": "bis",
       "sortBy": "Sortieren nach",
       "lowStockOnly": "Nur fast leere",
+      "unopenedOnly": "Nur ungeöffnete",
       "reset": "Filter zurücksetzen",
       "noMatch": "Keine Spule passt zu den Filtern.",
       "countAll": "{{count}} Spulen",

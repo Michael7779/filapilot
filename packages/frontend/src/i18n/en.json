@@ -36,13 +36,15 @@
     "totalSpools": "Total spools",
     "totalWeight": "Total weight",
     "activePrints": "Active prints",
-    "materialTypes": "Material types"
+    "materialTypes": "Material types",
+    "unopened": "Unopened"
   },
   "stats": {
     "totalSpools": "Total spools",
     "totalConsumed": "Total consumed",
     "totalRemaining": "Total remaining",
     "lowStock": "Low stock",
+    "unopened": "Unopened",
     "time": {
       "title": "Consumption over time",
       "period": { "day": "Day", "week": "Week", "month": "Month", "year": "Year" },
@@ -50,6 +52,11 @@
       "cost": "Cost",
       "byType": "By material type",
       "byManufacturer": "By manufacturer",
+      "byPrinter": "By printer",
+      "noBreakdown": "No entries in this period.",
+      "vsPrevious": "vs. previous period",
+      "exportCsv": "Export CSV",
+      "exportFailed": "The export failed.",
       "empty": "No consumption has been recorded in the selected period yet. Change a spool's remaining weight or sync with the Bambu Cloud and it will show up here.",
       "since": "Consumption has been recorded since {{date}}. Earlier consumption has no date and only appears in the totals below. The day counts on which the weight was changed or synced.",
       "notTracked": "No change of remaining weight has been recorded yet.",
@@ -107,6 +114,9 @@
     "contents": "Contents",
     "contentsDatabase": "Database",
     "contentsWithUploads": "Database and files",
+    "version": "Version",
+    "versionUnknown": "unknown",
+    "versionMismatch": "This backup is from FilaPilot v{{backupVersion}}, but this installation runs v{{currentVersion}}. Restoring it can leave the database schema and app version out of sync - run \"Update now\" afterwards if needed.",
     "size": "Size",
     "restore": "Restore",
     "download": "Download",
@@ -296,7 +306,10 @@
     "syncHint": "The sync takes the remaining weight of all spools from the cloud, creates new spools and archives spools removed in the cloud. For spools from the cloud, the cloud wins.",
     "syncResult": "Sync done: {{created}} new, {{updated}} updated, {{archived}} archived, {{restored}} restored.",
     "syncBlocked": "An unusual number of spools were missing in the cloud, so nothing was archived. Please check.",
-    "failed": "The import failed."
+    "failed": "The import failed.",
+    "suggestedMatch": "Probably already in stock as unopened spool \"{{label}}\".",
+    "linkExisting": "Link existing spool instead of creating a new one",
+    "linked": "{{count}} linked to an existing unopened spool."
   },
   "spoolman": {
     "open": "Import from Spoolman",
@@ -306,7 +319,8 @@
     "chooseFile": "Choose file",
     "fileInvalid": "The file doesn't contain a Spoolman spool list in the expected format.",
     "importFailed": "The import failed.",
-    "result": "{{created}} created, {{updated}} updated, {{skipped}} skipped."
+    "result": "{{created}} created, {{updated}} updated, {{skipped}} skipped.",
+    "linked": "{{count}} linked to an existing unopened spool (instead of creating new)."
   },
   "inventory": {
     "all": "All inventories",
@@ -399,6 +413,11 @@
     "twoTone": "Two-tone (second color)",
     "colorHex2": "Second color",
     "customFields": "Custom fields",
+    "alreadyOpened": "This spool is already opened",
+    "unopened": "Unopened",
+    "markOpened": "Mark as opened",
+    "markOpenedFailed": "Could not mark as opened.",
+    "groups": { "unopened": "Unopened", "started": "Started", "summary": "{{count}} spools · {{weight}}" },
     "export": { "label": "Export:", "csv": "CSV", "json": "JSON", "xlsx": "Excel", "failed": "Export failed." },
     "addToWishlist": "Add to wishlist",
     "addedToWishlist": "Added to wishlist.",
@@ -443,6 +462,7 @@
       "max": "to",
       "sortBy": "Sort by",
       "lowStockOnly": "Nearly empty only",
+      "unopenedOnly": "Unopened only",
       "reset": "Reset filters",
       "noMatch": "No spool matches the filters.",
       "countAll": "{{count}} spools",

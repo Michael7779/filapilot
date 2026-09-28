@@ -49,6 +49,13 @@ function StatusBadge({ spool }: { spool: SpoolWithRelations }): React.JSX.Elemen
       </span>
     );
   }
+  if (!spool.openedAt) {
+    return (
+      <span className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>
+        {t("spools.unopened")}
+      </span>
+    );
+  }
   return null;
 }
 

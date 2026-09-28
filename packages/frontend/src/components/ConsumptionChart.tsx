@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { STATS_PERIODS, type ConsumptionStats, type StatsPeriod } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
+import { downloadFile } from "../lib/download.js";
 
 interface ConsumptionChartProps {
   // ID des Lagers oder "all"
@@ -30,9 +31,11 @@ export function ConsumptionChart({ inventoryId }: ConsumptionChartProps): React.
   const [period, setPeriod] = useState<StatsPeriod>("day");
   const [data, setData] = useState<ConsumptionStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   useEffect(() => {
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     setData(null);
     setError(null);
     apiRequest<ConsumptionStats>(
@@ -40,7 +43,27 @@ export function ConsumptionChart({ inventoryId }: ConsumptionChartProps): React.
     )
       .then(setData)
       .catch((err: unknown) => setError(err instanceof ApiRequestError ? err.message : t("stats.time.loadFailed")));
-  }, [inventoryId, period, t]);
+  }, [inventoryId, period, t, timeZone]);
+
+  async function handleExport(): Promise<void> {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await downloadFile(
+        `/stats/consumption/export?inventoryId=${inventoryId}&period=${period}&timeZone=${encodeURIComponent(timeZone)}`,
+        "filapilot-verbrauch.csv"
+      );
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : t("stats.time.exportFailed"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  // null = kein sinnvoller Vergleich moeglich (im Vorzeitraum wurde nichts verbraucht)
+  function comparisonPercent(current: number, previous: number): number | null {
+    return previous > 0 ? Math.round(((current - previous) / previous) * 100) : null;
+  }
 
   const max = Math.max(1, ...(data?.buckets.map((bucket) => bucket.consumedG) ?? [0]));
   // Bei vielen Balken nur jede n-te Beschriftung zeigen
@@ -51,26 +74,37 @@ export function ConsumptionChart({ inventoryId }: ConsumptionChartProps): React.
     <div className="rounded-xl border border-[var(--color-border)] bg-white p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">{t("stats.time.title")}</h3>
-        <div className="flex gap-1" role="group" aria-label={t("stats.time.title")}>
-          {STATS_PERIODS.map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={period === value}
-              onClick={() => setPeriod(value)}
-              className="rounded-lg border px-3 py-1 text-xs font-medium"
-              style={
-                period === value
-                  ? { borderColor: "var(--accent)", color: "var(--accent)", backgroundColor: "var(--color-accent-bg)" }
-                  : { borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }
-              }
-            >
-              {t(`stats.time.period.${value}`)}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-1" role="group" aria-label={t("stats.time.title")}>
+            {STATS_PERIODS.map((value) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={period === value}
+                onClick={() => setPeriod(value)}
+                className="rounded-lg border px-3 py-1 text-xs font-medium"
+                style={
+                  period === value
+                    ? { borderColor: "var(--accent)", color: "var(--accent)", backgroundColor: "var(--color-accent-bg)" }
+                    : { borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }
+                }
+              >
+                {t(`stats.time.period.${value}`)}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            disabled={exporting || !data}
+            onClick={() => void handleExport()}
+            className="rounded-lg border border-[var(--color-border)] px-3 py-1 text-xs font-medium text-[var(--color-text-secondary)] disabled:opacity-60"
+          >
+            {t("stats.time.exportCsv")}
+          </button>
         </div>
       </div>
 
+      {exportError && <p className="mb-2 text-sm text-[var(--color-danger)]">{exportError}</p>}
       {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
       {!data && !error && <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>}
 
@@ -80,6 +114,15 @@ export function ConsumptionChart({ inventoryId }: ConsumptionChartProps): React.
             <span>
               <span className="text-[var(--color-text-secondary)]">{t("stats.time.consumed")}: </span>
               <span className="font-semibold">{formatGrams(data.totals.consumedG, i18n.language)}</span>
+              {(() => {
+                const percent = comparisonPercent(data.totals.consumedG, data.previousTotals.consumedG);
+                return percent === null ? null : (
+                  <span className="ml-1 text-xs" style={{ color: percent > 0 ? "var(--color-danger)" : "var(--color-text-secondary)" }}>
+                    ({percent > 0 ? "+" : ""}
+                    {percent}% {t("stats.time.vsPrevious")})
+                  </span>
+                );
+              })()}
             </span>
             <span>
               <span className="text-[var(--color-text-secondary)]">{t("stats.time.cost")}: </span>
@@ -112,21 +155,26 @@ export function ConsumptionChart({ inventoryId }: ConsumptionChartProps): React.
           )}
 
           {data.totals.consumedG > 0 && (
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
               {[
                 { title: t("stats.time.byType"), entries: data.byType },
-                { title: t("stats.time.byManufacturer"), entries: data.byManufacturer }
+                { title: t("stats.time.byManufacturer"), entries: data.byManufacturer },
+                { title: t("stats.time.byPrinter"), entries: data.byPrinter }
               ].map((group) => (
                 <div key={group.title}>
                   <h4 className="mb-1 text-xs font-semibold text-[var(--color-text-secondary)]">{group.title}</h4>
-                  <ul className="text-sm">
-                    {group.entries.map((entry) => (
-                      <li key={entry.label} className="flex justify-between gap-2">
-                        <span className="truncate">{entry.label}</span>
-                        <span className="text-[var(--color-text-secondary)]">{formatGrams(entry.consumedG, i18n.language)}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {group.entries.length === 0 ? (
+                    <p className="text-xs text-[var(--color-text-muted)]">{t("stats.time.noBreakdown")}</p>
+                  ) : (
+                    <ul className="text-sm">
+                      {group.entries.map((entry) => (
+                        <li key={entry.label} className="flex justify-between gap-2">
+                          <span className="truncate">{entry.label}</span>
+                          <span className="text-[var(--color-text-secondary)]">{formatGrams(entry.consumedG, i18n.language)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))}
             </div>

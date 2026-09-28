@@ -8,6 +8,18 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.22.0] - 2026-09-28
+
+### Hinzugefuegt
+- Neu angelegte Spulen gelten jetzt standardmäßig als "ungeöffnet", bis sie tatsächlich benutzt werden (erste Restgewicht-Änderung, Wiegen, Druck oder AMS-Zuordnung) – oder man markiert eine Spule von Hand als geöffnet. Beim Anlegen lässt sich das mit "Diese Spule ist schon angebrochen" übersteuern.
+- Der Filament-Bestand zeigt "Ungeöffnet" und "Angefangen" jetzt als zwei getrennte Abschnitte mit Anzahl und Gesamtgewicht, dazu einen neuen Filter "Nur ungeöffnete" und eine Kachel auf Dashboard und Statistik.
+- Beim Import aus der Bambu-Cloud erkennt die Vorschau jetzt, wenn eine "neue" Spule vermutlich schon als ungeöffnete Spule im eigenen Bestand liegt, und schlägt vor, sie zu verknüpfen statt doppelt anzulegen. Beim automatischen Bambu-Abgleich und beim Spoolman-Import passiert das bei einem eindeutigen Treffer automatisch, damit der Bestand nicht doppelt gezählt wird.
+- Statistik: Der Verbrauch lässt sich jetzt zusätzlich nach Drucker aufschlüsseln, mit dem gleich langen Zeitraum davor vergleichen und als CSV-Datei exportieren.
+- Sicherungen merken sich jetzt, mit welcher FilaPilot-Version sie erstellt wurden. Beim Wiederherstellen einer Sicherung aus einer anderen Version erscheint dafür ein Hinweis (nicht blockierend).
+
+### Hinweis zum Update
+- Neue Datenbank-Spalten (`Spool.openedAt`, `Settings.openedAtBackfilled`); das Update-Skript gleicht sie automatisch ab. Beim ersten Start nach dem Update markiert ein einmaliger, automatischer Nachtrag alle bestehenden Spulen anhand ihres Anlage-Datums als "geöffnet" (sonst würden sie in der neuen Ansicht fälschlich als frischer, ungeöffneter Bestand erscheinen).
+
 ## [0.21.3] - 2026-09-28
 
 ### Hinzugefuegt

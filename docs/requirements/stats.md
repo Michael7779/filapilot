@@ -19,8 +19,8 @@
 ## 1.1 Offene Punkte
 - OP-ST1 ✅ (0.14.5): Zeitlicher Verlauf gibt es seit "2.0 Verbrauch ueber die Zeit" unten
   (`SpoolWeightLog`-basiert, nach Tag/Woche/Monat/Jahr).
-- OP-ST2: `PrintJob` existiert seit 0.17.0 (siehe `printers.md`) - die Statistik-Seite koennte jetzt um
-  Kennzahlen pro Drucker (Auslastung, Druckzeit, Anzahl Auftraege) erweitert werden. Noch nicht gebaut.
+- OP-ST2 ✅ (0.22.0): `ConsumptionStats.byPrinter` schluesselt den Verbrauch im Zeitraum nach Drucker auf
+  (aus `PrintJob`, nicht aus `SpoolWeightLog` - der kennt keinen Drucker), siehe R4.
 
 ## 1.2 Anforderungen
 - **R1**: Jeder eingeloggte Nutzer sieht eine Uebersicht aus Spulen-Gesamtzahl, verbrauchtem
@@ -42,10 +42,19 @@
 ## 2.1 Offene Punkte
 - OP-ST3: Frueherer Verbrauch (vor 0.14.3) hat kein Datum und erscheint nur in den Gesamtwerten, nicht im Zeitverlauf.
 - OP-ST4: Der Tag eines Verbrauchs ist der Tag der Aenderung/des Abgleichs, nicht des Drucks (bei seltenem Abgleich ungenau).
-- OP-ST5: Kein Export (CSV) und kein Vergleich mit dem Vorzeitraum.
+- OP-ST5 ✅ (0.22.0): `GET /api/stats/consumption/export` (CSV) und `ConsumptionStats.previousTotals`
+  (Vergleich mit dem Vorzeitraum), siehe R4/R5.
 
 ## 2.2 Anforderungen
 - **R3**: Die Verbrauchs-Statistik ist nur mit Lese-Recht im Lager abrufbar (anonym 401, Fremde 404), "all" nur ueber eigene Lager, Eingaben (Periode, Zeitraum,
   Zeitzone, Lager) werden validiert (400), die Rechnung zaehlt nur positive Aenderungen, archivierte Spulen mit, Kosten aus dem Kaufpreis, und beachtet die Zeitzone.
   Tests: `tests/security/stats.test.ts`, `tests/unit/statsPeriod.test.ts`
+- **R4**: Ab 0.22.0: `ConsumptionStats.byPrinter` (Verbrauch je Drucker im Zeitraum, aus `PrintJob.filamentUsedG`/`startedAt`,
+  nicht aus dem Gewichtsverlauf) und `ConsumptionStats.previousTotals` (Summe von Verbrauch/Kosten im gleich langen Zeitraum
+  unmittelbar vor `from` - bei einem freien `from`/`to` ist das bewusst als "gleiche Dauer direkt davor" definiert, nicht als
+  Kalenderabschnitt). Dieselbe Rechteprüfung wie R3. Test: `tests/security/stats.test.ts`.
+- **R5**: Ab 0.22.0: `GET /api/stats/consumption/export?...&format=csv` (dieselben Parameter/Rechte wie
+  `GET /api/stats/consumption`) liefert denselben Verbrauch als CSV-Datei (Semikolon-Trennzeichen, UTF-8-BOM, wie der
+  Spulen-Export) mit Zeitabschnitten, Gesamt-/Vorzeitraum-Summen und den drei Aufschluesselungen. Oberflaeche:
+  "CSV exportieren"-Knopf in `components/ConsumptionChart.tsx`. Test: `tests/security/stats.test.ts`.
 

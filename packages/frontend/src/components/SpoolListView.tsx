@@ -23,10 +23,10 @@ function bedTempCell(bedTempC: number | null, bedTempMaxC: number | null): strin
 }
 
 function statusKey(spool: SpoolWithRelations): string {
-  if (!spool.archivedAt) {
-    return "spools.list.active";
+  if (spool.archivedAt) {
+    return spool.archiveReason === "CLOUD_REMOVED" ? "spools.archivedCloud" : "spools.archived";
   }
-  return spool.archiveReason === "CLOUD_REMOVED" ? "spools.archivedCloud" : "spools.archived";
+  return spool.openedAt ? "spools.list.active" : "spools.unopened";
 }
 
 // Liste: eine Zeile pro Spule mit ALLEN Angaben (Material, Farbe, Temperaturen, Gewicht, Lagerort, Preis, Datum, Notiz, Zusatzfelder).
@@ -116,7 +116,9 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, ...
                     {customFieldSummary(spool) || "–"}
                   </td>
                 )}
-                <td className={cellClass}>{t(statusKey(spool))}</td>
+                <td className={cellClass} style={!spool.archivedAt && !spool.openedAt ? { color: "var(--accent)" } : undefined}>
+                  {t(statusKey(spool))}
+                </td>
                 <td className={cellClass}>
                   <SpoolActions spool={spool} {...handlers} />
                 </td>

@@ -31,8 +31,11 @@ export interface ConsumptionStats {
   timeZone: string;
   buckets: ConsumptionBucket[];
   totals: { consumedG: number; costCents: number };
+  // Gleich langer Zeitraum unmittelbar vor "from" (zum Vergleich "mehr/weniger als im Vorzeitraum").
+  previousTotals: { consumedG: number; costCents: number };
   byType: ConsumptionBreakdownEntry[];
   byManufacturer: ConsumptionBreakdownEntry[];
+  byPrinter: ConsumptionBreakdownEntry[];
   // Seit wann Aenderungen des Restgewichts erfasst werden (frueherer Verbrauch hat kein Datum), sonst null
   trackingSince: string | null;
 }

@@ -17,6 +17,7 @@ export interface SpoolFilter {
   priceMinCents: number | null;
   priceMaxCents: number | null;
   lowStockOnly: boolean;
+  unopenedOnly: boolean;
 }
 
 export const EMPTY_SPOOL_FILTER: SpoolFilter = {
@@ -29,7 +30,8 @@ export const EMPTY_SPOOL_FILTER: SpoolFilter = {
   remainingMaxG: null,
   priceMinCents: null,
   priceMaxCents: null,
-  lowStockOnly: false
+  lowStockOnly: false,
+  unopenedOnly: false
 };
 
 export function isFilterActive(filter: SpoolFilter): boolean {
@@ -68,7 +70,8 @@ export function filterSpools(spools: readonly SpoolWithRelations[], filter: Spoo
       (!filter.location || spool.location === filter.location) &&
       inRange(spool.remainingWeightG, filter.remainingMinG, filter.remainingMaxG) &&
       inRange(spool.purchasePriceCents, filter.priceMinCents, filter.priceMaxCents) &&
-      (!filter.lowStockOnly || spool.remainingWeightG / spool.initialWeightG <= lowStockRatio)
+      (!filter.lowStockOnly || spool.remainingWeightG / spool.initialWeightG <= lowStockRatio) &&
+      (!filter.unopenedOnly || spool.openedAt === null)
   );
 }
 

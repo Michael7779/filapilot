@@ -7,6 +7,7 @@ import {
   createCatalogEntries,
   createInventoryWithMembers,
   createLoggedInUser,
+  createPrinterIn,
   createSpoolIn,
   resetInventoryData,
   type TestUser
@@ -52,6 +53,11 @@ describe("Verbrauchs-Statistik - Negativ-Tests und Rechnung", () => {
     await log(a1.id, lagerA, "2026-09-26T22:30:00.000Z", 10); // in Berlin schon am 27.09.
     await log(a2.id, lagerA, "2026-09-25T09:00:00.000Z", 400); // archivierte Spule zaehlt mit
     await log(b1.id, lagerB, "2026-09-25T09:00:00.000Z", 999);
+
+    const printer = await createPrinterIn(lagerA, "Stats-Drucker");
+    await prisma.printJob.create({
+      data: { printerId: printer.id, spoolId: a1.id, name: "Testdruck", filamentUsedG: 42, startedAt: new Date("2026-09-24T12:00:00.000Z") }
+    });
   });
 
   after(async () => {
@@ -96,6 +102,7 @@ describe("Verbrauchs-Statistik - Negativ-Tests und Rechnung", () => {
     assert.deepEqual(res.body.data.totals, { consumedG: 760, costCents: 900 });
     assert.deepEqual(res.body.data.byType, [{ label: "PETG", consumedG: 400 }, { label: "PLA", consumedG: 360 }]);
     assert.deepEqual(res.body.data.byManufacturer, [{ label: "Test Hersteller", consumedG: 760 }]);
+    assert.deepEqual(res.body.data.byPrinter, [{ label: "Stats-Drucker", consumedG: 42 }]);
     assert.equal(res.body.data.trackingSince, "2026-09-20T08:00:00.000Z");
     const cost = Object.fromEntries(res.body.data.buckets.map((b: { key: string; costCents: number }) => [b.key, b.costCents]));
     assert.deepEqual([cost["2026-09-24"], cost["2026-09-25"], cost["2026-09-26"]], [375, 0, 525]);
@@ -130,5 +137,40 @@ describe("Verbrauchs-Statistik - Negativ-Tests und Rechnung", () => {
     const none = await stats(editor, "inventoryId=" + empty.id + "&period=week");
     assert.equal(none.status, 200);
     assert.deepEqual([none.body.data.totals.consumedG, none.body.data.trackingSince], [0, null]);
+  });
+
+  it("vergleicht mit dem gleich langen Zeitraum unmittelbar davor (previousTotals)", async () => {
+    // BASE_RANGE = 22.-27.09.; der Vorzeitraum ist 17.-22.09. und enthaelt genau den 10g-Log vom 20.09. (Kosten: 25 Cent)
+    const res = await stats(editor, "inventoryId=" + lagerA + "&period=day&" + BASE_RANGE);
+    assert.deepEqual(res.body.data.previousTotals, { consumedG: 10, costCents: 25 });
+  });
+
+  it("zaehlt den Verbrauch je Drucker aus dem Druckauftrag-Verlauf (nicht aus dem Gewichtsverlauf)", async () => {
+    const res = await stats(editor, "inventoryId=" + lagerA + "&period=day&" + BASE_RANGE);
+    assert.deepEqual(res.body.data.byPrinter, [{ label: "Stats-Drucker", consumedG: 42 }]);
+    // ausserhalb des Zeitraums zaehlt der Druckauftrag nicht mit
+    const narrow = await stats(editor, "inventoryId=" + lagerA + "&period=day&from=2026-09-25T00:00:00.000Z&to=2026-09-27T00:00:00.000Z");
+    assert.deepEqual(narrow.body.data.byPrinter, []);
+  });
+
+  it("CSV-Export: gleiche Rechte wie das Lesen (401/404), liefert eine Datei mit Zeitabschnitten und Drucker-Aufschluesselung", async () => {
+    const anon = await request(app).get(`/api/stats/consumption/export?inventoryId=${lagerA}&period=day&${BASE_RANGE}`);
+    assert.equal(anon.status, 401);
+    const foreign = await request(app)
+      .get(`/api/stats/consumption/export?inventoryId=${lagerA}&period=day&${BASE_RANGE}`)
+      .set("Cookie", outsider.cookie);
+    assert.equal(foreign.status, 404);
+
+    const res = await request(app)
+      .get(`/api/stats/consumption/export?inventoryId=${lagerA}&period=day&${BASE_RANGE}`)
+      .set("Cookie", editor.cookie);
+    assert.equal(res.status, 200);
+    assert.match(res.headers["content-type"], /text\/csv/);
+    assert.match(res.headers["content-disposition"], /filename="filapilot-verbrauch-.*\.csv"/);
+    const text = res.text;
+    assert.ok(text.startsWith("﻿"));
+    assert.match(text, /Verbrauch je Zeitabschnitt/);
+    assert.match(text, /Verbrauch nach Drucker/);
+    assert.match(text, /Stats-Drucker;42/);
   });
 });

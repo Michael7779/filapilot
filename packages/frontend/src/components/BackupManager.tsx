@@ -27,6 +27,8 @@ function RestoreDialog({
   const [error, setError] = useState<string | null>(null);
   const [finishedWhileLoggedOut, setFinishedWhileLoggedOut] = useState(false);
   const date = new Date(backup.createdAt).toLocaleString(i18n.language);
+  // Ohne appVersion (Sicherung vor 0.22.0) keine Warnung - das waere nur eine Vermutung, keine echte Erkenntnis.
+  const versionMismatch = backup.appVersion !== null && backup.appVersion !== __APP_VERSION__;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -80,6 +82,11 @@ function RestoreDialog({
         {!started && (
           <>
             <p className="text-sm">{t("backup.restoreWarning", { date })}</p>
+            {versionMismatch && (
+              <p className="rounded-lg bg-[var(--color-warning)]/10 p-2 text-sm text-[var(--color-warning)]">
+                {t("backup.versionMismatch", { backupVersion: backup.appVersion, currentVersion: __APP_VERSION__ })}
+              </p>
+            )}
             <ul className="list-disc space-y-1 pl-5 text-sm text-[var(--color-text-secondary)]">
               <li>{t("backup.restoreInfoSafety")}</li>
               <li>{t("backup.restoreInfoLogin")}</li>
@@ -180,6 +187,7 @@ function BackupTable({
           <tr className="text-xs uppercase text-[var(--color-text-muted)]">
             <th className="pb-2 font-medium">{t("backup.createdAt")}</th>
             <th className="pb-2 font-medium">{t("backup.contents")}</th>
+            <th className="pb-2 font-medium">{t("backup.version")}</th>
             <th className="pb-2 text-right font-medium">{t("backup.size")}</th>
             <th />
           </tr>
@@ -191,6 +199,7 @@ function BackupTable({
               <td className="py-2.5 text-[var(--color-text-secondary)]">
                 {backup.hasUploads ? t("backup.contentsWithUploads") : t("backup.contentsDatabase")}
               </td>
+              <td className="py-2.5 text-[var(--color-text-secondary)]">{backup.appVersion ? `v${backup.appVersion}` : t("backup.versionUnknown")}</td>
               <td className="py-2.5 text-right">{formatSize(backup.sizeBytes, i18n.language)}</td>
               <td className="py-2.5">
                 <div className="flex justify-end gap-3 text-xs font-medium">

@@ -50,8 +50,10 @@
   ueberschreibt nie eine vorhandene Sicherung (409) und spielt nichts ein - Wiederherstellen bleibt ein eigener Schritt.
 
 ## 1.1 Offene Punkte
-- OP-S4: Wiederherstellung wurde nur mit einer Sicherung aus derselben Version praktisch geprueft;
-  Sicherungen aus einer *neueren* Version in eine aeltere Installation einzuspielen ist nicht unterstuetzt.
+- OP-S4 ✅ (0.22.0): Jede Sicherung haelt jetzt die App-Version fest (`filapilot-version-<Zeitstempel>.txt`), sodass
+  eine abweichende Version beim Wiederherstellen erkannt und gewarnt wird (siehe R11) - Wiederherstellen selbst bleibt
+  aber weiterhin nur mit einer Sicherung aus derselben Version praktisch geprueft; das Einspielen einer *neueren*
+  Version in eine aeltere Installation ist unveraendert nicht unterstuetzt (nur die Warnung ist neu, kein Schema-Migrations-Mechanismus).
 
 ## 1.2 Anforderungen
 - **R1**: Nur Nutzer mit Rolle `ADMIN` duerfen Einstellungen lesen oder aendern.
@@ -82,3 +84,10 @@
 - **R9**: Der Sicherungs-Upload ist nur fuer Admins (401/403), lehnt Nicht-tar-Dateien, fremde Dateien, Pfade
   (`../`), Verknuepfungen und Archive ohne Datenbank-Dump ab (400, es wird nichts entpackt), nimmt eine gueltige
   Sicherung an (201) und lehnt dieselbe ein zweites Mal ab (409). Test: `tests/security/backupUpload.test.ts`
+- **R11**: Ab 0.22.0: Jede neu erstellte Sicherung schreibt zusaetzlich `filapilot-version-<Zeitstempel>.txt`
+  (App-Version aus der Root-`package.json`); `BackupInfo.appVersion` gibt das an die Oberflaeche weiter (`null`
+  bei Sicherungen ohne diese Datei, z.B. aus einer Version vor 0.22.0 - keine falsche Warnung). Die Oberflaeche
+  zeigt die Version je Sicherung in der Liste und warnt beim Wiederherstellen (nicht blockierend), wenn sie von der
+  laufenden Version abweicht (`components/BackupManager.tsx`, Vergleich mit `__APP_VERSION__`, rein clientseitig).
+  Der Sicherungs-Upload/-Download/das Aufraeumen behandeln die neue Datei wie die uebrigen (generische Namensliste),
+  keine Anpassung noetig. Test: `tests/unit/backupCatalog.test.ts`.

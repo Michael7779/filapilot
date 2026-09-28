@@ -66,6 +66,8 @@ export function BambuImportModal({
   const [preview, setPreview] = useState<BambuPreview | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [updateExisting, setUpdateExisting] = useState(false);
+  // cloudIds, bei denen der Vorschlag "mit vorhandener ungeoeffneter Spule verknuepfen" aktiv ist (Standard: ja)
+  const [linkChoices, setLinkChoices] = useState<Set<string>>(new Set());
   const [summary, setSummary] = useState<BambuImportSummary | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +122,7 @@ export function BambuImportModal({
     setSessionId(id);
     setPreview(data);
     setSelected(new Set(data.rows.filter((row) => !row.alreadyImported && (row.status === 0 || row.status === null)).map((row) => row.cloudId)));
+    setLinkChoices(new Set(data.rows.filter((row) => row.suggestedMatch).map((row) => row.cloudId)));
     setStep("preview");
   }
 
@@ -231,10 +234,15 @@ export function BambuImportModal({
       return;
     }
     await run(async () => {
+      const linkToSpoolId = Object.fromEntries(
+        (preview?.rows ?? [])
+          .filter((row) => row.suggestedMatch && linkChoices.has(row.cloudId) && actionIds.includes(row.cloudId))
+          .map((row) => [row.cloudId, row.suggestedMatch?.spoolId])
+      );
       setSummary(
         await apiRequest<BambuImportSummary>(`${base}/${sessionId}/import`, {
           method: "POST",
-          body: JSON.stringify({ cloudIds: actionIds, updateExisting })
+          body: JSON.stringify({ cloudIds: actionIds, updateExisting, linkToSpoolId })
         })
       );
       setStep("result");
@@ -244,6 +252,18 @@ export function BambuImportModal({
 
   function toggle(cloudId: string): void {
     setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(cloudId)) {
+        next.delete(cloudId);
+      } else {
+        next.add(cloudId);
+      }
+      return next;
+    });
+  }
+
+  function toggleLink(cloudId: string): void {
+    setLinkChoices((current) => {
       const next = new Set(current);
       if (next.has(cloudId)) {
         next.delete(cloudId);
@@ -411,6 +431,12 @@ export function BambuImportModal({
                       <span className="shrink-0 rounded-full bg-[var(--color-bg)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">{t("bambu.alreadyImported")}</span>
                     )}
                   </label>
+                  {row.suggestedMatch && selected.has(row.cloudId) && (
+                    <label className="flex cursor-pointer items-center gap-2 px-3 pb-2 pl-10 text-xs text-[var(--color-text-secondary)]">
+                      <input type="checkbox" checked={linkChoices.has(row.cloudId)} onChange={() => toggleLink(row.cloudId)} />
+                      {t("bambu.suggestedMatch", { label: row.suggestedMatch.label })}
+                    </label>
+                  )}
                 </li>
               ))}
             </ul>
@@ -446,6 +472,7 @@ export function BambuImportModal({
                 restored: syncSummary.restored
               })}
             </p>
+            {syncSummary.linked > 0 && <p className="text-xs text-[var(--color-text-secondary)]">{t("bambu.linked", { count: syncSummary.linked })}</p>}
             {syncSummary.archiveBlocked && <p className="text-xs text-[var(--color-danger)]">{t("bambu.syncBlocked")}</p>}
             <div className="flex justify-end">
               <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: "var(--accent)" }}>
@@ -458,6 +485,7 @@ export function BambuImportModal({
         {step === "result" && summary && (
           <div className="flex flex-col gap-3">
             <p className="text-sm">{t("bambu.result", { created: summary.created, updated: summary.updated, skipped: summary.skipped })}</p>
+            {summary.linked > 0 && <p className="text-xs text-[var(--color-text-secondary)]">{t("bambu.linked", { count: summary.linked })}</p>}
             {(summary.manufacturersCreated > 0 || summary.materialsCreated > 0) && (
               <p className="text-xs text-[var(--color-text-muted)]">
                 {t("bambu.createdCatalog", { manufacturers: summary.manufacturersCreated, materials: summary.materialsCreated })}

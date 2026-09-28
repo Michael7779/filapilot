@@ -5,6 +5,7 @@ import { startDailyBackupScheduler } from "./services/backupScheduler.js";
 import { startBambuAutoSync } from "./services/bambuAutoSync.js";
 import { connectAllPrinters } from "./services/printerRuntime.js";
 import { ensureDefaultInventory } from "./services/inventoryService.js";
+import { ensureOpenedAtBackfilled } from "./services/openedAtBackfill.js";
 import { runWithStartupRetry } from "./lib/startupRetry.js";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
@@ -23,6 +24,7 @@ startBambuAutoSync();
 runWithStartupRetry(
   async () => {
     await ensureDefaultInventory();
+    await ensureOpenedAtBackfilled();
     await connectAllPrinters();
   },
   {
