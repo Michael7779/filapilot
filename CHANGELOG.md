@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.22.2] - 2026-09-29
+
+### Hinweis zum Update
+- `scripts/update-synology.sh` gegen einen seltenen Sonderfall abgesichert: Das Skript aktualisiert sich selbst per `git pull`, während es noch läuft. Der eigentliche Ablauf (bauen, Datenbank abgleichen, neu starten) steckt jetzt in einer Funktion, die vor dem `git pull` vollständig eingelesen wird - dadurch läuft immer konsistent eine Version durch, nie eine Mischung aus alt und neu. Kein Eingriff nötig, betrifft nur das Update-Skript selbst.
+
 ## [0.22.1] - 2026-09-29
 
 ### Behoben
