@@ -53,6 +53,12 @@ describe("Spulen: Suche, Filter, Sortierung", () => {
     assert.deepEqual(filterSpools(list, f({ priceMinCents: 2000 }), 0.15).map((s) => s.colorName), ["Blau"]);
     assert.deepEqual(filterSpools(list, f({ priceMaxCents: 3000 }), 0.15).map((s) => s.colorName), ["Rot", "Blau"]);
   });
+  it("Restgewicht-%-Filter: hoechstens X % vom Ursprungsgewicht", () => {
+    // Rot 100/1000=10%, Blau 900/1000=90%, Weiss 1000/1000=100%
+    assert.deepEqual(filterSpools(list, f({ remainingMaxPercent: 10 }), 0.15).map((s) => s.colorName), ["Rot"]);
+    assert.deepEqual(filterSpools(list, f({ remainingMaxPercent: 90 }), 0.15).map((s) => s.colorName), ["Rot", "Blau"]);
+    assert.equal(filterSpools(list, f({ remainingMaxPercent: 5 }), 0.15).length, 0);
+  });
   it("sortiert nach Restgewicht und nach Preis (ohne Preis zuletzt)", () => {
     assert.deepEqual(sortSpools(list, "remaining", "de").map((s) => s.colorName), ["Rot", "Blau", "Weiss"]);
     assert.deepEqual(sortSpools(list, "price", "de").map((s) => s.colorName), ["Rot", "Blau", "Weiss"]);

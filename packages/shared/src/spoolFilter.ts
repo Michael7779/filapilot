@@ -16,6 +16,8 @@ export interface SpoolFilter {
   // Kaufpreis in Cent
   priceMinCents: number | null;
   priceMaxCents: number | null;
+  // Restgewicht in % vom Ursprungsgewicht, nur Obergrenze ("hoechstens X %")
+  remainingMaxPercent: number | null;
   lowStockOnly: boolean;
   unopenedOnly: boolean;
 }
@@ -30,9 +32,15 @@ export const EMPTY_SPOOL_FILTER: SpoolFilter = {
   remainingMaxG: null,
   priceMinCents: null,
   priceMaxCents: null,
+  remainingMaxPercent: null,
   lowStockOnly: false,
   unopenedOnly: false
 };
+
+// Restgewicht in % vom Ursprungsgewicht (0-100, kann rechnerisch > 100 sein bei nachtraeglich erhoehtem Restgewicht)
+export function remainingPercent(spool: Pick<SpoolWithRelations, "remainingWeightG" | "initialWeightG">): number {
+  return (spool.remainingWeightG / spool.initialWeightG) * 100;
+}
 
 export function isFilterActive(filter: SpoolFilter): boolean {
   return (Object.keys(EMPTY_SPOOL_FILTER) as (keyof SpoolFilter)[]).some((key) => filter[key] !== EMPTY_SPOOL_FILTER[key]);
@@ -70,6 +78,7 @@ export function filterSpools(spools: readonly SpoolWithRelations[], filter: Spoo
       (!filter.location || spool.location === filter.location) &&
       inRange(spool.remainingWeightG, filter.remainingMinG, filter.remainingMaxG) &&
       inRange(spool.purchasePriceCents, filter.priceMinCents, filter.priceMaxCents) &&
+      (filter.remainingMaxPercent === null || remainingPercent(spool) <= filter.remainingMaxPercent) &&
       (!filter.lowStockOnly || spool.remainingWeightG / spool.initialWeightG <= lowStockRatio) &&
       (!filter.unopenedOnly || spool.openedAt === null)
   );

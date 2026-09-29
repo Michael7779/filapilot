@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { LOW_STOCK_THRESHOLD_RATIO, type CustomFieldDefinition, type Material, type SpoolWithRelations } from "@filapilot/shared";
+import { LOW_STOCK_THRESHOLD_RATIO, remainingPercent, type CustomFieldDefinition, type Material, type SpoolWithRelations } from "@filapilot/shared";
 import { SpoolActions, type SpoolHandlers } from "./SpoolActions.js";
 import { formatBedTemp } from "../lib/formatTemps.js";
 
@@ -22,7 +22,7 @@ export function ColorDot({ hex, hex2 = null, size = "h-5 w-5" }: { hex: string |
 }
 
 export function WeightBar({ spool }: { spool: SpoolWithRelations }): React.JSX.Element {
-  const percent = Math.round((spool.remainingWeightG / spool.initialWeightG) * 100);
+  const percent = Math.round(remainingPercent(spool));
   return (
     <div className="h-1.5 overflow-hidden rounded-full bg-[var(--color-bg)]">
       <div
@@ -67,6 +67,7 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
       {spools.map((spool) => {
         const temps = materials.find((material) => material.id === spool.materialId);
         const bedTemp = temps ? formatBedTemp(temps.bedTempC, temps.bedTempMaxC, t) : null;
+        const percent = Math.round(remainingPercent(spool));
         return (
           <div key={spool.id} className={`rounded-xl border border-[var(--color-border)] bg-white p-4 ${spool.archivedAt ? "opacity-70" : ""}`}>
             {spool.photoUrl && (
@@ -97,7 +98,7 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
               <WeightBar spool={spool} />
             </div>
             <div className="text-xs text-[var(--color-text-secondary)]">
-              {spool.remainingWeightG} g / {spool.initialWeightG} g
+              {spool.remainingWeightG} g / {spool.initialWeightG} g ({percent} %)
             </div>
           </div>
         );

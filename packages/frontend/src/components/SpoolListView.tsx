@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { estimateRemainingLengthM, type SpoolWithRelations } from "@filapilot/shared";
+import { estimateRemainingLengthM, remainingPercent, type SpoolWithRelations } from "@filapilot/shared";
 import { SpoolActions } from "./SpoolActions.js";
 import { ColorDot, WeightBar, type SpoolViewProps } from "./SpoolViews.js";
 
@@ -76,7 +76,7 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, ...
         <tbody>
           {spools.map((spool) => {
             const temps = materials.find((material) => material.id === spool.materialId);
-            const percent = Math.round((spool.remainingWeightG / spool.initialWeightG) * 100);
+            const percent = Math.round(remainingPercent(spool));
             return (
               <tr key={spool.id} className={`border-b border-[var(--color-border)] last:border-b-0 ${spool.archivedAt ? "opacity-70" : ""}`}>
                 <td className={cellClass}>

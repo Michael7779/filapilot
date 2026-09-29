@@ -30,6 +30,9 @@ function unique(values: readonly string[]): string[] {
   return [...new Set(values.filter((value) => value !== ""))];
 }
 
+// Stufen fuer den Restgewicht-%-Filter ("hoechstens X %"); 15 % deckt sich mit LOW_STOCK_THRESHOLD_RATIO.
+const REMAINING_PERCENT_STEPS = [10, 15, 20, 25, 30, 50, 75] as const;
+
 // Suche, Filter und Sortierung der Spulenliste (rein im Browser; die Liste ist bereits auf das Lager begrenzt).
 export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortChange }: SpoolFilterBarProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
@@ -144,6 +147,21 @@ export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortCha
           {select(t("spools.colorName"), filter.colorName, (value) => set({ colorName: value }), options.colors.map((name) => [name, name]))}
           {select(t("spools.filter.location"), filter.location, (value) => set({ location: value }), options.locations.map((name) => [name, name]))}
           {range(t("spools.filter.remaining"), "g", filter.remainingMinG, filter.remainingMaxG, (min, max) => set({ remainingMinG: min, remainingMaxG: max }), 1)}
+          <label className="flex flex-col gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
+            {t("spools.filter.remainingPercent")}
+            <select
+              value={filter.remainingMaxPercent === null ? "" : String(filter.remainingMaxPercent)}
+              onChange={(event) => set({ remainingMaxPercent: event.target.value === "" ? null : Number(event.target.value) })}
+              className={inputClass}
+            >
+              <option value="">{t("spools.filter.all")}</option>
+              {REMAINING_PERCENT_STEPS.map((step) => (
+                <option key={step} value={step}>
+                  {t("spools.filter.remainingPercentOption", { percent: step })}
+                </option>
+              ))}
+            </select>
+          </label>
           {range(t("spools.filter.price"), "€", filter.priceMinCents, filter.priceMaxCents, (min, max) => set({ priceMinCents: min, priceMaxCents: max }), 100)}
           <label className="flex flex-col gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
             {t("spools.filter.sortBy")}

@@ -8,6 +8,14 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.22.3] - 2026-09-29
+
+### Hinzugefügt
+- Neuer Filter "Restgewicht in %": zeigt nur Spulen mit höchstens der ausgewählten Prozentzahl vom Ursprungsgewicht (10/15/20/25/30/50/75 %).
+
+### Geändert
+- Die Standardansicht zeigt jetzt wie die Listenansicht den Restgewicht-Prozentwert direkt neben der Gramm-Angabe.
+
 ## [0.22.2] - 2026-09-29
 
 ### Hinweis zum Update

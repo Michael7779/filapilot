@@ -457,6 +457,8 @@
       "all": "Alle",
       "location": "Lagerort",
       "remaining": "Restgewicht",
+      "remainingPercent": "Restgewicht in %",
+      "remainingPercentOption": "höchstens {{percent}} %",
       "price": "Kaufpreis",
       "min": "von",
       "max": "bis",

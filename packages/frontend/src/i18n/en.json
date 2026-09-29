@@ -457,6 +457,8 @@
       "all": "All",
       "location": "Location",
       "remaining": "Remaining weight",
+      "remainingPercent": "Remaining weight in %",
+      "remainingPercentOption": "{{percent}} % or less",
       "price": "Purchase price",
       "min": "from",
       "max": "to",
