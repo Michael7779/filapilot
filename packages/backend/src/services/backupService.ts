@@ -1,5 +1,5 @@
 import { env } from "../env.js";
-import { exec as execCallback } from "node:child_process";
+import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -9,13 +9,24 @@ import { runExclusive } from "./backupLock.js";
 import { backupFileNames, pruneBackups } from "./backupCatalog.js";
 import { APP_VERSION } from "../lib/appVersion.js";
 
-const exec = promisify(execCallback);
+const execFile = promisify(execFileCallback);
+
+// Kommando-Ausfuehrung injizierbar (wie restoreService.ts): Tests koennen so pruefen, dass Backup-Ordner und
+// Datenbank-URL immer als einzelnes execFile-Argument ankommen - nie durch eine Shell gejagt. `backupFolderPath`
+// kommt aus den Admin-Settings (Zod erlaubt aktuell jedes Zeichen); ohne execFile waere ein Wert wie
+// `/data"; rm -rf / #` eine Befehls-Einschleusung (CWE-78), weil node:child_process.exec ueber /bin/sh -c laeuft.
+export type CommandRunner = (command: string, args: string[]) => Promise<void>;
+
+const defaultRunner: CommandRunner = async (command, args) => {
+  await execFile(command, args, { maxBuffer: 20 * 1024 * 1024 });
+};
 
 export interface CreateBackupOptions {
   // Injizierbar, damit Tests nicht in den echten Backup-Ordner schreiben (siehe CLAUDE.md Tests).
   targetFolder?: string;
   databaseUrl?: string;
   uploadsFolder?: string;
+  run?: CommandRunner;
 }
 
 // Ohne Sperre - fuer die Wiederherstellung, die die Sperre schon haelt und vorher eine Sicherung anlegt.
@@ -24,6 +35,7 @@ export async function createBackupUnlocked(options: CreateBackupOptions = {}): P
   const targetFolder = options.targetFolder ?? settings.backupFolderPath;
   const databaseUrl = options.databaseUrl ?? process.env.DATABASE_URL;
   const uploadsFolder = options.uploadsFolder ?? env.UPLOADS_FOLDER_PATH;
+  const run = options.run ?? defaultRunner;
 
   if (!databaseUrl) {
     throw new Error("DATABASE_URL ist nicht gesetzt - Backup kann nicht erstellt werden.");
@@ -40,7 +52,7 @@ export async function createBackupUnlocked(options: CreateBackupOptions = {}): P
   const filesArchivePath = path.join(targetFolder, names.uploads);
   const versionPath = path.join(targetFolder, names.version);
 
-  await exec(`pg_dump "${databaseUrl}" --no-owner --file="${dumpPath}"`);
+  await run("pg_dump", [databaseUrl, "--no-owner", `--file=${dumpPath}`]);
   // eslint-disable-next-line security/detect-non-literal-fs-filename
   await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), "utf8");
   // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -51,7 +63,7 @@ export async function createBackupUnlocked(options: CreateBackupOptions = {}): P
     .then(() => true)
     .catch(() => false);
   if (uploadsExist) {
-    await exec(`tar -czf "${filesArchivePath}" -C "${uploadsFolder}" .`);
+    await run("tar", ["-czf", filesArchivePath, "-C", uploadsFolder, "."]);
   }
 
   logger.info("Backup erstellt", { targetFolder, timestamp });

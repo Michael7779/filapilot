@@ -8,6 +8,15 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.22.5] - 2026-09-29
+
+### Sicherheit
+- Beim Erstellen einer Sicherung wurden Befehle an das Betriebssystem seit jeher über eine Shell zusammengebaut; ein bösartiger oder gekaperter Admin-Zugang hätte darüber eigene Befehle auf dem Server einschleusen können. Läuft jetzt ohne Shell, kann also nicht mehr missbraucht werden.
+
+### Hinweis zum Update
+- Kleinere Abhängigkeiten aktualisiert (prettier, socket.io, socket.io-client, supertest, typescript-eslint) - rein technisch, kein sichtbarer Effekt.
+- Eine falsch geschriebene Abschnitts-Überschrift ("Hinzugefügt" mit Umlaut statt "Hinzugefuegt") in der 0.22.3-Zeile dieser Datei behoben - dadurch wäre 0.22.3 im Änderungsverlauf der App unsichtbar geblieben.
+
 ## [0.22.4] - 2026-09-29
 
 ### Geändert
@@ -25,7 +34,7 @@ erscheint nicht in der App.
 
 ## [0.22.3] - 2026-09-29
 
-### Hinzugefügt
+### Hinzugefuegt
 - Neuer Filter "Restgewicht in %": zeigt nur Spulen mit höchstens der ausgewählten Prozentzahl vom Ursprungsgewicht (10/15/20/25/30/50/75 %).
 
 ### Geändert

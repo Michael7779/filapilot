@@ -50,12 +50,24 @@ describe("Aenderungsverlauf-Parser", () => {
   // eine erfundene Ueberschrift wie "Bekannte Einschränkungen") wird vom Parser stillschweigend uebergangen - die
   // Version verschwindet dann komplett aus dem Aenderungsverlauf der App, ohne Fehler. Diese zwei Tests waeren bei
   // genau diesem Fehler (0.15.0-0.17.0, September 2026) fehlgeschlagen.
-  it("jede Versions-Ueberschrift im echten CHANGELOG.md ergibt auch einen Eintrag mit Punkten", () => {
+  it("jede Versions-Ueberschrift im echten CHANGELOG.md ergibt auch einen Eintrag mit Punkten (ausser reine Admin-Versionen)", () => {
     const markdown = realChangelog();
-    const headingVersions = [...markdown.matchAll(/^## \[(\d+\.\d+\.\d+)\]/gm)].map((match) => match[1]);
+    const versionBlocks = markdown.split(/^## \[/m).slice(1);
     const entries = parseChangelog(markdown);
     const parsedVersions = new Set(entries.map((entry) => entry.version));
-    for (const version of headingVersions) {
+    for (const block of versionBlocks) {
+      const version = /^(\d+\.\d+\.\d+)/.exec(block)?.[1];
+      if (!version) {
+        continue;
+      }
+      const sectionHeadings = [...block.matchAll(/^### (.+)$/gm)].map((match) => match[1]?.trim());
+      // Eine Version, die ausschliesslich "Hinweis zum Update" hat (rein technische Aenderung ohne
+      // sichtbaren Effekt fuer Nutzer, z.B. nur am Update-Skript), darf legitim ohne Eintrag im
+      // App-Aenderungsverlauf bleiben - das ist kein Zeichen einer falsch geschriebenen Ueberschrift.
+      const onlyAdminNotice = sectionHeadings.length > 0 && sectionHeadings.every((h) => h === "Hinweis zum Update");
+      if (onlyAdminNotice) {
+        continue;
+      }
       assert.ok(parsedVersions.has(version), `Version ${version} fehlt im Aenderungsverlauf (Ueberschrift falsch geschrieben?)`);
     }
   });
