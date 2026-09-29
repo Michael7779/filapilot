@@ -20,17 +20,23 @@ if [ "$LOCAL" = "$REMOTE" ]; then
   exit 0
 fi
 
-echo "Update gefunden: $LOCAL -> $REMOTE. Baue und starte neu..."
+echo "Update gefunden: $LOCAL -> $REMOTE. Baue neu..."
 git pull origin main
 docker compose build
-docker compose up -d
 
-# Gleicht das Schema automatisch ab, falls sich prisma/schema.prisma geaendert hat. Rein additive
-# Aenderungen (neue Tabelle/Spalte) laufen ohne Rueckfrage durch. Eine potenziell
-# datenverlust-traechtige Aenderung (z.B. eine neue Pflichtspalte auf einer Tabelle mit
-# bestehenden Zeilen) lehnt "prisma db push" ohne "--accept-data-loss" bewusst ab und bricht den
-# Lauf mit einem klaren Fehler im Log ab, statt sie automatisch/unbeaufsichtigt durchzufuehren -
-# das braucht dann einen manuellen Blick (siehe README, Abschnitt Schema-Aenderungen).
-docker compose exec -T backend node_modules/.bin/prisma db push --schema=prisma/schema.prisma
+# Schema-Abgleich VOR dem Neustart des Backends (nicht danach) - sonst liefe der neue Programmcode
+# fuer den kurzen Moment zwischen "up -d" und "db push" schon gegen die alte Datenbank-Struktur und
+# koennte abstuerzen (so geschehen bei 0.22.0/0.22.1: ein Neustart-Zeitfenster reichte, um den
+# Server in eine Absturzschleife zu schicken). "docker compose run" nutzt das frisch gebaute Image,
+# ohne den noch laufenden alten Backend-Container anzutasten; Postgres laeuft ohnehin durchgehend.
+# Rein additive Schema-Aenderungen (neue Tabelle/Spalte) laufen ohne Rueckfrage durch. Eine potenziell
+# datenverlust-traechtige Aenderung (z.B. eine neue Pflichtspalte auf einer Tabelle mit bestehenden
+# Zeilen) lehnt "prisma db push" ohne "--accept-data-loss" bewusst ab und bricht den Lauf mit einem
+# klaren Fehler im Log ab, statt sie automatisch/unbeaufsichtigt durchzufuehren - das braucht dann
+# einen manuellen Blick (siehe README, Abschnitt Schema-Aenderungen). In diesem Fall wird NICHT
+# neu gestartet, damit die bisherige (noch funktionierende) Version weiterlaeuft.
+docker compose run --rm backend node_modules/.bin/prisma db push --schema=prisma/schema.prisma
+
+docker compose up -d
 
 echo "Update abgeschlossen."

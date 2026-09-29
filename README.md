@@ -107,13 +107,16 @@ Auf der Synology per Aufgabenplanung regelmäßig ausführen lassen (siehe
 ./scripts/update-synology.sh
 ```
 
-Prüft, ob es einen neueren Stand auf `main` gibt, und baut/startet die Container bei Bedarf neu.
-Gleicht danach automatisch das Datenbank-Schema ab (`prisma db push`), sofern die Änderung rein
-additiv ist (neue Tabelle/Spalte). Bricht das Skript dabei mit einem Fehler zu einer
-"nicht ausführbaren" Schema-Änderung ab (z.B. eine neue Pflichtspalte auf einer Tabelle mit
-bestehenden Zeilen), ist manuelles Eingreifen nötig — betroffene Zeilen bereinigen oder einen
-Default-Wert ergänzen, dann `docker compose exec backend node_modules/.bin/prisma db push
---schema=prisma/schema.prisma` erneut manuell ausführen.
+Prüft, ob es einen neueren Stand auf `main` gibt, baut das Image bei Bedarf neu und gleicht danach
+automatisch das Datenbank-Schema ab (`prisma db push`, mit dem frisch gebauten Image gegen die
+laufende Datenbank — der bisherige Backend-Container läuft dabei unverändert weiter), bevor die
+Container neu gestartet werden. So läuft der neue Programmcode nie gegen eine noch nicht
+abgeglichene Datenbank. Rein additive Schema-Änderungen (neue Tabelle/Spalte) laufen dabei ohne
+Rückfrage durch. Bricht das Skript mit einem Fehler zu einer "nicht ausführbaren" Schema-Änderung
+ab (z.B. eine neue Pflichtspalte auf einer Tabelle mit bestehenden Zeilen), bleibt die bisherige
+Version unverändert in Betrieb — manuelles Eingreifen nötig: betroffene Zeilen bereinigen oder
+einen Default-Wert ergänzen, dann `docker compose run --rm backend node_modules/.bin/prisma db push
+--schema=prisma/schema.prisma` erneut manuell ausführen und danach `docker compose up -d`.
 
 ## Entwicklung
 

@@ -8,6 +8,14 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.22.1] - 2026-09-29
+
+### Behoben
+- Der Server startete seit 0.22.0 nicht mehr (Absturz direkt beim Start), weil eine für den Sicherungs-Versions-Hinweis benötigte Datei im fertig gebauten Programm fehlte. Betroffene Installationen kamen dadurch komplett nicht mehr hoch (auch Anmeldung und E-Mail-Versand liefen nicht).
+
+### Hinweis zum Update
+- Fehler im Produktions-Docker-Image von 0.22.0 (`packages/backend/Dockerfile` kopierte die Root-`package.json` nicht in den finalen Image-Stand, obwohl `lib/appVersion.ts` sie zur Laufzeit liest - `ENOENT: /app/package.json`, Absturzschleife). Betrifft nur Installationen, die 0.22.0 bereits gebaut haben; Neubauen mit diesem Stand behebt es. Vor dem Update-Skript geprüft: `docker compose exec -T backend node_modules/.bin/prisma db push` ist weiterhin sicher und idempotent auszuführen.
+
 ## [0.22.0] - 2026-09-28
 
 ### Hinzugefuegt

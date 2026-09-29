@@ -29,6 +29,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg ca-c
   && apt-get autoremove -y \
   && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/pgdg.list
 COPY --from=build /app/node_modules ./node_modules
+# Wird zur Laufzeit von lib/appVersion.ts gelesen (App-Version fuer den Sicherungs-Hinweis bei
+# abweichender Version) - ohne diese Datei stuerzt der Server beim Start ab (ENOENT).
+COPY --from=build /app/package.json /app/package.json
 COPY --from=build /app/packages/shared/package.json /app/packages/shared/package.json
 COPY --from=build /app/packages/shared/dist /app/packages/shared/dist
 COPY --from=build /app/packages/shared/node_modules /app/packages/shared/node_modules
