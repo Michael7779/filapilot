@@ -22,7 +22,7 @@ export function ChangelogModal({ entries, onClose }: ChangelogModalProps): React
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();

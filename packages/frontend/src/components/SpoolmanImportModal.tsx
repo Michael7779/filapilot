@@ -79,7 +79,7 @@ export function SpoolmanImportModal({ inventoryId, inventoryName, onClose, onImp
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <div className="flex w-full max-w-[480px] flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-6">
         <h2 className="text-lg font-bold">{t("spoolman.title", { name: inventoryName })}</h2>
         <p className="text-sm text-[var(--color-text-secondary)]">{t("spoolman.intro")}</p>

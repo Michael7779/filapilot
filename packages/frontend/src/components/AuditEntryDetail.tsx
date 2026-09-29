@@ -44,7 +44,7 @@ export function AuditEntryDetailModal({ entry, onClose }: AuditEntryDetailModalP
   const rows = keys.filter((key) => entry.action !== "UPDATE" || JSON.stringify(before[key]) !== JSON.stringify(after[key]));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <div className="flex max-h-[90dvh] w-full max-w-[560px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6">
         <h2 className="text-lg font-bold">{t("audit.details")}</h2>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">

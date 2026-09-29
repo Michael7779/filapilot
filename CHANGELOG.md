@@ -8,6 +8,21 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.22.4] - 2026-09-29
+
+### Geändert
+- Der Restgewicht-Prozentwert wird jetzt in allen vier Ansichten (Standard, Kompakt, Liste, Farbkacheln) angezeigt, nicht nur in zweien.
+- Der Filter "Restgewicht in %" nutzt jetzt gleichmäßige 10-%-Schritte (10 bis 90) statt unregelmäßiger Stufen.
+- Bessere Lesbarkeit von grauem Hinweistext (z. B. Hersteller, Hex-Codes) durch dunkleren Kontrast.
+- Die Hersteller-/Material-Liste in den Einstellungen richtet "Bearbeiten/Löschen" jetzt rechtsbündig aus, statt direkt am Namen zu kleben.
+- Kurze Zahlenfelder in den System-Einstellungen sind nicht mehr unnötig breit gestreckt.
+- Das Drei-Punkte-Menü einer Spule hat jetzt eine etwas größere Klickfläche.
+- Dialoge auf dem Smartphone verdunkeln den Hintergrund (inkl. der unteren Navigationsleiste) jetzt deutlicher.
+
+### Behoben
+- Auf dem Smartphone wurden die Menüpunkte "Wunschliste" und "Einstellungen" unten abgeschnitten ("Wunschli…") statt vollständig angezeigt.
+- Die Überschrift "Filament-Bestand" quetschte sich auf dem Smartphone neben die Buttons und brach mitten im Wort um.
+
 ## [0.22.3] - 2026-09-29
 
 ### Hinzugefügt

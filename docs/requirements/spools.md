@@ -137,9 +137,8 @@
   um zu bestaetigen) wird bei einem eindeutigen Treffer still verknuepft statt neu angelegt (`summary.linked`,
   sichtbar im Protokoll der Spule). Mehrdeutige Treffer (mehr als eine passende ungeoeffnete Spule) werden nicht
   vorgeschlagen. Tests: `tests/security/bambuImport.test.ts`, `tests/security/spoolmanImport.test.ts`.
-- **R24**: Ab 0.22.3: Der Restgewicht-Prozentwert ("X % vom Ursprungsgewicht") wird in Standard- und Listenansicht
-  einheitlich neben dem Gramm-Wert angezeigt (Kompakt/Farbkacheln bleiben bewusst nur bei Gramm - der Balken zeigt
-  den Anteil dort bereits visuell). Zusaetzlich filtert `SpoolFilter.remainingMaxPercent` ("hoechstens X %") in
-  festen Stufen (10/15/20/25/30/50/75, Dropdown statt Freitext) - 15 % deckt sich mit `LOW_STOCK_THRESHOLD_RATIO`.
+- **R24**: Ab 0.22.3: Der Restgewicht-Prozentwert ("X % vom Ursprungsgewicht") wird in allen vier Ansichten
+  (Standard, Kompakt, Liste, Farbkacheln) einheitlich neben dem Gramm-Wert angezeigt. Zusaetzlich filtert
+  `SpoolFilter.remainingMaxPercent` ("hoechstens X %") in festen 10-%-Stufen von 10 bis 90 (Dropdown statt Freitext).
   Reine Client-Logik (`packages/shared/src/spoolFilter.ts`, `remainingPercent()`), keine neue Route.
   Test: `tests/unit/spoolFilter.test.ts`; die Anzeige wurde manuell im Browser geprueft.

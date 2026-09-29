@@ -73,7 +73,7 @@ export function SpoolHistoryModal({ spool, onClose }: SpoolHistoryModalProps): R
   }, [spool.id, t]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <div className="flex max-h-[85dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6 sm:max-w-[640px]">
         <h2 className="text-lg font-bold">{t("spools.history.title", { name: `${spool.materialName} ${spool.colorName}` })}</h2>
         {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}

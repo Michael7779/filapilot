@@ -124,7 +124,7 @@ export function SpoolActions({
         aria-label={t("spools.actions")}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="rounded-md p-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"
+        className="rounded-md p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
           <circle cx="12" cy="5" r="1.8" />

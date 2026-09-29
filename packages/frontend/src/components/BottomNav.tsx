@@ -20,11 +20,11 @@ export function BottomNav(): React.JSX.Element {
             key={item.key}
             to={item.href}
             aria-current={active ? "page" : undefined}
-            className="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium"
+            className="flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-medium"
             style={{ color: active ? "var(--accent)" : "var(--color-text-secondary)" }}
           >
             <NavIcon name={item.key} />
-            <span className="max-w-full truncate">{t(`nav.${item.key}`)}</span>
+            <span className="max-w-full text-center leading-[1.15]">{t(`nav.${item.key}`)}</span>
           </Link>
         );
       })}

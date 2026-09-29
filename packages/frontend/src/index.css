@@ -19,7 +19,8 @@
   --color-border: #ececE7;
   --color-text-primary: #17181a;
   --color-text-secondary: #6b6d70;
-  --color-text-muted: #9a9c9f;
+  /* WCAG-AA-Kontrast (>=4.5:1) auf weissem/--color-bg-Hintergrund; #9a9c9f davor lag bei ~2.75:1 */
+  --color-text-muted: #75777a;
   --color-accent: #2f6fed;
   --color-accent-bg: #eaf1fe;
   --color-danger: #b3261e;

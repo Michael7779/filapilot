@@ -30,8 +30,8 @@ function unique(values: readonly string[]): string[] {
   return [...new Set(values.filter((value) => value !== ""))];
 }
 
-// Stufen fuer den Restgewicht-%-Filter ("hoechstens X %"); 15 % deckt sich mit LOW_STOCK_THRESHOLD_RATIO.
-const REMAINING_PERCENT_STEPS = [10, 15, 20, 25, 30, 50, 75] as const;
+// Stufen fuer den Restgewicht-%-Filter ("hoechstens X %") in gleichmaessigen 10-%-Schritten.
+const REMAINING_PERCENT_STEPS = [10, 20, 30, 40, 50, 60, 70, 80, 90] as const;
 
 // Suche, Filter und Sortierung der Spulenliste (rein im Browser; die Liste ist bereits auf das Lager begrenzt).
 export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortChange }: SpoolFilterBarProps): React.JSX.Element {

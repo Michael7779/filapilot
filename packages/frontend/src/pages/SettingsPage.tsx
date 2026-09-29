@@ -186,7 +186,7 @@ function GeneralSettingsSection({
 
   return (
     <SectionCard title={t("settings.general")}>
-      <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-3">
+      <form onSubmit={(event) => void handleSubmit(event)} className="flex max-w-md flex-col gap-3">
         <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
           <input
             type="checkbox"
@@ -347,7 +347,7 @@ function SmtpSettingsSection({ settings }: { settings: Settings }): React.JSX.El
   return (
     <SectionCard title={t("settings.smtp")}>
       <p className="text-xs text-[var(--color-text-muted)]">{t("settings.smtpHint")}</p>
-      <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-3">
+      <form onSubmit={(event) => void handleSubmit(event)} className="flex max-w-md flex-col gap-3">
         <Field label={t("settings.smtpHost")}>
           <input type="text" value={host} onChange={(e) => setHost(e.target.value)} className={inputClass} />
         </Field>
@@ -498,7 +498,7 @@ function NewUserModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
         className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"

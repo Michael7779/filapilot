@@ -124,7 +124,9 @@ export function CompactView({ spools, isAll, ...handlers }: SpoolViewProps): Rea
           </div>
           <WeightBar spool={spool} />
           <div className="mt-1 flex items-center justify-between gap-1 text-xs text-[var(--color-text-secondary)]">
-            <span>{spool.remainingWeightG} g</span>
+            <span>
+              {spool.remainingWeightG} g ({Math.round(remainingPercent(spool))} %)
+            </span>
             <StatusBadge spool={spool} />
           </div>
         </div>
@@ -148,7 +150,9 @@ export function SwatchView({ spools, ...handlers }: SpoolViewProps): React.JSX.E
             <div className="truncate text-sm font-semibold">{spool.colorName}</div>
             <div className="truncate text-xs text-[var(--color-text-muted)]">{spool.materialName}</div>
             <div className="mt-1 flex items-center justify-between gap-1 text-xs text-[var(--color-text-secondary)]">
-              <span>{spool.remainingWeightG} g</span>
+              <span>
+                {spool.remainingWeightG} g ({Math.round(remainingPercent(spool))} %)
+              </span>
               <StatusBadge spool={spool} />
             </div>
           </div>

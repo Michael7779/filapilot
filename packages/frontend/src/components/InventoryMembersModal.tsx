@@ -71,7 +71,7 @@ export function InventoryMembersModal({ inventory, onClose, onChanged }: Invento
   const roleLabel = (role: InventoryRole): string => t(`inventory.role.${role}`);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <div className="flex max-h-[90dvh] w-full max-w-[460px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6">
         <h2 className="text-lg font-bold">{t("inventory.membersTitle", { name: inventory.name })}</h2>
         <ul className="flex flex-col">

@@ -41,7 +41,7 @@ export function InventoryDeleteModal({ inventory, onClose, onDeleted }: Inventor
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
         className="flex w-full max-w-[420px] flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-6"

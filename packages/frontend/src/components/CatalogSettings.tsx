@@ -60,7 +60,7 @@ function ModalForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <form
         onSubmit={handleSubmit}
         className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
@@ -341,7 +341,7 @@ export function CatalogSection(): React.JSX.Element {
           <tbody>
             {sortAlphabetically(manufacturers, (m) => m.name, i18n.language).map((m) => (
               <tr key={m.id} className="border-t border-[var(--color-border)] first:border-t-0">
-                <td className="py-2">{m.name}</td>
+                <td className="w-full py-2">{m.name}</td>
                 <td className="py-2">
                   <RowActions
                     onEdit={() => setManufacturerModal(m)}
@@ -392,7 +392,7 @@ export function CatalogSection(): React.JSX.Element {
               <tr key={m.id} className="border-t border-[var(--color-border)]">
                 <td className="py-2">{m.name}</td>
                 <td className="py-2 text-[var(--color-text-secondary)]">{nameOfManufacturer(m.manufacturerId)}</td>
-                <td className="py-2 text-[var(--color-text-secondary)]">
+                <td className="w-full py-2 text-[var(--color-text-secondary)]">
                   {m.printTempMinC}–{m.printTempMaxC} °C
                   {bedTempLabel(m.bedTempC, m.bedTempMaxC)}
                   {m.densityGCm3 !== null ? ` · ${m.densityGCm3} g/cm³` : ""}

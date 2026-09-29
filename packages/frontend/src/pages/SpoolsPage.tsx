@@ -332,7 +332,7 @@ export function SpoolsPage(): React.JSX.Element {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-bold">{t("spools.title")}</h2>
         {canEdit && (
           <div className="flex flex-wrap items-center gap-2">

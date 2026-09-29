@@ -69,7 +69,7 @@ export function InventoryAuditModal({ inventory, onClose }: InventoryAuditModalP
   const pageCount = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <div className="flex max-h-[85dvh] w-full max-w-[640px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6">
         <h2 className="text-lg font-bold">{t("inventory.audit.title", { name: inventory.name })}</h2>
         {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}

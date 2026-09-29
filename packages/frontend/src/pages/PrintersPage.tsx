@@ -97,7 +97,7 @@ function NewPrinterModal({
     "rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
       <form
         onSubmit={(event) => void handleSubmit(event)}
         className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
