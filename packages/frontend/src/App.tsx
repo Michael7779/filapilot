@@ -36,6 +36,7 @@ const TITLE_BY_PATH: Record<string, string> = {
   "/spools": "nav.spools",
   "/printers": "nav.printers",
   "/stats": "nav.stats",
+  "/wunschliste": "nav.wunschliste",
   "/settings": "nav.settings"
 };
 
@@ -97,7 +98,7 @@ function AppShell(): React.JSX.Element {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar />
-        <main className="flex-1 overflow-auto p-4 pb-24 md:p-7 md:pb-7">
+        <main className="min-w-0 flex-1 overflow-auto p-4 pb-24 md:p-7 md:pb-7">
           <AppContent />
         </main>
       </div>

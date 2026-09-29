@@ -8,6 +8,12 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.22.6] - 2026-09-29
+
+### Behoben
+- Die Titelzeile oben zeigte auf der Wunschlisten-Seite fälschlich "Dashboard" statt "Wunschliste".
+- Die Listenansicht der Spulen konnte bei schmaleren Fenstern (z. B. 1024 px) die ganze Seite statt nur die Tabelle selbst zum seitlichen Scrollen bringen.
+
 ## [0.22.5] - 2026-09-29
 
 ### Sicherheit
