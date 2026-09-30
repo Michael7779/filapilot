@@ -95,12 +95,14 @@
   `components/SpoolHistoryModal.tsx` zeigt Temperatur/Dauer/Notiz direkt in der Liste). Aktion "Trocknen
   protokollieren" bei jeder Spule (`components/SpoolActions.tsx`, `components/SpoolDryingModal.tsx`).
   Test: `tests/security/spoolDrying.test.ts`.
-- **R19**: Ab 0.21.1: Die Filter der Spulen-Seite sind hinter einem "Filter"-Knopf eingeklappt (`components/SpoolFilterBar.tsx`,
-  ein Punkt am Knopf zeigt aktive Filter auch eingeklappt an); die Suche bleibt immer sichtbar. Alle vier Ansichten
-  (Standard/Kompakt/Liste/Farbkacheln) zeigen die Aktionen einer Spule einheitlich ueber ein Drei-Punkte-Menue
-  (`components/SpoolActions.tsx`), das per React-Portal an `<body>` gerendert wird, damit es nie von einem
-  scrollenden Vorfahren (z.B. der seitlich scrollenden Tabelle der Listenansicht) abgeschnitten wird. Oberflaeche
-  manuell auf Mobil- und Desktop-Breite geprueft.
+- **R19**: Ab 0.21.1, umgekehrt in 0.22.6: Auf der Spulen-Seite sind die Filter dauerhaft sichtbar
+  (`components/SpoolFilterBar.tsx`); nur die manuelle Suche ist hinter einem "Suche"-Knopf eingeklappt (ein Punkt
+  am Knopf zeigt einen eingeklappt aktiven Suchtext an). Vor 0.22.6 war es umgekehrt (Filter eingeklappt, Suche
+  immer sichtbar) - auf Wunsch getauscht. Alle vier Ansichten (Standard/Kompakt/Liste/Farbkacheln) zeigen die
+  Aktionen einer Spule einheitlich ueber ein Drei-Punkte-Menue (`components/SpoolActions.tsx`), das per
+  React-Portal an `<body>` gerendert wird, damit es nie von einem scrollenden Vorfahren (z.B. der seitlich
+  scrollenden Tabelle der Listenansicht) abgeschnitten wird. Oberflaeche manuell auf Mobil- und Desktop-Breite
+  geprueft.
 - **R20**: Ab 0.21.2: Eine Spule hat ein optionales Leergewicht (`tareWeightG`, g). `POST /api/spools/:id/weigh`
   (EDITOR im Lager, Zod: 0-10000 g) zieht das Leergewicht vom eingegebenen Gesamtgewicht ab und setzt so das
   Restgewicht (auf 0 begrenzt, nie negativ); ohne hinterlegtes Leergewicht wird abgelehnt (400). Schreibt den
@@ -142,3 +144,9 @@
   `SpoolFilter.remainingMaxPercent` ("hoechstens X %") in festen 10-%-Stufen von 10 bis 90 (Dropdown statt Freitext).
   Reine Client-Logik (`packages/shared/src/spoolFilter.ts`, `remainingPercent()`), keine neue Route.
   Test: `tests/unit/spoolFilter.test.ts`; die Anzeige wurde manuell im Browser geprueft.
+- **R25**: Ab 0.22.7: Die Spulen-Seite akzeptiert einen Start-Filter ueber den React-Router-Navigationszustand
+  (`location.state.presetFilter`, z.B. von der "Braucht Aufmerksamkeit"-Liste des Dashboards, siehe
+  `dashboard.md`) - nur beim ersten Rendern gelesen, rein clientseitig, keine sicherheitsrelevante Aenderung
+  (der Filter wirkt nur auf die ohnehin schon geladene, rechtegeprueft geladene Liste). Ohne `state` wie zuvor
+  `EMPTY_SPOOL_FILTER`. Die Oberflaeche wurde manuell geprueft (Link von "Fast leer" auf dem Dashboard oeffnet
+  die Spulen-Seite mit bereits angehaktem "Nur fast leere").

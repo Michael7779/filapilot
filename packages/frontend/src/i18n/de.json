@@ -37,7 +37,16 @@
     "totalWeight": "Gesamtgewicht",
     "activePrints": "Aktive Drucke",
     "materialTypes": "Material-Arten",
-    "unopened": "Ungeöffnet"
+    "unopened": "Ungeöffnet",
+    "attention": {
+      "title": "Braucht Aufmerksamkeit",
+      "allGood": "Alles im grünen Bereich.",
+      "printFailed": "Druck auf \"{{name}}\" fehlgeschlagen",
+      "printerOffline": "Drucker \"{{name}}\" nicht verbunden",
+      "lowStock": "{{count}} Spule(n) fast leer"
+    },
+    "stockByType": "Restbestand nach Material-Typ",
+    "noStock": "Noch keine Spulen im Bestand."
   },
   "stats": {
     "totalSpools": "Spulen gesamt",
@@ -453,7 +462,7 @@
     "filter": {
       "search": "Spulen durchsuchen",
       "searchPlaceholder": "Suchen nach Hersteller, Material, Farbe, Lagerort …",
-      "toggle": "Filter",
+      "searchToggle": "Suche",
       "all": "Alle",
       "location": "Lagerort",
       "remaining": "Restgewicht",

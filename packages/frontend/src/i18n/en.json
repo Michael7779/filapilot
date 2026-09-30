@@ -37,7 +37,16 @@
     "totalWeight": "Total weight",
     "activePrints": "Active prints",
     "materialTypes": "Material types",
-    "unopened": "Unopened"
+    "unopened": "Unopened",
+    "attention": {
+      "title": "Needs attention",
+      "allGood": "Everything looks good.",
+      "printFailed": "Print on \"{{name}}\" failed",
+      "printerOffline": "Printer \"{{name}}\" not connected",
+      "lowStock": "{{count}} spool(s) almost empty"
+    },
+    "stockByType": "Remaining stock by material type",
+    "noStock": "No spools in stock yet."
   },
   "stats": {
     "totalSpools": "Total spools",
@@ -453,7 +462,7 @@
     "filter": {
       "search": "Search spools",
       "searchPlaceholder": "Search by manufacturer, material, color, location …",
-      "toggle": "Filter",
+      "searchToggle": "Search",
       "all": "All",
       "location": "Location",
       "remaining": "Remaining weight",

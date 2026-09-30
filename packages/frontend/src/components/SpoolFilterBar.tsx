@@ -39,8 +39,9 @@ export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortCha
   const locale = i18n.language;
   // Zaehler, der die (unkontrollierten) Zahlenfelder beim Zuruecksetzen leert
   const [resetCount, setResetCount] = useState(0);
-  // Die Filter (anders als die Suche) sind eingeklappt, um Platz zu sparen - offen bleiben sie, solange man auf der Seite ist.
-  const [expanded, setExpanded] = useState(false);
+  // Die Filter sind dauerhaft sichtbar; nur die manuelle Suche ist eingeklappt, um Platz zu sparen -
+  // offen bleibt sie, solange man auf der Seite ist.
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const set = (patch: Partial<SpoolFilter>): void => onFilterChange({ ...filter, ...patch });
 
   const options = useMemo(() => {
@@ -116,6 +117,37 @@ export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortCha
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-border)] bg-white p-4">
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setSearchExpanded((current) => !current)}
+          aria-expanded={searchExpanded}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)]"
+        >
+          <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+            <circle cx="8.5" cy="8.5" r="5.5" />
+            <path d="M17 17l-4-4" strokeLinecap="round" />
+          </svg>
+          {t("spools.filter.searchToggle")}
+          {filter.search !== "" && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: "var(--accent)" }} aria-hidden="true" />}
+          <svg viewBox="0 0 20 20" className={`h-3.5 w-3.5 shrink-0 transition-transform ${searchExpanded ? "rotate-180" : ""}`} fill="currentColor" aria-hidden="true">
+            <path d="M5.2 7.5a1 1 0 0 1 1.4-.1L10 10.4l3.4-3a1 1 0 1 1 1.3 1.5l-4 3.5a1 1 0 0 1-1.3 0l-4-3.5a1 1 0 0 1-.2-1.4Z" />
+          </svg>
+        </button>
+        {active && (
+          <button
+            type="button"
+            onClick={() => {
+              setResetCount((count) => count + 1);
+              onFilterChange(EMPTY_SPOOL_FILTER);
+            }}
+            className="text-sm font-medium"
+            style={{ color: "var(--accent)" }}
+          >
+            {t("spools.filter.reset")}
+          </button>
+        )}
+      </div>
+      {searchExpanded && (
         <input
           type="search"
           value={filter.search}
@@ -124,78 +156,48 @@ export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortCha
           aria-label={t("spools.filter.search")}
           className={`${inputClass} w-full`}
         />
-        <button
-          type="button"
-          onClick={() => setExpanded((current) => !current)}
-          aria-expanded={expanded}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)]"
-        >
-          <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-            <path d="M2 4.5h16a1 1 0 0 1 .8 1.6l-5.8 7.4v3.5a1 1 0 0 1-1.45.9l-3-1.5A1 1 0 0 1 8 15.5v-2l-5.8-7.4A1 1 0 0 1 3 4.5Z" />
-          </svg>
-          {t("spools.filter.toggle")}
-          {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: "var(--accent)" }} aria-hidden="true" />}
-          <svg viewBox="0 0 20 20" className={`h-3.5 w-3.5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} fill="currentColor" aria-hidden="true">
-            <path d="M5.2 7.5a1 1 0 0 1 1.4-.1L10 10.4l3.4-3a1 1 0 1 1 1.3 1.5l-4 3.5a1 1 0 0 1-1.3 0l-4-3.5a1 1 0 0 1-.2-1.4Z" />
-          </svg>
-        </button>
-      </div>
-      {expanded && (
-        <div className="flex flex-wrap items-end gap-3">
-          {select(t("spools.manufacturer"), filter.manufacturerId, (value) => set({ manufacturerId: value }), options.manufacturers)}
-          {select(t("spools.material"), filter.materialName, (value) => set({ materialName: value }), options.materials.map((name) => [name, name]))}
-          {select(t("spools.colorName"), filter.colorName, (value) => set({ colorName: value }), options.colors.map((name) => [name, name]))}
-          {select(t("spools.filter.location"), filter.location, (value) => set({ location: value }), options.locations.map((name) => [name, name]))}
-          {range(t("spools.filter.remaining"), "g", filter.remainingMinG, filter.remainingMaxG, (min, max) => set({ remainingMinG: min, remainingMaxG: max }), 1)}
-          <label className="flex flex-col gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
-            {t("spools.filter.remainingPercent")}
-            <select
-              value={filter.remainingMaxPercent === null ? "" : String(filter.remainingMaxPercent)}
-              onChange={(event) => set({ remainingMaxPercent: event.target.value === "" ? null : Number(event.target.value) })}
-              className={inputClass}
-            >
-              <option value="">{t("spools.filter.all")}</option>
-              {REMAINING_PERCENT_STEPS.map((step) => (
-                <option key={step} value={step}>
-                  {t("spools.filter.remainingPercentOption", { percent: step })}
-                </option>
-              ))}
-            </select>
-          </label>
-          {range(t("spools.filter.price"), "€", filter.priceMinCents, filter.priceMaxCents, (min, max) => set({ priceMinCents: min, priceMaxCents: max }), 100)}
-          <label className="flex flex-col gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
-            {t("spools.filter.sortBy")}
-            <select value={sort} onChange={(event) => onSortChange(SPOOL_SORT_KEYS.find((key) => key === event.target.value) ?? "name")} className={inputClass}>
-              {sortOptions.map((key) => (
-                <option key={key} value={key}>
-                  {t(`spools.sort.${key}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2 pb-2 text-sm text-[var(--color-text-secondary)]">
-            <input type="checkbox" checked={filter.lowStockOnly} onChange={(event) => set({ lowStockOnly: event.target.checked })} />
-            {t("spools.filter.lowStockOnly")}
-          </label>
-          <label className="flex items-center gap-2 pb-2 text-sm text-[var(--color-text-secondary)]">
-            <input type="checkbox" checked={filter.unopenedOnly} onChange={(event) => set({ unopenedOnly: event.target.checked })} />
-            {t("spools.filter.unopenedOnly")}
-          </label>
-          {active && (
-            <button
-              type="button"
-              onClick={() => {
-                setResetCount((count) => count + 1);
-                onFilterChange(EMPTY_SPOOL_FILTER);
-              }}
-              className="pb-2 text-sm font-medium"
-              style={{ color: "var(--accent)" }}
-            >
-              {t("spools.filter.reset")}
-            </button>
-          )}
-        </div>
       )}
+      <div className="flex flex-wrap items-end gap-3">
+        {select(t("spools.manufacturer"), filter.manufacturerId, (value) => set({ manufacturerId: value }), options.manufacturers)}
+        {select(t("spools.material"), filter.materialName, (value) => set({ materialName: value }), options.materials.map((name) => [name, name]))}
+        {select(t("spools.colorName"), filter.colorName, (value) => set({ colorName: value }), options.colors.map((name) => [name, name]))}
+        {select(t("spools.filter.location"), filter.location, (value) => set({ location: value }), options.locations.map((name) => [name, name]))}
+        {range(t("spools.filter.remaining"), "g", filter.remainingMinG, filter.remainingMaxG, (min, max) => set({ remainingMinG: min, remainingMaxG: max }), 1)}
+        <label className="flex flex-col gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
+          {t("spools.filter.remainingPercent")}
+          <select
+            value={filter.remainingMaxPercent === null ? "" : String(filter.remainingMaxPercent)}
+            onChange={(event) => set({ remainingMaxPercent: event.target.value === "" ? null : Number(event.target.value) })}
+            className={inputClass}
+          >
+            <option value="">{t("spools.filter.all")}</option>
+            {REMAINING_PERCENT_STEPS.map((step) => (
+              <option key={step} value={step}>
+                {t("spools.filter.remainingPercentOption", { percent: step })}
+              </option>
+            ))}
+          </select>
+        </label>
+        {range(t("spools.filter.price"), "€", filter.priceMinCents, filter.priceMaxCents, (min, max) => set({ priceMinCents: min, priceMaxCents: max }), 100)}
+        <label className="flex flex-col gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
+          {t("spools.filter.sortBy")}
+          <select value={sort} onChange={(event) => onSortChange(SPOOL_SORT_KEYS.find((key) => key === event.target.value) ?? "name")} className={inputClass}>
+            {sortOptions.map((key) => (
+              <option key={key} value={key}>
+                {t(`spools.sort.${key}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 pb-2 text-sm text-[var(--color-text-secondary)]">
+          <input type="checkbox" checked={filter.lowStockOnly} onChange={(event) => set({ lowStockOnly: event.target.checked })} />
+          {t("spools.filter.lowStockOnly")}
+        </label>
+        <label className="flex items-center gap-2 pb-2 text-sm text-[var(--color-text-secondary)]">
+          <input type="checkbox" checked={filter.unopenedOnly} onChange={(event) => set({ unopenedOnly: event.target.checked })} />
+          {t("spools.filter.unopenedOnly")}
+        </label>
+      </div>
     </div>
   );
 }

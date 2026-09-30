@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   EMPTY_SPOOL_FILTER,
@@ -45,7 +46,13 @@ import {
 
 export function SpoolsPage(): React.JSX.Element {
   const { t, i18n } = useTranslation();
-  const [filter, setFilterState] = useState<SpoolFilter>(EMPTY_SPOOL_FILTER);
+  // Ein Link von aussen (z.B. "Braucht Aufmerksamkeit" auf dem Dashboard) kann einen Startfilter mitgeben
+  // (location.state.presetFilter) - nur beim ersten Rendern gelesen, kein Zurueckschreiben in die History.
+  const location = useLocation();
+  const [filter, setFilterState] = useState<SpoolFilter>(() => {
+    const preset = (location.state as { presetFilter?: Partial<SpoolFilter> } | null)?.presetFilter;
+    return preset ? { ...EMPTY_SPOOL_FILTER, ...preset } : EMPTY_SPOOL_FILTER;
+  });
   const setFilter = (next: SpoolFilter): void => {
     setFilterState(next);
     setPage(1);

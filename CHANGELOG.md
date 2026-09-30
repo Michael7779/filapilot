@@ -8,6 +8,15 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.22.7] - 2026-09-30
+
+### Hinzugefuegt
+- Dashboard: neuer Bereich "Braucht Aufmerksamkeit" zeigt fehlgeschlagene Drucke, nicht verbundene Drucker und fast leere Spulen auf einen Blick, jeweils anklickbar zur passenden Seite.
+- Dashboard: Verbrauchs-Diagramm (wie auf der Statistik-Seite) und neue Übersicht "Restbestand nach Material-Typ".
+
+### Geändert
+- Spulen-Suche und -Filter vertauscht: Die Filter sind jetzt dauerhaft sichtbar, die manuelle Suche lässt sich stattdessen auf- und zuklappen.
+
 ## [0.22.6] - 2026-09-29
 
 ### Behoben
