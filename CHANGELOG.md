@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.23.2] - 2026-10-01
+
+### Behoben
+- Spulen-Formular: Nach Wahl eines Herstellers mit eigenen Markennamen (z. B. Bambu Lab "PLA Basic") tauchten im Material-Dropdown zusätzlich fremde generische Einträge auf (z. B. ein allgemeines "PLA", das dieser Hersteller so gar nicht führt). Es werden jetzt nur noch die eigenen Produkte des Herstellers gezeigt; die allgemeine Liste erscheint nur noch, wenn der Hersteller gar kein eigenes Material hat.
+
 ## [0.23.1] - 2026-10-01
 
 ### Behoben

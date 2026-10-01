@@ -15,9 +15,17 @@
   Richtwerte aus allgemeinem Wissen, nicht einzeln am Datenblatt geprueft.
 - Lesen + Anlegen: `SCOPE: user`. Aendern + Loeschen: `SCOPE: global` (nur Admin), Pflege im
   Frontend unter Einstellungen -> Hersteller/Materialien (`CatalogSettings.tsx`).
-- Spulen-Formular: erst Hersteller waehlen, dann Material (Produkte des Herstellers + allgemeine,
-  gleichnamige allgemeine werden ausgeblendet); Temperaturen werden unter der Auswahl und auf der
-  Spulenkarte angezeigt. Der Server lehnt ein herstellerfremdes Material an einer Spule ab.
+- Spulen-Formular: erst Hersteller waehlen, dann Material. Ab 0.23.2 (`availableMaterialsFor()`,
+  `packages/shared/src/availableMaterials.ts`): zeigt NUR die eigenen Produkte des Herstellers, wenn er
+  welche hat (z.B. nur Bambu Labs eigene Linien, kein fremdes generisches "PLA" darunter); allgemeine
+  Materialien (kein Hersteller) erscheinen nur als Fallback fuer einen Hersteller ganz ohne eigenes
+  Material (frisch angelegt/unbekannt) oder solange noch keiner gewaehlt ist. Temperaturen werden unter
+  der Auswahl und auf der Spulenkarte angezeigt. Der Server lehnt ein herstellerfremdes Material an einer
+  Spule ab.
+  Befund (behoben 0.23.2): bis 0.23.1 wurden zusaetzlich alle allgemeinen Materialien angezeigt, deren
+  Name nicht EXAKT mit einem eigenen Produkt des Herstellers kollidierte - bei Herstellern mit eigenen
+  Markennamen (z.B. Bambu Lab "PLA Basic" statt "PLA") blieben so fremde generische Eintraege wie "PLA"
+  sichtbar, obwohl der Hersteller sie gar nicht unter diesem Namen fuehrt.
 
 - Statistik nach Material-Typ: `materialTypeOf()` (`packages/shared/src/materialType.ts`) ordnet Produktnamen
   ("PolyLite PLA", "PLA Silk", "PLA+") ihrem Grundmaterial ("PLA") zu; PETG, PETG-CF, PLA-CF, PA-CF getrennt.
@@ -64,3 +72,6 @@
   Hersteller+Material-Kombination deren eigene Farbnamen, sonst die generische Liste; unterschiedliche
   Material-Linien desselben Herstellers liefern unterschiedliche Listen (keine kombinierte Gesamtliste).
   Test: `tests/unit/manufacturerColorCatalog.test.ts`
+- **R11**: Ab 0.23.2 liefert `availableMaterialsFor(materials, manufacturerId)` nur die eigenen Produkte
+  eines Herstellers, sofern er welche hat; generische (herstellerlose) Materialien nur als Fallback ohne
+  gewaehlten Hersteller oder fuer einen Hersteller ganz ohne eigenes Produkt. Test: `tests/unit/availableMaterials.test.ts`

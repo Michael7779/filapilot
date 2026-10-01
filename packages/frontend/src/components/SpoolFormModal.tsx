@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
+import { availableMaterialsFor } from "@filapilot/shared";
 import { formatBedTemp } from "../lib/formatTemps.js";
 import type { PhotoChange } from "../lib/spoolPhoto.js";
 import { SpoolPhotoField } from "./SpoolPhotoField.js";
@@ -102,26 +103,14 @@ export function SpoolFormModal({
 
   // Materialien gelten fuer einen Hersteller oder allgemein (manufacturerId === null).
   const chosenManufacturerId = showNewManufacturer ? "" : form.manufacturerId;
-  const ownMaterials = materials.filter(
-    (material) => chosenManufacturerId !== "" && material.manufacturerId === chosenManufacturerId
-  );
-  const ownNames = new Set(ownMaterials.map((material) => material.name.toLowerCase()));
-  // Ein allgemeines Material entfaellt, wenn der Hersteller ein gleichnamiges eigenes Produkt hat.
-  const availableMaterials = [
-    ...ownMaterials,
-    ...materials.filter(
-      (material) => material.manufacturerId === null && !ownNames.has(material.name.toLowerCase())
-    )
-  ];
+  const availableMaterials = availableMaterialsFor(materials, chosenManufacturerId || null);
   const selectedMaterial = materials.find((material) => material.id === form.materialId);
   const selectedManufacturer = manufacturers.find((manufacturer) => manufacturer.id === form.manufacturerId);
   const selectedBedTemp = selectedMaterial ? formatBedTemp(selectedMaterial.bedTempC, selectedMaterial.bedTempMaxC, t) : null;
 
   function handleManufacturerChange(manufacturerId: string): void {
-    const stillFits = materials.some(
-      (material) =>
-        material.id === form.materialId &&
-        (material.manufacturerId === null || material.manufacturerId === manufacturerId)
+    const stillFits = availableMaterialsFor(materials, manufacturerId || null).some(
+      (material) => material.id === form.materialId
     );
     setForm({ ...form, manufacturerId, materialId: stillFits ? form.materialId : "" });
   }
