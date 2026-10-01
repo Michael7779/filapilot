@@ -4,6 +4,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { CatalogSection } from "../components/CatalogSettings.js";
 import { CustomFieldSettings } from "../components/CustomFieldSettings.js";
+import { DefaultManufacturerSetting } from "../components/DefaultManufacturerSetting.js";
 import { EditUserModal } from "../components/EditUserModal.js";
 import { BackupManager } from "../components/BackupManager.js";
 import { AuditLogView } from "../components/AuditLogView.js";
@@ -817,6 +818,7 @@ export function SettingsPage(): React.JSX.Element {
       {active.key === "benutzer" && <UserManagementSection />}
       {active.key === "filamente" && (
         <div className="flex flex-col gap-4">
+          {settings && <DefaultManufacturerSetting settings={settings} onSaved={setSettings} />}
           <CatalogSection />
           <CustomFieldSettings />
         </div>

@@ -18,6 +18,11 @@
 - Frontend: `packages/frontend/src/pages/SettingsPage.tsx` - eigene Sektionen fuer Allgemein,
   SMTP (Passwort muss bei jeder Aenderung neu eingegeben werden, da `GET /api/settings` es nie
   zurueckgibt), Backup-Trigger und Nutzerverwaltung (Liste + Anlegen ueber Modal).
+- Ab 0.23.0: `Settings.defaultManufacturerId` (nullable, `onDelete: SetNull`) legt fest, welcher
+  Hersteller im "Neue Spule"-Formular vorbelegt ist. Pflege unter Einstellungen -> Filamente
+  (`components/DefaultManufacturerSetting.tsx`). Jeder eingeloggte Nutzer (nicht nur Admin) braucht
+  diesen einen Wert fuers Formular; ausgeliefert ueber den bestehenden `GET /api/spools/photo-settings`
+  -Ausschnitt (`{ enabled, defaultManufacturerId }`), nicht ueber die Admin-only `GET /api/settings`.
 - MQTT-Einrichtungsanleitung fuer Bambu-Drucker ist als ausklappbarer Guide auf der Drucker-Seite
   umgesetzt (`packages/frontend/src/pages/PrintersPage.tsx`, siehe `printers.md`), nicht in den
   Einstellungen.
@@ -91,6 +96,10 @@
 - **R9**: Der Sicherungs-Upload ist nur fuer Admins (401/403), lehnt Nicht-tar-Dateien, fremde Dateien, Pfade
   (`../`), Verknuepfungen und Archive ohne Datenbank-Dump ab (400, es wird nichts entpackt), nimmt eine gueltige
   Sicherung an (201) und lehnt dieselbe ein zweites Mal ab (409). Test: `tests/security/backupUpload.test.ts`
+- **R12**: Ab 0.23.0: `defaultManufacturerId` wird per Zod als UUID oder `null` geprueft und zusaetzlich gegen
+  die DB aufgeloest (unbekannte ID -> 400 statt stillem Erfolg); Aendern nur durch Admin (403 als Nutzer);
+  Loeschen des hinterlegten Herstellers raeumt das Feld automatisch auf (SetNull), ohne das Loeschen zu blockieren.
+  Test: `tests/security/settings.test.ts`, `tests/security/manufacturers.test.ts`
 - **R11**: Ab 0.22.0: Jede neu erstellte Sicherung schreibt zusaetzlich `filapilot-version-<Zeitstempel>.txt`
   (App-Version aus der Root-`package.json`); `BackupInfo.appVersion` gibt das an die Oberflaeche weiter (`null`
   bei Sicherungen ohne diese Datei, z.B. aus einer Version vor 0.22.0 - keine falsche Warnung). Die Oberflaeche

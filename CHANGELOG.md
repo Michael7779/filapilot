@@ -8,6 +8,17 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.23.1] - 2026-10-01
+
+### Behoben
+- Bambu-Cloud-Import/-Abgleich: Eine schon im Bestand vorhandene, ungeöffnete Spule wurde nicht erkannt und stattdessen doppelt angelegt, wenn ihr von Hand eingetragener Farbwert nur minimal vom tatsächlich gemeldeten Wert abwich (z. B. "Weiß" als `#FFFFFF` statt des von der Cloud gemeldeten `#F5F5F0`). Die automatische Zuordnung erkennt jetzt auch sehr ähnliche Farben als gleich.
+
+## [0.23.0] - 2026-09-30
+
+### Hinzugefuegt
+- Die Farb-Auswahlknöpfe im Spulen-Formular zeigen jetzt die echten Farbnamen des jeweiligen Herstellers und Materials (z. B. Bambu Lab PLA Basic "Jade-Weiß" statt nur "Weiß") statt einer allgemeinen Liste.
+- Einstellungen → Filamente: neuer "Standard-Hersteller", der beim Anlegen einer neuen Spule vorausgewählt ist (im Formular jederzeit änderbar).
+
 ## [0.22.7] - 2026-09-30
 
 ### Hinzugefuegt

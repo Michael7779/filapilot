@@ -40,7 +40,9 @@ export const settingsSchema = z.object({
   sessionExpiryDays: sessionExpiryDaysSchema,
   // Reserviert fuer spaeter: Freischaltung per Lizenzschluessel. Aktuell ungenutzt,
   // keine Pruef-/Gating-Logik ohne expliziten Auftrag bauen.
-  licenseKey: z.string().nullable()
+  licenseKey: z.string().nullable(),
+  // Vorbelegter Hersteller im "Neue Spule"-Formular; null = kein Standard.
+  defaultManufacturerId: z.string().uuid().nullable()
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -54,7 +56,8 @@ export const updateSettingsInputSchema = z
     backupRetentionCount: z.number().int().min(1).max(365),
     auditRetentionMonths: z.number().int().min(0).max(120),
     bambuAutoSyncMinutes: bambuAutoSyncMinutesSchema,
-    sessionExpiryDays: sessionExpiryDaysSchema
+    sessionExpiryDays: sessionExpiryDaysSchema,
+    defaultManufacturerId: z.string().uuid().nullable()
   })
   .partial();
 export type UpdateSettingsInput = z.infer<typeof updateSettingsInputSchema>;

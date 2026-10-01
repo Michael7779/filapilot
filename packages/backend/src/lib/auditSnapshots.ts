@@ -78,6 +78,7 @@ export function settingsSnapshot(settings: Settings): Snapshot {
     bambuAutoSyncMinutes: settings.bambuAutoSyncMinutes,
     sessionExpiryDays: settings.sessionExpiryDays,
     backupFolderPath: settings.backupFolderPath,
+    defaultManufacturerId: settings.defaultManufacturerId,
     smtpHost: settings.smtp?.host ?? null,
     smtpPort: settings.smtp?.port ?? null,
     smtpSecure: settings.smtp?.secure ?? null,

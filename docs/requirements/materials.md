@@ -24,8 +24,20 @@
   Es ist eine Namens-Heuristik, kein gepflegtes Feld: Unbekanntes bleibt unter seinem eigenen Namen stehen.
   Die Statistik-Seite zeigt zusaetzlich zur Auswertung nach Material-Name eine nach Typ.
 
+- Ab 0.23.0: Die Farb-Vorauswahl im Spulen-Formular (`SpoolColorFields.tsx`) richtet sich nach der
+  gewaehlten Hersteller+Material-Kombination (`getColorPresets()`, `packages/shared/src/manufacturerColorCatalog.ts`) -
+  z.B. zeigt Bambu Lab PLA Basic "Jade-Weiß" statt eines generischen "Weiß". Manuell im Code gepflegte
+  Momentaufnahme (Stand 2026-09, aktuell nur Bambu Lab), kein automatischer Abgleich mit Hersteller-Shops
+  (siehe OP-M3). Ohne passende Kombination (oder bevor Hersteller/Material gewaehlt sind) gilt die bisherige
+  generische Liste als Fallback - nie eine kombinierte Liste ueber mehrere Materialien hinweg.
+
 ## 1.1 Offene Punkte
 - OP-M2 ✅ (0.21.2): Betttemperatur kann jetzt ein Bereich sein, siehe R9.
+- OP-M3: Farb-Vorauswahl nur fuer Bambu Lab gepflegt (PLA Basic/Matte/Silk, PETG HF, ABS, ASA); andere
+  Hersteller nutzen die generische Liste. Automatischer Abgleich mit Hersteller-Shops wurde bewusst
+  verworfen (keine offizielle API, Daten tief im JS-DOM, Bruchgefahr bei Shop-Aenderungen, moegliche
+  AGB-Konflikte) - Erweiterung auf weitere Hersteller bleibt manuelle Pflege in
+  `manufacturerColorCatalog.ts`, wenn der User das moechte.
 
 ## 1.2 Anforderungen
 - **R1**: Nur eingeloggte Nutzer koennen Materialien lesen. Test: `tests/security/materials.test.ts`
@@ -48,3 +60,7 @@
 - **R9**: Ab 0.21.2 hat ein Material zusaetzlich zu `bedTempC` ein optionales `bedTempMaxC` (0-150 °C) fuer einen
   Bett-Temperatur-Bereich (z.B. "60-80 °C"); weglassen (`null`) bedeutet weiterhin ein Einzelwert wie zuvor.
   Test: `tests/security/materials.test.ts`
+- **R10**: Ab 0.23.0 liefert `getColorPresets(manufacturerName, materialName)` fuer eine bekannte
+  Hersteller+Material-Kombination deren eigene Farbnamen, sonst die generische Liste; unterschiedliche
+  Material-Linien desselben Herstellers liefern unterschiedliche Listen (keine kombinierte Gesamtliste).
+  Test: `tests/unit/manufacturerColorCatalog.test.ts`

@@ -160,6 +160,41 @@ describe("Settings - Negativ-Tests", () => {
     assert.equal(denied.status, 403);
   });
 
+  it("validiert den Standard-Hersteller (existierende ID, null zum Zuruecksetzen, 400 bei unbekannter ID) und lehnt USER ab", async () => {
+    const manufacturer = await prisma.manufacturer.create({ data: { name: "Settings-Test-Hersteller" } });
+
+    const unknown = await request(app)
+      .patch("/api/settings")
+      .set("Cookie", adminCookie)
+      .send({ defaultManufacturerId: "00000000-0000-4000-8000-000000000000" });
+    assert.equal(unknown.status, 400);
+
+    const ok = await request(app)
+      .patch("/api/settings")
+      .set("Cookie", adminCookie)
+      .send({ defaultManufacturerId: manufacturer.id });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.data.defaultManufacturerId, manufacturer.id);
+
+    const cleared = await request(app)
+      .patch("/api/settings")
+      .set("Cookie", adminCookie)
+      .send({ defaultManufacturerId: null });
+    assert.equal(cleared.status, 200);
+    assert.equal(cleared.body.data.defaultManufacturerId, null);
+
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "normaluser", password: "correct-horse-battery-staple" });
+    const denied = await request(app)
+      .patch("/api/settings")
+      .set("Cookie", login.headers["set-cookie"])
+      .send({ defaultManufacturerId: manufacturer.id });
+    assert.equal(denied.status, 403);
+
+    await prisma.manufacturer.delete({ where: { id: manufacturer.id } });
+  });
+
   it("lehnt den SMTP-Test ohne Login (401) und durch nicht-Admin (403) ab", async () => {
     assert.equal((await request(app).post("/api/settings/smtp-test")).status, 401);
     const login = await request(app)

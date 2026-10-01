@@ -109,6 +109,19 @@ describe("Manufacturers - Negativ-Tests", () => {
     assert.equal(await prisma.material.count({ where: { manufacturerId: m.id } }), 0);
   });
 
+  it("loescht einen als Standard hinterlegten Hersteller trotzdem und raeumt die Einstellung auf (SetNull)", async () => {
+    const m = await prisma.manufacturer.create({ data: { name: "Standard-Hersteller Test" } });
+    await prisma.settings.upsert({
+      where: { id: 1 },
+      update: { defaultManufacturerId: m.id },
+      create: { id: 1, defaultManufacturerId: m.id }
+    });
+    const res = await request(app).delete(`/api/manufacturers/${m.id}`).set("Cookie", adminCookie);
+    assert.equal(res.status, 200);
+    const settings = await prisma.settings.findUnique({ where: { id: 1 } });
+    assert.equal(settings?.defaultManufacturerId, null);
+  });
+
   it("lehnt Loeschen eines Herstellers ab, den noch Spulen nutzen (409)", async () => {
     const m = await prisma.manufacturer.create({ data: { name: "Benutzt Test" } });
     const material = await prisma.material.create({ data: { name: "Allg Test", printTempMinC: 1, printTempMaxC: 2 } });

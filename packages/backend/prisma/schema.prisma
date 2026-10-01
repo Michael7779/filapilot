@@ -256,6 +256,7 @@ model Manufacturer {
   spools    Spool[]
   materials Material[]
   wishlistItems WishlistItem[]
+  defaultForSettings Settings[]
   createdAt DateTime   @default(now())
 
   @@map("manufacturers")
@@ -422,6 +423,10 @@ model Settings {
   // Einmaliger Nachtrag beim Update auf 0.22.0 (openedAt): true = schon erledigt, nie erneut ausfuehren - sonst
   // wuerden auch echte neue ungeoeffnete Spulen faelschlich als "schon immer geoeffnet" markiert. Siehe openedAtBackfill.ts.
   openedAtBackfilled                 Boolean  @default(false)
+  // Vorbelegter Hersteller im "Neue Spule"-Formular; null = kein Standard. Loeschen des Herstellers raeumt
+  // dieses Feld nur auf (SetNull), verhindert nicht das Loeschen.
+  defaultManufacturerId               String?
+  defaultManufacturer                 Manufacturer? @relation(fields: [defaultManufacturerId], references: [id], onDelete: SetNull)
   updatedAt                          DateTime @updatedAt
 
   @@map("settings")

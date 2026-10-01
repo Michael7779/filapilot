@@ -1,16 +1,5 @@
 import { useTranslation } from "react-i18next";
-
-const COLOR_PRESETS: { name: string; hex: string }[] = [
-  { name: "Schwarz", hex: "#1A1A1A" },
-  { name: "Weiß", hex: "#F5F5F0" },
-  { name: "Grau", hex: "#8C8C88" },
-  { name: "Rot", hex: "#D14343" },
-  { name: "Orange", hex: "#E8622C" },
-  { name: "Gelb", hex: "#F2C94C" },
-  { name: "Grün", hex: "#4C8C3C" },
-  { name: "Blau", hex: "#2F6FED" },
-  { name: "Violett", hex: "#7F56D9" }
-];
+import { getColorPresets } from "@filapilot/shared";
 
 const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
@@ -23,18 +12,28 @@ export interface SpoolColorValue {
 interface SpoolColorFieldsProps {
   value: SpoolColorValue;
   onChange: (value: SpoolColorValue) => void;
+  // Fuer die Voreinstellungs-Knoepfe: Herstellername/Materialname der aktuellen Auswahl im Spulen-Formular
+  // (nicht die ID - der Katalog ist ueber Namen indiziert). Ohne beide faellt die Liste auf generische Farben zurueck.
+  manufacturerName: string | null;
+  materialName: string | null;
 }
 
 // Farbname, Hauptfarbe (Voreinstellungen + freie Wahl) und optional eine zweite Farbe fuer zweifarbiges Filament.
-export function SpoolColorFields({ value, onChange }: SpoolColorFieldsProps): React.JSX.Element {
+export function SpoolColorFields({
+  value,
+  onChange,
+  manufacturerName,
+  materialName
+}: SpoolColorFieldsProps): React.JSX.Element {
   const { t } = useTranslation();
   const hasSecondColor = value.colorHex2 !== "";
+  const colorPresets = getColorPresets(manufacturerName, materialName);
 
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium text-[var(--color-text-secondary)]">{t("spools.colorName")}</span>
       <div className="flex flex-wrap gap-2">
-        {COLOR_PRESETS.map((preset) => {
+        {colorPresets.map((preset) => {
           const isActive = value.colorHex.toLowerCase() === preset.hex.toLowerCase();
           return (
             <button

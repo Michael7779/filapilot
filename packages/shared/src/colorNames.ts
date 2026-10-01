@@ -35,6 +35,14 @@ function channels(hex: string): [number, number, number] {
   return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 }
 
+// Quadrierter euklidischer Abstand zweier "#RRGGBB"-Farben im RGB-Raum (kein sqrt noetig, nur zum Vergleichen
+// gegen einen Schwellwert). Erwartet bereits normalisierte Hex-Werte (siehe normalizeHexColor).
+export function colorDistanceSquared(hexA: string, hexB: string): number {
+  const [ar, ag, ab] = channels(hexA);
+  const [br, bg, bb] = channels(hexB);
+  return (ar - br) ** 2 + (ag - bg) ** 2 + (ab - bb) ** 2;
+}
+
 export function nearestColorName(hex: string | null): string {
   if (!hex) {
     return "Unbekannt";

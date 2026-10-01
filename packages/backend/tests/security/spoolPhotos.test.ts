@@ -128,18 +128,24 @@ describe("Spulen-Fotos - Negativ-Tests", () => {
 describe("Spulen-Fotos - Einstellung fuer die Oberflaeche", () => {
   const app = createApp();
 
-  it("lehnt die Abfrage ohne Login ab (401) und meldet mit Login den Schalter", async () => {
+  it("lehnt die Abfrage ohne Login ab (401) und meldet mit Login Schalter und Standard-Hersteller", async () => {
     assert.equal((await request(app).get("/api/spools/photo-settings")).status, 401);
     await prisma.user.deleteMany();
     await prisma.user.create({
       data: { username: "photoset", email: "photoset@example.test", passwordHash: await hashPassword("correct-horse-battery-staple"), role: "USER", mustChangePassword: false }
     });
-    await prisma.settings.upsert({ where: { id: 1 }, update: { photoUploadEnabled: false }, create: { id: 1, photoUploadEnabled: false } });
+    const manufacturer = await prisma.manufacturer.create({ data: { name: "Photoset-Hersteller" } });
+    await prisma.settings.upsert({
+      where: { id: 1 },
+      update: { photoUploadEnabled: false, defaultManufacturerId: manufacturer.id },
+      create: { id: 1, photoUploadEnabled: false, defaultManufacturerId: manufacturer.id }
+    });
     const login = await request(app).post("/api/auth/login").send({ username: "photoset", password: "correct-horse-battery-staple" });
     const res = await request(app).get("/api/spools/photo-settings").set("Cookie", login.headers["set-cookie"]);
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body.data, { enabled: false });
-    await prisma.settings.update({ where: { id: 1 }, data: { photoUploadEnabled: true } });
+    assert.deepEqual(res.body.data, { enabled: false, defaultManufacturerId: manufacturer.id });
+    await prisma.settings.update({ where: { id: 1 }, data: { photoUploadEnabled: true, defaultManufacturerId: null } });
+    await prisma.manufacturer.delete({ where: { id: manufacturer.id } });
     await prisma.user.deleteMany();
     await prisma.$disconnect();
   });

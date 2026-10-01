@@ -35,13 +35,16 @@ interface SpoolFormModalProps {
   // Lager, in denen der Benutzer Spulen anlegen/aendern darf, und das vorbelegte Lager
   inventories: Inventory[];
   defaultInventoryId: string;
+  // Vom Admin in den Einstellungen hinterlegter Standard-Hersteller; nur bei einer neuen Spule vorbelegt,
+  // eine bestehende Spule behaelt immer ihren eigenen Hersteller.
+  defaultManufacturerId: string | null;
   onSubmit: (input: CreateSpoolInput, photo: PhotoChange) => Promise<void>;
 }
 
-function toFormState(spool: SpoolWithRelations | null) {
+function toFormState(spool: SpoolWithRelations | null, defaultManufacturerId: string | null) {
   return {
     materialId: spool?.materialId ?? "",
-    manufacturerId: spool?.manufacturerId ?? "",
+    manufacturerId: spool?.manufacturerId ?? defaultManufacturerId ?? "",
     colorName: spool?.colorName ?? "",
     colorHex: spool?.colorHex ?? "",
     colorHex2: spool?.colorHex2 ?? "",
@@ -65,10 +68,11 @@ export function SpoolFormModal({
   photoUploadEnabled,
   inventories,
   defaultInventoryId,
+  defaultManufacturerId,
   onSubmit
 }: SpoolFormModalProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
-  const [form, setForm] = useState(toFormState(initialSpool));
+  const [form, setForm] = useState(toFormState(initialSpool, defaultManufacturerId));
   const [customFields, setCustomFields] = useState<CustomFieldValues>(initialSpool?.customFields ?? {});
   const [showNewMaterial, setShowNewMaterial] = useState(false);
   const [newMaterial, setNewMaterial] = useState({
@@ -110,6 +114,7 @@ export function SpoolFormModal({
     )
   ];
   const selectedMaterial = materials.find((material) => material.id === form.materialId);
+  const selectedManufacturer = manufacturers.find((manufacturer) => manufacturer.id === form.manufacturerId);
   const selectedBedTemp = selectedMaterial ? formatBedTemp(selectedMaterial.bedTempC, selectedMaterial.bedTempMaxC, t) : null;
 
   function handleManufacturerChange(manufacturerId: string): void {
@@ -338,6 +343,8 @@ export function SpoolFormModal({
         <SpoolColorFields
           value={{ colorName: form.colorName, colorHex: form.colorHex, colorHex2: form.colorHex2 }}
           onChange={(value) => setForm({ ...form, ...value })}
+          manufacturerName={showNewManufacturer ? null : (selectedManufacturer?.name ?? null)}
+          materialName={showNewMaterial ? null : (selectedMaterial?.name ?? null)}
         />
 
         <div className="flex min-w-0 gap-2">

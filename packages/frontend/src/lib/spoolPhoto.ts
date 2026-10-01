@@ -41,9 +41,18 @@ export async function removeSpoolPhoto(spoolId: string): Promise<void> {
   await apiRequest(`/spools/${spoolId}/photo`, { method: "DELETE" });
 }
 
-export async function fetchPhotoUploadEnabled(): Promise<boolean> {
-  const result = await apiRequest<{ enabled: boolean }>("/spools/photo-settings");
-  return result.enabled;
+export interface SpoolFormDefaults {
+  photoUploadEnabled: boolean;
+  defaultManufacturerId: string | null;
+}
+
+// Ausschnitt der Admin-Einstellungen, den jeder eingeloggte Nutzer fuers "Neue Spule"-Formular braucht
+// (Foto-Upload an/aus, vorbelegter Hersteller) - die Einstellungen selbst sind Admin-only.
+export async function fetchSpoolFormDefaults(): Promise<SpoolFormDefaults> {
+  const result = await apiRequest<{ enabled: boolean; defaultManufacturerId: string | null }>(
+    "/spools/photo-settings"
+  );
+  return { photoUploadEnabled: result.enabled, defaultManufacturerId: result.defaultManufacturerId };
 }
 
 export type PhotoChange =

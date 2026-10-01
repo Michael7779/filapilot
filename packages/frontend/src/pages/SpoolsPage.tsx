@@ -38,7 +38,7 @@ import type { BambuConnectionInfo, BambuSyncSummary } from "@filapilot/shared";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 import {
-  fetchPhotoUploadEnabled,
+  fetchSpoolFormDefaults,
   removeSpoolPhoto,
   uploadSpoolPhoto,
   type PhotoChange
@@ -86,6 +86,7 @@ export function SpoolsPage(): React.JSX.Element {
   const inventories = useInventoryStore((state) => state.inventories);
   const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
+  const [defaultManufacturerId, setDefaultManufacturerId] = useState<string | null>(null);
 
   // silent: im Hintergrund nachladen, ohne die Seite (und einen offenen Dialog) durch die Ladeanzeige zu ersetzen
   const load = useCallback(async (silent = false) => {
@@ -97,14 +98,15 @@ export function SpoolsPage(): React.JSX.Element {
     }
     setLoadError(null);
     try {
-      const [spoolsData, materialsData, manufacturersData, customFieldsData, photosEnabled] = await Promise.all([
+      const [spoolsData, materialsData, manufacturersData, customFieldsData, formDefaults] = await Promise.all([
         apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}&archived=${showArchived ? "include" : "exclude"}`),
         apiRequest<Material[]>("/materials"),
         apiRequest<Manufacturer[]>("/manufacturers"),
         apiRequest<CustomFieldDefinition[]>("/custom-field-definitions"),
-        fetchPhotoUploadEnabled()
+        fetchSpoolFormDefaults()
       ]);
-      setPhotoUploadEnabled(photosEnabled);
+      setPhotoUploadEnabled(formDefaults.photoUploadEnabled);
+      setDefaultManufacturerId(formDefaults.defaultManufacturerId);
       setSpools(spoolsData);
       setMaterials(materialsData);
       setManufacturers(manufacturersData);
@@ -478,6 +480,7 @@ export function SpoolsPage(): React.JSX.Element {
           photoUploadEnabled={photoUploadEnabled}
           inventories={editableInventories}
           defaultInventoryId={selectedId ?? ""}
+          defaultManufacturerId={defaultManufacturerId}
           onSubmit={handleSubmitSpool}
         />
       )}

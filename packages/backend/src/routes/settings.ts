@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { updateSettingsInputSchema } from "@filapilot/shared";
-import { sendData } from "../lib/apiResult.js";
+import { prisma } from "../prisma.js";
+import { sendData, AppError } from "../lib/apiResult.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../middleware/auth.js";
 import { getSettings, updateSettings } from "../services/settingsService.js";
@@ -14,6 +15,16 @@ export const settingsRouter = Router();
 
 const requireAdmin = [requireAuth, requirePasswordAlreadyChanged, requireRole("ADMIN")] as const;
 
+async function assertManufacturerExists(manufacturerId: string | null | undefined): Promise<void> {
+  if (manufacturerId == null) {
+    return;
+  }
+  const manufacturer = await prisma.manufacturer.findUnique({ where: { id: manufacturerId } });
+  if (!manufacturer) {
+    throw new AppError("VALIDATION_ERROR", "Unbekannter Hersteller.");
+  }
+}
+
 // SCOPE: global
 settingsRouter.get(
   "/",
@@ -23,13 +34,15 @@ settingsRouter.get(
   })
 );
 
-// Threat-Model: Ein Nutzer ohne Admin-Rolle koennte versuchen, SMTP-Zugangsdaten oder den
-// Backup-Pfad zu aendern. Serverseitig erzwungen: requireRole("ADMIN"). Negativ-Test: Nutzer mit
-// Rolle USER erhaelt 403.
+// Threat-Model: Ein Nutzer ohne Admin-Rolle koennte versuchen, SMTP-Zugangsdaten, den Backup-Pfad oder den
+// Standard-Hersteller zu aendern. Serverseitig erzwungen: requireRole("ADMIN"); defaultManufacturerId wird per
+// Zod als UUID oder null geprueft und zusaetzlich gegen die DB aufgeloest (kein stiller Erfolg mit einer
+// erfundenen ID). Negativ-Tests: Nutzer mit Rolle USER erhaelt 403, unbekannte manufacturerId ergibt 400.
 // SCOPE: global
 settingsRouter.patch("/", ...requireAdmin, async (req, res, next) => {
   try {
     const input = updateSettingsInputSchema.parse(req.body);
+    await assertManufacturerExists(input.defaultManufacturerId);
     const before = await getSettings();
     const updated = await updateSettings(input);
     // Das SMTP-Passwort ist ein Geheimnis: nie im Protokoll, nur dass es gesetzt wurde.

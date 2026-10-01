@@ -68,3 +68,13 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   (z.B. erneuter Abgleich mit gleichem Cloud-Stand) entsteht kein Eintrag. Die Eintraege werden erst NACH erfolgreichem Abschluss
   der Transaktion geschrieben (kein verwaister Eintrag bei einem Fehlschlag). Tests: `tests/security/bambuImport.test.ts`,
   `tests/integration/bambuAutoSync.test.ts`
+- **R12**: "Verknuepfen statt neu anlegen" (`services/unopenedSpoolMatch.ts::findUnopenedMatch`, auch von
+  `spoolmanImportService.ts` genutzt): Eine noch ungeoeffnete, noch nicht extern verknuepfte Spule mit gleichem
+  Hersteller/Material und (ab 0.23.1) einer Farbe innerhalb einer kleinen RGB-Toleranz (`MAX_COLOR_DISTANCE_SQUARED`,
+  ca. euklidischer Abstand 30 - z.B. von Hand eingetragenes `#FFFFFF` fuer dieselbe Spule, die die Cloud/AMS als
+  `#F5F5F0` meldet) wird vorgeschlagen und beim Import/Abgleich automatisch verknuepft statt eine doppelte Spule
+  anzulegen. Mehrere Kandidaten innerhalb der Toleranz gelten als mehrdeutig (kein Vorschlag) statt irgendeinen zu
+  raten; ohne bekannten Hex-Wert wird gar nicht gesucht.
+  Befund (behoben 0.23.1): bis 0.23.0 verlangte der Abgleich einen *exakt* gleichen Hex-Wert, wodurch die oben
+  genannte, in der Praxis haeufige Abweichung zu uebersehenen Verknuepfungen und doppelten Spulen fuehrte.
+  Test: `tests/unit/unopenedSpoolMatch.test.ts`, `tests/security/bambuImport.test.ts`

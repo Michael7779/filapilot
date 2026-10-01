@@ -39,14 +39,16 @@ async function findSpoolOrThrow(id: string) {
 // Negativ-Tests: kein Cookie -> 401, Foto-Upload aus -> 403, keine Bilddatei -> 400, zu gross -> 400, unbekannte
 // Spule -> 404, ungueltige ID -> 400, fremdes Lager -> 404, Betrachter beim Hochladen -> 403.
 
-// Damit die Oberflaeche das Foto-Feld nur zeigt, wenn der Admin den Upload erlaubt hat (die Einstellungen selbst
-// sind Admin-only).
+// Damit die Oberflaeche das Foto-Feld nur zeigt, wenn der Admin den Upload erlaubt hat, und das "Neue Spule"-
+// Formular den vom Admin hinterlegten Standard-Hersteller vorbelegen kann (die Einstellungen selbst sind
+// Admin-only, dieser Ausschnitt braucht aber jeder eingeloggte Nutzer beim Anlegen einer Spule).
 // SCOPE: user
 spoolPhotosRouter.get(
   "/photo-settings",
   ...requireActiveUser,
   asyncHandler(async (_req, res) => {
-    sendData(res, { enabled: (await getSettings()).photoUploadEnabled });
+    const settings = await getSettings();
+    sendData(res, { enabled: settings.photoUploadEnabled, defaultManufacturerId: settings.defaultManufacturerId });
   })
 );
 

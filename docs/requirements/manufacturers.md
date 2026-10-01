@@ -12,6 +12,9 @@
 - Frontend: Im Spulen-Formular ein Dropdown statt Freitext, mit "+ Neuer Hersteller"-Kurzweg
   (`packages/frontend/src/components/SpoolFormModal.tsx`).
 
+- Ab 0.23.0: `Settings.defaultManufacturerId` kann auf einen Hersteller verweisen (siehe `settings.md` R12);
+  Loeschen dieses Herstellers raeumt die Einstellung automatisch auf (SetNull), statt das Loeschen zu blockieren.
+
 ## 1.1 Offene Punkte
 - OP-MF1 ✅: Umbenennen/Loeschen gibt es seit `components/CatalogSettings.tsx` (Einstellungen ->
   Stammdaten) - siehe R4 unten, das war hier nur nicht mehr aktualisiert.
