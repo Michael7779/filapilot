@@ -64,6 +64,7 @@ describe("Automatische Verbrauchsbuchung aus dem Druckstatus", () => {
 
     const spool = await prisma.spool.findUniqueOrThrow({ where: { id: spoolId } });
     assert.equal(spool.remainingWeightG, 300); // 500 - 200 (20% von 1000g)
+    assert.ok(spool.lastModifiedAt !== null);
 
     const jobs = await prisma.printJob.findMany({ where: { spoolId } });
     assert.equal(jobs.length, 1);
@@ -119,6 +120,8 @@ describe("Automatische Verbrauchsbuchung aus dem Druckstatus", () => {
     assert.equal(await prisma.printJob.count(), 0);
     const untouched = await prisma.spool.findUniqueOrThrow({ where: { id: otherSpoolId } });
     assert.equal(untouched.remainingWeightG, 500);
+    // Kein Verbrauch gebucht -> lastModifiedAt bleibt unangetastet (R26)
+    assert.equal(untouched.lastModifiedAt, null);
   });
 
   it("uebersteht einen Server-Neustart mitten im Druck: die Kalibrierung von vor dem Neustart bleibt gueltig (OP-P6)", async () => {

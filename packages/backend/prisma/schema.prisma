@@ -304,6 +304,11 @@ model Spool {
   archivedAt          DateTime?
   archiveReason       SpoolArchiveReason?
   createdAt           DateTime   @default(now())
+  // Zeitpunkt der letzten inhaltlichen Aenderung (manuell durch einen Nutzer, oder durch den Bambu-Cloud-Abgleich/
+  // Druckverbrauch, aber nur wenn sich dabei wirklich ein Wert geaendert hat) - siehe Spool.md R26. null = noch nie
+  // geaendert, die Oberflaeche zeigt dann createdAt. Bewusst getrennt von Prisma's eigenem @updatedAt (das Feld
+  // weiter unten), das bei JEDEM update()-Aufruf feuert, auch ohne echte Wertaenderung.
+  lastModifiedAt      DateTime?
   updatedAt           DateTime   @updatedAt
   printJobs           PrintJob[]
   amsSlotAssignments  AmsSlotAssignment[]

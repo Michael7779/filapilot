@@ -123,7 +123,7 @@ async function finalizeEnd(printer: TrackedPrinter, status: PrinterLiveStatus, j
       let remainingAfter = spool.remainingWeightG;
       if (consumedG > 0) {
         remainingAfter = Math.max(0, spool.remainingWeightG - consumedG);
-        await tx.spool.update({ where: { id: spool.id }, data: { remainingWeightG: remainingAfter } });
+        await tx.spool.update({ where: { id: spool.id }, data: { remainingWeightG: remainingAfter, lastModifiedAt: now } });
         await recordWeightChange(
           { spoolId: spool.id, inventoryId: spool.inventoryId, before: spool.remainingWeightG, after: remainingAfter, source: "PRINT" },
           tx

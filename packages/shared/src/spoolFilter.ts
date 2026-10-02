@@ -20,6 +20,11 @@ export interface SpoolFilter {
   remainingMaxPercent: number | null;
   lowStockOnly: boolean;
   unopenedOnly: boolean;
+  // Zeitstempel (ms) auf die letzte Aenderung (siehe effectiveLastModifiedAt), bereits auf Tagesgrenzen
+  // umgerechnet (Beginn/Ende des gewaehlten Tages) - wie bei den Zahlen-Bereichen oben rechnet die Oberflaeche
+  // den fertigen Grenzwert, der Filter selbst vergleicht nur noch.
+  lastModifiedAfter: number | null;
+  lastModifiedBefore: number | null;
 }
 
 export const EMPTY_SPOOL_FILTER: SpoolFilter = {
@@ -34,8 +39,15 @@ export const EMPTY_SPOOL_FILTER: SpoolFilter = {
   priceMaxCents: null,
   remainingMaxPercent: null,
   lowStockOnly: false,
-  unopenedOnly: false
+  unopenedOnly: false,
+  lastModifiedAfter: null,
+  lastModifiedBefore: null
 };
+
+// Letzte inhaltliche Aenderung einer Spule: lastModifiedAt, sonst (noch nie geaendert) createdAt.
+export function effectiveLastModifiedAt(spool: Pick<SpoolWithRelations, "lastModifiedAt" | "createdAt">): Date {
+  return new Date(spool.lastModifiedAt ?? spool.createdAt);
+}
 
 // Restgewicht in % vom Ursprungsgewicht (0-100, kann rechnerisch > 100 sein bei nachtraeglich erhoehtem Restgewicht)
 export function remainingPercent(spool: Pick<SpoolWithRelations, "remainingWeightG" | "initialWeightG">): number {
@@ -80,7 +92,8 @@ export function filterSpools(spools: readonly SpoolWithRelations[], filter: Spoo
       inRange(spool.purchasePriceCents, filter.priceMinCents, filter.priceMaxCents) &&
       (filter.remainingMaxPercent === null || remainingPercent(spool) <= filter.remainingMaxPercent) &&
       (!filter.lowStockOnly || spool.remainingWeightG / spool.initialWeightG <= lowStockRatio) &&
-      (!filter.unopenedOnly || spool.openedAt === null)
+      (!filter.unopenedOnly || spool.openedAt === null) &&
+      inRange(effectiveLastModifiedAt(spool).getTime(), filter.lastModifiedAfter, filter.lastModifiedBefore)
   );
 }
 

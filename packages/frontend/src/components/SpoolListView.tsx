@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { estimateRemainingLengthM, remainingPercent, type SpoolWithRelations } from "@filapilot/shared";
+import { effectiveLastModifiedAt, estimateRemainingLengthM, remainingPercent, type SpoolWithRelations } from "@filapilot/shared";
 import { SpoolActions } from "./SpoolActions.js";
 import { ColorDot, WeightBar, type SpoolViewProps } from "./SpoolViews.js";
 
@@ -32,7 +32,11 @@ function statusKey(spool: SpoolWithRelations): string {
 // Liste: eine Zeile pro Spule mit ALLEN Angaben (Material, Farbe, Temperaturen, Gewicht, Lagerort, Preis, Datum, Notiz, Zusatzfelder).
 export function ListView({ spools, materials, isAll, customFieldDefinitions, ...handlers }: SpoolViewProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
+  // "Gekauft am" bleibt ein reines Datum (kein Zeitpunkt, nur ein Kalendertag). "Hinzugefuegt am" und "Geaendert
+  // am" sind echte Zeitpunkte und zeigen deshalb auch die Uhrzeit.
   const date = (value: Date | string | null): string => (value ? new Date(value).toLocaleDateString(i18n.language) : "–");
+  const dateTime = (value: Date | string): string =>
+    new Date(value).toLocaleString(i18n.language, { dateStyle: "medium", timeStyle: "short" });
   const price = (spool: SpoolWithRelations): string =>
     spool.purchasePriceCents === null ? "–" : (spool.purchasePriceCents / 100).toLocaleString(i18n.language, { style: "currency", currency: "EUR" });
   const customFieldSummary = (spool: SpoolWithRelations): string =>
@@ -65,6 +69,7 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, ...
             <th className={headClass}>{t("spools.filter.price")}</th>
             <th className={headClass}>{t("spools.list.purchasedAt")}</th>
             <th className={headClass}>{t("spools.list.addedAt")}</th>
+            <th className={headClass}>{t("spools.list.lastModifiedAt")}</th>
             <th className={headClass}>{t("spools.note")}</th>
             {customFieldDefinitions.length > 0 && <th className={headClass}>{t("spools.customFields")}</th>}
             <th className={headClass}>{t("spools.list.status")}</th>
@@ -107,7 +112,8 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, ...
                 <td className={cellClass}>{spool.location ?? "–"}</td>
                 <td className={cellClass}>{price(spool)}</td>
                 <td className={cellClass}>{date(spool.purchasedAt)}</td>
-                <td className={cellClass}>{date(spool.createdAt)}</td>
+                <td className={cellClass}>{dateTime(spool.createdAt)}</td>
+                <td className={cellClass}>{dateTime(effectiveLastModifiedAt(spool))}</td>
                 <td className={`${cellClass} max-w-[160px] truncate`} title={spool.note ?? ""}>
                   {spool.note ?? "–"}
                 </td>

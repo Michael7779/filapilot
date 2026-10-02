@@ -30,6 +30,33 @@ function unique(values: readonly string[]): string[] {
   return [...new Set(values.filter((value) => value !== ""))];
 }
 
+// <input type="date"> arbeitet mit "YYYY-MM-DD" in der Zeitzone des Geraets - bewusst nicht ueber UTC/ISO
+// umgerechnet, damit der ausgewaehlte Kalendertag lokal stimmt (wie bei der Anzeige in der Listenansicht).
+function toDateInputValue(ms: number | null): string {
+  if (ms === null) {
+    return "";
+  }
+  const date = new Date(ms);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function parseDateInput(value: string): { year: number; month: number; day: number } | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return match ? { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) } : null;
+}
+
+function startOfDayMs(value: string): number | null {
+  const parsed = parseDateInput(value);
+  return parsed ? new Date(parsed.year, parsed.month - 1, parsed.day, 0, 0, 0, 0).getTime() : null;
+}
+
+function endOfDayMs(value: string): number | null {
+  const parsed = parseDateInput(value);
+  return parsed ? new Date(parsed.year, parsed.month - 1, parsed.day, 23, 59, 59, 999).getTime() : null;
+}
+
 // Stufen fuer den Restgewicht-%-Filter ("hoechstens X %") in gleichmaessigen 10-%-Schritten.
 const REMAINING_PERCENT_STEPS = [10, 20, 30, 40, 50, 60, 70, 80, 90] as const;
 
@@ -112,6 +139,36 @@ export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortCha
     </fieldset>
   );
 
+  const dateRange = (
+    label: string,
+    after: number | null,
+    before: number | null,
+    onChange: (after: number | null, before: number | null) => void
+  ): React.JSX.Element => (
+    <fieldset className="flex flex-col gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
+      <legend className="mb-1">{label}</legend>
+      <div className="flex items-center gap-1">
+        <input
+          type="date"
+          aria-label={`${label} ${t("spools.filter.min")}`}
+          defaultValue={toDateInputValue(after)}
+          key={`min-${resetCount}`}
+          onChange={(event) => onChange(startOfDayMs(event.target.value), before)}
+          className={`${inputClass} w-36`}
+        />
+        <span>–</span>
+        <input
+          type="date"
+          aria-label={`${label} ${t("spools.filter.max")}`}
+          defaultValue={toDateInputValue(before)}
+          key={`max-${resetCount}`}
+          onChange={(event) => onChange(after, endOfDayMs(event.target.value))}
+          className={`${inputClass} w-36`}
+        />
+      </div>
+    </fieldset>
+  );
+
   const active = isFilterActive(filter);
 
   return (
@@ -179,6 +236,9 @@ export function SpoolFilterBar({ spools, filter, sort, onFilterChange, onSortCha
           </select>
         </label>
         {range(t("spools.filter.price"), "€", filter.priceMinCents, filter.priceMaxCents, (min, max) => set({ priceMinCents: min, priceMaxCents: max }), 100)}
+        {dateRange(t("spools.filter.lastModified"), filter.lastModifiedAfter, filter.lastModifiedBefore, (after, before) =>
+          set({ lastModifiedAfter: after, lastModifiedBefore: before })
+        )}
         <label className="flex flex-col gap-1 text-xs font-medium text-[var(--color-text-secondary)]">
           {t("spools.filter.sortBy")}
           <select value={sort} onChange={(event) => onSortChange(SPOOL_SORT_KEYS.find((key) => key === event.target.value) ?? "name")} className={inputClass}>

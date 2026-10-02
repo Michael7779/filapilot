@@ -150,3 +150,21 @@
   (der Filter wirkt nur auf die ohnehin schon geladene, rechtegeprueft geladene Liste). Ohne `state` wie zuvor
   `EMPTY_SPOOL_FILTER`. Die Oberflaeche wurde manuell geprueft (Link von "Fast leer" auf dem Dashboard oeffnet
   die Spulen-Seite mit bereits angehaktem "Nur fast leere").
+- **R26**: Ab 0.24.0: Eine Spule hat `lastModifiedAt` (nullable `DateTime`, Prisma `@updatedAt` bleibt intern,
+  wird aber nie an den Client gegeben). Gesetzt wird es ausschliesslich serverseitig per `new Date()`, nie vom
+  Client (nicht in `updateSpoolInputSchema` enthalten): bei jeder manuellen Aenderung (`PATCH /:id`,
+  `/archive`, `/unarchive`, `/mark-opened`, `/weigh`) sowie beim automatischen Bambu-Cloud-Abgleich
+  (`bambuSyncService.ts`) und beim automatischen Verbrauch waehrend eines laufenden Drucks
+  (`printJobTracker.ts`) - dort jeweils NUR, wenn sich dabei tatsaechlich ein Wert aendert (Restgewicht oder
+  Archiv-Status), nicht bei jedem Abgleich-/Status-Lauf. Die manuelle AMS-Fach-Zuordnung (`amsSlotService.ts`,
+  setzt nur `openedAt`) und der interaktive Bambu-Import-Assistent (`bambuImportService.ts`, eigener Quelle
+  `CLOUD_IMPORT`) zaehlen bewusst NICHT dazu (Entscheidung des Users). Die Spulen-Seite zeigt in der Listenansicht
+  eine Spalte "Geaendert am" mit Datum UND Uhrzeit (`lastModifiedAt`, ohne Wert faellt sie auf `createdAt`
+  zurueck - `effectiveLastModifiedAt()` in `spoolFilter.ts`); "Hinzugefuegt am" zeigt ab jetzt ebenfalls die
+  Uhrzeit (`createdAt` hatte sie in der Datenbank schon immer, nur die Anzeige blendete sie vorher aus - kein
+  Nachtrag aus Logs noetig). Neuer Bereichsfilter in `SpoolFilterBar.tsx` ("Geaendert am", zwei `<input
+  type="date">`) filtert `SpoolFilter.lastModifiedAfter`/`lastModifiedBefore` (ms, schon auf Tagesanfang/-ende
+  umgerechnet) gegen den effektiven Zeitpunkt. Tests: `tests/unit/spoolFilter.test.ts`,
+  `tests/security/spools.test.ts` (ignoriert vom Client mitgeschicktes `lastModifiedAt`),
+  `tests/security/spoolWeigh.test.ts`, `tests/integration/printJobTracker.test.ts`,
+  `tests/integration/bambuSyncService.test.ts`.

@@ -102,6 +102,10 @@ async function findSpoolOrThrow(id: string) {
 // Verschieben EDITOR im Quell- UND Ziel-Lager; ohne Zugriff 404. "inventoryId=all" liefert nur Lager mit Mitgliedschaft.
 // Negativ-Tests: kein Cookie -> 401, mustChangePassword -> 403, Fremder -> 404, Betrachter beim Schreiben -> 403.
 // Archivieren/Wiederherstellen braucht Bearbeiten wie jede Aenderung; der Gewichtsverlauf wird nur hier im Server geschrieben.
+// lastModifiedAt (R26): ein Nutzer koennte versuchen, das Aenderungsdatum einer Spule selbst zu faelschen. Serverseitig
+// erzwungen: das Feld ist in updateSpoolInputSchema nicht enthalten (Zod verwirft unbekannte Body-Felder), jede
+// schreibende Route setzt es ausschliesslich selbst per new Date(). Negativ-Test: PATCH mit lastModifiedAt im Body
+// aendert nur den serverseitig gesetzten Wert, nie den mitgeschickten (tests/security/spools.test.ts).
 // SCOPE: user
 spoolsRouter.get(
   "/",
@@ -259,8 +263,10 @@ spoolsRouter.patch(
     }
 
     const customFields = input.customFields !== undefined ? await resolveCustomFields(input.customFields) : undefined;
+    // lastModifiedAt ist kein Feld von updateSpoolInputSchema (siehe spool.ts im shared-Paket) - der Client kann es
+    // also nie selbst setzen, auch nicht ueber ein zusaetzliches Feld im Request-Body (Zod wirft unbekannte Keys weg).
     const updated = await prisma.spool
-      .update({ where: { id }, data: omitUndefined({ ...input, customFields }), include: SPOOL_INCLUDE })
+      .update({ where: { id }, data: omitUndefined({ ...input, customFields, lastModifiedAt: new Date() }), include: SPOOL_INCLUDE })
       .catch((err: unknown) => {
         if (err instanceof Error && err.message.includes("Record to update not found")) {
           throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
@@ -304,7 +310,7 @@ spoolsRouter.post(
       ? spool
       : await prisma.spool.update({
           where: { id: spool.id },
-          data: { archivedAt: new Date(), archiveReason: "MANUAL" },
+          data: { archivedAt: new Date(), archiveReason: "MANUAL", lastModifiedAt: new Date() },
           include: SPOOL_INCLUDE
         });
     if (!spool.archivedAt) {
@@ -329,7 +335,11 @@ spoolsRouter.post(
     const spool = await findSpoolOrThrow(idParamSchema.parse(req.params.id));
     await requireAccessToObjectInventory(getAuthenticatedUser(req), spool.inventoryId, "EDITOR");
     const updated = spool.archivedAt
-      ? await prisma.spool.update({ where: { id: spool.id }, data: { archivedAt: null, archiveReason: null }, include: SPOOL_INCLUDE })
+      ? await prisma.spool.update({
+          where: { id: spool.id },
+          data: { archivedAt: null, archiveReason: null, lastModifiedAt: new Date() },
+          include: SPOOL_INCLUDE
+        })
       : spool;
     if (spool.archivedAt) {
       await recordAudit({
@@ -357,7 +367,11 @@ spoolsRouter.post(
     await requireAccessToObjectInventory(getAuthenticatedUser(req), spool.inventoryId, "EDITOR");
     const updated = spool.openedAt
       ? spool
-      : await prisma.spool.update({ where: { id: spool.id }, data: { openedAt: new Date() }, include: SPOOL_INCLUDE });
+      : await prisma.spool.update({
+          where: { id: spool.id },
+          data: { openedAt: new Date(), lastModifiedAt: new Date() },
+          include: SPOOL_INCLUDE
+        });
     if (!spool.openedAt) {
       await recordAudit({
         actor: actorFromRequest(req),

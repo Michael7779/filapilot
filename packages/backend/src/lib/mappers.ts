@@ -94,7 +94,8 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
     openedAt: spool.openedAt,
     archivedAt: spool.archivedAt,
     archiveReason: spool.archiveReason,
-    createdAt: spool.createdAt
+    createdAt: spool.createdAt,
+    lastModifiedAt: spool.lastModifiedAt
   };
 }
 

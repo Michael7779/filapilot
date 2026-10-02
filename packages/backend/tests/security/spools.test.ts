@@ -199,6 +199,7 @@ describe("Spools - Negativ-Tests", () => {
       .send({ remainingWeightG: 820 });
     assert.equal(patchRes.status, 200);
     assert.equal(patchRes.body.data.remainingWeightG, 820);
+    assert.ok(patchRes.body.data.lastModifiedAt !== null);
 
     const deleteRes = await request(app)
       .delete(`/api/spools/${spoolId}`)
@@ -209,5 +210,35 @@ describe("Spools - Negativ-Tests", () => {
       .get(`/api/spools/${spoolId}`)
       .set("Cookie", activeUserCookie);
     assert.equal(getAfterDelete.status, 404);
+  });
+
+  it("ignoriert ein vom Client mitgeschicktes lastModifiedAt beim Bearbeiten (R26)", async () => {
+    const createRes = await request(app)
+      .post("/api/spools")
+      .set("Cookie", activeUserCookie)
+      .send({
+        materialId,
+        manufacturerId,
+        colorName: "Faelschungsversuch",
+        colorHex: null,
+        initialWeightG: 1000,
+        remainingWeightG: 1000,
+        inventoryId,
+        purchasePriceCents: null,
+        purchasedAt: null,
+        location: null
+      });
+    assert.equal(createRes.status, 201);
+    const spoolId: string = createRes.body.data.id;
+    assert.equal(createRes.body.data.lastModifiedAt, null);
+
+    const fakeDate = "2099-01-01T00:00:00.000Z";
+    const patchRes = await request(app)
+      .patch(`/api/spools/${spoolId}`)
+      .set("Cookie", activeUserCookie)
+      .send({ remainingWeightG: 900, lastModifiedAt: fakeDate });
+    assert.equal(patchRes.status, 200);
+    assert.notEqual(patchRes.body.data.lastModifiedAt, fakeDate);
+    assert.ok(new Date(patchRes.body.data.lastModifiedAt).getTime() <= Date.now());
   });
 });

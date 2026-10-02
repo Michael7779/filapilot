@@ -65,7 +65,7 @@ async function syncOne(
   }
   await context.tx.spool.update({
     where: { id: existing.id },
-    data: { remainingWeightG: remaining, ...(restore ? { archivedAt: null, archiveReason: null } : {}) }
+    data: { remainingWeightG: remaining, lastModifiedAt: new Date(), ...(restore ? { archivedAt: null, archiveReason: null } : {}) }
   });
   await recordWeightChange(
     { spoolId: existing.id, inventoryId: context.inventoryId, before: existing.remainingWeightG, after: remaining, source: "CLOUD_SYNC" },
@@ -104,7 +104,7 @@ async function archiveMissing(context: ImportContext, linked: LinkedSpool[], clo
   }
   await context.tx.spool.updateMany({
     where: { id: { in: missing.map((spool) => spool.id) } },
-    data: { archivedAt: new Date(), archiveReason: "CLOUD_REMOVED" }
+    data: { archivedAt: new Date(), archiveReason: "CLOUD_REMOVED", lastModifiedAt: new Date() }
   });
   summary.archived = missing.length;
   for (const spool of missing) {

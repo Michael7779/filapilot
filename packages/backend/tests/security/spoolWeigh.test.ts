@@ -89,8 +89,10 @@ describe("Spule wiegen - Negativ-Tests", () => {
 
     const log = await prisma.spoolWeightLog.findFirst({ where: { spoolId: spoolWithTareId }, orderBy: { at: "desc" } });
     assert.deepEqual([log?.remainingG, log?.source], [750, "WEIGHED"]);
+    const weighed = await prisma.spool.findUniqueOrThrow({ where: { id: spoolWithTareId } });
     // Das erste echte Wiegen macht aus einer ungeoeffneten eine geoeffnete Spule
-    assert.ok((await prisma.spool.findUniqueOrThrow({ where: { id: spoolWithTareId } })).openedAt !== null);
+    assert.ok(weighed.openedAt !== null);
+    assert.ok(weighed.lastModifiedAt !== null);
 
     const history = await request(app).get(`/api/spools/${spoolWithTareId}/history`).set("Cookie", editor.cookie);
     const entry = history.body.data.find((row: { action: string }) => row.action === "UPDATE");

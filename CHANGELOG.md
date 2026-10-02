@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.24.0] - 2026-10-01
+
+### Hinzugefuegt
+- Spulen-Liste: neue Spalte "Geändert am" zeigt, wann eine Spule zuletzt bearbeitet wurde - manuell oder durch den automatischen Bambu-Cloud-Abgleich/Druckverbrauch, aber nur wenn sich dabei wirklich etwas geändert hat. Ohne bisherige Änderung wird das Hinzufüge-Datum gezeigt. Beide Datumsspalten zeigen jetzt auch die Uhrzeit. Neuer Filter "Geändert am" (von/bis) in der Spulen-Suche.
+
 ## [0.23.2] - 2026-10-01
 
 ### Behoben

@@ -46,7 +46,11 @@ spoolWeighRouter.post(
       throw new AppError("VALIDATION_ERROR", "Bitte zuerst das Leergewicht dieser Spule hinterlegen (im Bearbeiten-Formular).");
     }
     const remaining = Math.max(0, input.measuredWeightG - before.tareWeightG);
-    const updated = await prisma.spool.update({ where: { id }, data: { remainingWeightG: remaining }, include: SPOOL_INCLUDE });
+    const updated = await prisma.spool.update({
+      where: { id },
+      data: { remainingWeightG: remaining, lastModifiedAt: new Date() },
+      include: SPOOL_INCLUDE
+    });
     const openedAt = await recordWeightChange({ spoolId: id, inventoryId: updated.inventoryId, before: before.remainingWeightG, after: remaining, source: "WEIGHED" });
     await recordUpdate({
       actor: actorFromRequest(req),

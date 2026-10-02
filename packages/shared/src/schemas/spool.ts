@@ -31,7 +31,11 @@ export const spoolSchema = z.object({
   // Archiviert = nicht mehr im Bestand, aber im Verbrauch weiter gezaehlt. Nur ueber die Archiv-Routen aenderbar.
   archivedAt: z.coerce.date().nullable(),
   archiveReason: z.enum(["MANUAL", "CLOUD_REMOVED"]).nullable(),
-  createdAt: z.coerce.date()
+  createdAt: z.coerce.date(),
+  // Letzte inhaltliche Aenderung (manuell oder durch Cloud-Sync/Druckverbrauch mit echter Wertaenderung); vom
+  // Server verwaltet, nie vom Client setzbar. null = noch nie geaendert - die Oberflaeche faellt dann auf
+  // createdAt zurueck (siehe effectiveLastModifiedAt in spoolFilter.ts).
+  lastModifiedAt: z.coerce.date().nullable()
 });
 export type Spool = z.infer<typeof spoolSchema>;
 
@@ -50,7 +54,8 @@ export const createSpoolInputSchema = spoolSchema
     colorHex2: true,
     note: true,
     tareWeightG: true,
-    openedAt: true
+    openedAt: true,
+    lastModifiedAt: true
   })
   .extend({
     inventoryId: z.string().uuid(),
