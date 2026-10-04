@@ -78,3 +78,9 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   Befund (behoben 0.23.1): bis 0.23.0 verlangte der Abgleich einen *exakt* gleichen Hex-Wert, wodurch die oben
   genannte, in der Praxis haeufige Abweichung zu uebersehenen Verknuepfungen und doppelten Spulen fuehrte.
   Test: `tests/unit/unopenedSpoolMatch.test.ts`, `tests/security/bambuImport.test.ts`
+- **R13**: Ab 0.25.1: `parseBambuHits()` (Datei-Import, Cloud-Import und automatischer Abgleich) ueberspringt Eintraege
+  ganz ohne Materialangabe (weder `filamentName` noch `filamentType`, auch nicht nur Leerzeichen) und zaehlt sie als
+  "uebersprungen". Das sind leere Platzhalter in Bambu Studio/Cloud (dort nur mit Hersteller, 0 g); sie landeten
+  bisher ueber den Ersatzwert in `mapBambuSpool()` als Material "Filament" im Bestand. Eine solche, schon
+  importierte Spule wird beim naechsten Abgleich wie jede aus der Cloud verschwundene Spule archiviert (nicht
+  geloescht). Reine Eingabepruefung, keine neue Route. Test: `tests/unit/bambuMapping.test.ts`.

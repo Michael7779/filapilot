@@ -69,13 +69,15 @@ export function toAppError(err: unknown): AppError {
 }
 
 // Prueft jede Spule einzeln: kaputte Eintraege werden gezaehlt und uebersprungen, ein ganzes Ergebnis wird nie blind uebernommen.
+// Ein Eintrag ganz ohne Materialangabe (weder Name noch Typ) ist ein leerer Platzhalter in Bambu Studio/Cloud, keine
+// echte Spule - er wuerde sonst als Material "Filament" im Bestand landen und wird uebersprungen.
 export function parseBambuHits(hits: readonly unknown[]): { spools: BambuSpool[]; skipped: number } {
   const spools: BambuSpool[] = [];
   const seen = new Set<string>();
   let skipped = 0;
   for (const hit of hits) {
     const parsed = bambuSpoolSchema.safeParse(hit);
-    if (!parsed.success || seen.has(parsed.data.id)) {
+    if (!parsed.success || seen.has(parsed.data.id) || !(clean(parsed.data.filamentName) || clean(parsed.data.filamentType))) {
       skipped += 1;
       continue;
     }

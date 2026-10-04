@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.25.1] - 2026-10-04
+
+### Behoben
+- Bambu-Import und automatischer Abgleich: Leere Einträge ohne Materialangabe (in Bambu Studio nur als "Bambu Lab" mit 0 g sichtbar) werden nicht mehr als Spule mit dem Material "Filament" angelegt, sondern übersprungen. Eine bereits so angelegte Spule wird beim nächsten Abgleich archiviert.
+
 ## [0.25.0] - 2026-10-04
 
 ### Hinzugefuegt

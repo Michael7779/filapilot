@@ -59,6 +59,17 @@ describe("Bambu-Import: Eintraege pruefen", () => {
     assert.deepEqual(spools.map((spool) => spool.id), ["1", "2"]);
     assert.equal(skipped, 5);
   });
+
+  it("ueberspringt leere Platzhalter ohne Materialangabe, nimmt aber Eintraege mit nur Name oder nur Typ an", () => {
+    const { spools, skipped } = parseBambuHits([
+      { id: "leer", filamentVendor: "Bambu Lab", netWeight: 0, totalNetWeight: 0 },
+      { id: "blank", filamentName: "  ", filamentType: "" },
+      { id: "nurName", filamentName: "PLA Basic" },
+      { id: "nurTyp", filamentType: "PETG" }
+    ]);
+    assert.deepEqual(spools.map((spool) => spool.id), ["nurName", "nurTyp"]);
+    assert.equal(skipped, 2);
+  });
 });
 
 describe("Farbnamen", () => {
