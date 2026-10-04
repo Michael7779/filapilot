@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.26.1] - 2026-10-04
+
+### Behoben
+- Bambu-Import und automatischer Abgleich: Farben bekommen jetzt den passenden Namen. Vorher wurde z. B. ein helles Grün als "Grau" benannt, weil nur nach ähnlichen Zahlenwerten statt nach dem Farbeindruck gesucht wurde. Neu: der Name wird wie das menschliche Auge die Farbe sieht gewählt, die Liste kennt zusätzlich Hellgrün, Dunkelgrün, Hellblau, Hellgrau, Dunkelgrau, Magenta und Dunkelrot, und passt der Farbwert genau zu einer bekannten Farbe des Herstellers (z. B. Bambu Lab PLA Basic "Bambu-Grün"), wird dessen Name übernommen. Schon angelegte Spulen behalten ihren Namen und lassen sich bei Bedarf in der Spule ändern.
+
 ## [0.26.0] - 2026-10-04
 
 ### Hinzugefuegt

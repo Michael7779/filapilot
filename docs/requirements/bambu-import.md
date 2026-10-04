@@ -84,3 +84,10 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   bisher ueber den Ersatzwert in `mapBambuSpool()` als Material "Filament" im Bestand. Eine solche, schon
   importierte Spule wird beim naechsten Abgleich wie jede aus der Cloud verschwundene Spule archiviert (nicht
   geloescht). Reine Eingabepruefung, keine neue Route. Test: `tests/unit/bambuMapping.test.ts`.
+- **R14**: Ab 0.26.1: `nearestColorName()` (`packages/shared/src/colorNames.ts`) waehlt den Farbnamen im CIELAB-Farbraum
+  statt im RGB-Raum (Befund, behoben: ein helles Gruen `#61C680` wurde im RGB-Raum dem "Grau" statt dem Gruen
+  zugeordnet). Die Namensliste kennt zusaetzlich Hellgruen, Dunkelgruen, Hellblau, Hellgrau, Dunkelgrau, Magenta und
+  Dunkelrot sowie kraeftige Stuetzpunkte fuer reine Grundfarben. `mapBambuSpool()` nimmt zuerst den Herstellernamen,
+  wenn der Hex-Wert GENAU einer Farbe aus `getColorPresets(Hersteller, Material)` entspricht (z.B. Bambu Lab PLA
+  Basic `#00AE42` = "Bambu-Gruen"), sonst den allgemeinen Namen. Bestehende Spulen werden nicht umbenannt. Test:
+  `tests/unit/bambuMapping.test.ts`.

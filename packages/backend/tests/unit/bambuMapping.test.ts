@@ -89,4 +89,23 @@ describe("Farbnamen", () => {
     assert.equal(nearestColorName("#00AE42"), "Grün");
     assert.equal(nearestColorName(null), "Unbekannt");
   });
+
+  it("ordnet auch helle und gedeckte Farben ihrem Farbton zu (Werte aus Bambu Studio), nicht dem Grau", () => {
+    assert.equal(nearestColorName("#61C680"), "Hellgrün");
+    assert.equal(nearestColorName("#56B7E6"), "Hellblau");
+    assert.equal(nearestColorName("#DE4343"), "Rot");
+    assert.equal(nearestColorName("#F7D959"), "Gelb");
+    assert.equal(nearestColorName("#042F56"), "Dunkelblau");
+    assert.equal(nearestColorName("#757575"), "Grau");
+    assert.equal(nearestColorName("#9B9EA0"), "Grau");
+  });
+
+  it("nimmt den Herstellernamen, wenn der Hex-Wert genau zu einer bekannten Farbe des Materials passt", () => {
+    const base = { id: "c1", filamentVendor: "Bambu Lab", filamentName: "PLA Basic" };
+    assert.equal(mapBambuSpool({ ...base, color: "#00AE42FF" }).colorName, "Bambu-Grün");
+    assert.equal(mapBambuSpool({ ...base, color: "#C12E1FFF" }).colorName, "Rot");
+    // kein exakter Treffer -> allgemeiner Name; anderer Hersteller -> nie ein fremder Herstellername
+    assert.equal(mapBambuSpool({ ...base, color: "#61C680FF" }).colorName, "Hellgrün");
+    assert.equal(mapBambuSpool({ ...base, filamentVendor: "eSun", color: "#00AE42FF" }).colorName, "Grün");
+  });
 });

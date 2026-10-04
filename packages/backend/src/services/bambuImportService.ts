@@ -1,5 +1,6 @@
 import {
   bambuSpoolSchema,
+  getColorPresets,
   nearestColorName,
   normalizeHexColor,
   type BambuImportInput,
@@ -91,6 +92,13 @@ function clean(value: string | null | undefined): string {
   return (value ?? "").trim();
 }
 
+// Farbname: der Name des Herstellers, wenn der Hex-Wert GENAU einer seiner bekannten Farben fuer dieses Material
+// entspricht (z.B. Bambu Lab PLA Basic #00AE42 = "Bambu-Grün"), sonst der naechste allgemeine Name im Lab-Farbraum.
+function colorNameFor(colorHex: string | null, vendor: string, materialName: string): string {
+  const exact = colorHex ? getColorPresets(vendor, materialName).find((preset) => preset.hex.toUpperCase() === colorHex) : undefined;
+  return exact?.name ?? nearestColorName(colorHex);
+}
+
 export function mapBambuSpool(spool: BambuSpool): MappedSpool {
   const typeName = clean(spool.filamentType);
   const materialName = clean(spool.filamentName) || typeName || "Filament";
@@ -103,7 +111,7 @@ export function mapBambuSpool(spool: BambuSpool): MappedSpool {
     materialName,
     typeName: typeName || materialName,
     colorHex,
-    colorName: nearestColorName(colorHex),
+    colorName: colorNameFor(colorHex, clean(spool.filamentVendor), materialName),
     remainingG: remaining,
     totalG: total,
     status: spool.status ?? null,
