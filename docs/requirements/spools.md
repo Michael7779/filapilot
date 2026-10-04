@@ -191,3 +191,13 @@
   (`accessibleInventoryIds`), liefert ausschliesslich IDs + Preis. Von Hand geaenderte Preise werden nicht mehr
   ueberschrieben. Negativ-Tests: kein Cookie -> 401, `mustChangePassword` -> 403, Preis aus fremdem Lager taucht nie
   auf (`tests/security/spoolPriceSuggestions.test.ts`); Logik: `tests/unit/spoolPrice.test.ts`.
+- **R30**: Ab 0.27.0: Der Dialog "Mehrere Spulen" (`BulkSpoolModal.tsx`) legt viele Spulen in einem Schritt an:
+  Hersteller + Material waehlen, Farbknoepfe (`getColorPresets`, plus eigene Farbe) anklicken - jeder Klick erhoeht den
+  Zaehler der Farbe (`addBulkEntry()` in `packages/shared/src/bulkSpoolList.ts`, Gruppen je Hersteller + Material +
+  Lieferform + Gewicht mit eigenem Preis, vorbelegt wie in R29). Lager, Lagerort und "schon angebrochen" gelten fuer alle.
+  Server: `POST /api/spools/bulk` (SCOPE: user, `routes/spoolsBulk.ts`, `services/spoolBulkService.ts`): Rolle EDITOR im
+  Ziel-Lager, Zod mit Obergrenzen (100 Eintraege, 200 Spulen, je Eintrag 50), Hersteller/Material/Kombination vorab
+  geprueft, Anlage in EINER Transaktion (alles oder nichts), je Spule ein Protokoll-Eintrag. Negativ-Tests: 401,
+  `mustChangePassword` -> 403, Fremder -> 404, Betrachter -> 403, zu viele/ungueltige Werte -> 400,
+  falsche Material/Hersteller-Kombination -> 400 ohne angelegte Spule (`tests/security/spoolsBulk.test.ts`);
+  Listenlogik: `tests/unit/bulkSpoolList.test.ts`. Die Oberflaeche wurde manuell im Browser geprueft.

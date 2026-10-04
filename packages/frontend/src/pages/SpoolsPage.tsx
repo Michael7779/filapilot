@@ -26,6 +26,7 @@ import type {
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { downloadFile } from "../lib/download.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
+import { BulkSpoolModal } from "../components/BulkSpoolModal.js";
 import { SpoolFilterBar } from "../components/SpoolFilterBar.js";
 import { BambuSyncStatus } from "../components/BambuSyncStatus.js";
 import { ListView } from "../components/SpoolListView.js";
@@ -76,6 +77,7 @@ export function SpoolsPage(): React.JSX.Element {
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
   const [editingSpool, setEditingSpool] = useState<SpoolWithRelations | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [labelSpool, setLabelSpool] = useState<SpoolWithRelations | null>(null);
   const [historySpool, setHistorySpool] = useState<SpoolWithRelations | null>(null);
   const [dryingSpool, setDryingSpool] = useState<SpoolWithRelations | null>(null);
@@ -392,6 +394,13 @@ export function SpoolsPage(): React.JSX.Element {
             </button>
             <button
               type="button"
+              onClick={() => setBulkOpen(true)}
+              className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
+            >
+              {t("spools.bulk.open")}
+            </button>
+            <button
+              type="button"
               onClick={openCreate}
               className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
               style={{ backgroundColor: "var(--accent)" }}
@@ -488,6 +497,23 @@ export function SpoolsPage(): React.JSX.Element {
             : renderSpoolView(pagedSpools)}
           <SpoolPager page={currentPage} pageCount={pageCount} pageSize={pageSize} total={visibleSpools.length} onPage={setPage} onPageSize={setPageSize} />
         </>
+      )}
+
+      {bulkOpen && (
+        <BulkSpoolModal
+          materials={materials}
+          manufacturers={manufacturers}
+          inventories={editableInventories}
+          defaultInventoryId={selectedId ?? ""}
+          defaultManufacturerId={defaultManufacturerId}
+          priceSuggestions={priceSuggestions}
+          onClose={() => setBulkOpen(false)}
+          onCreated={(count) => {
+            setBulkOpen(false);
+            setActionNotice(t("spools.bulk.created", { count }));
+            void load(true);
+          }}
+        />
       )}
 
       {modalOpen && (

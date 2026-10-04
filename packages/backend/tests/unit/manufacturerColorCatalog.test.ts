@@ -16,6 +16,16 @@ describe("getColorPresets", () => {
     assert.notDeepEqual(basic, matte);
   });
 
+  it("kennt eigene Farben fuer Bambu Lab PETG Basic und PETG Translucent (gueltige, eindeutige Eintraege)", () => {
+    for (const material of ["PETG Basic", "PETG Translucent"]) {
+      const presets = getColorPresets("Bambu Lab", material);
+      assert.notDeepEqual(presets, DEFAULT_COLOR_PRESETS);
+      assert.ok(presets.every((preset) => /^#[0-9A-F]{6}$/.test(preset.hex)), material);
+      assert.equal(new Set(presets.map((preset) => preset.name)).size, presets.length, material);
+    }
+    assert.ok(getColorPresets("Bambu Lab", "PETG Translucent").some((preset) => preset.name === "Klar"));
+  });
+
   it("faellt auf die generische Liste zurueck, wenn kein Material gewaehlt ist", () => {
     assert.deepEqual(getColorPresets("Bambu Lab", null), DEFAULT_COLOR_PRESETS);
     assert.deepEqual(getColorPresets(null, null), DEFAULT_COLOR_PRESETS);

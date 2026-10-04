@@ -21,6 +21,7 @@ import { spoolsRouter } from "./routes/spools.js";
 import { spoolPhotosRouter } from "./routes/spoolPhotos.js";
 import { spoolDryingRouter } from "./routes/spoolDrying.js";
 import { spoolWeighRouter } from "./routes/spoolWeigh.js";
+import { spoolsBulkRouter } from "./routes/spoolsBulk.js";
 import { spoolmanImportRouter } from "./routes/spoolmanImport.js";
 import { inventoryAuditRouter } from "./routes/inventoryAudit.js";
 import { printersRouter } from "./routes/printers.js";
@@ -62,6 +63,7 @@ export function createApp() {
   app.use("/api/spools", spoolPhotosRouter);
   app.use("/api/spools", spoolDryingRouter);
   app.use("/api/spools", spoolWeighRouter);
+  app.use("/api/spools", spoolsBulkRouter);
   app.use("/api/spools", spoolsRouter);
   app.use("/api/printers", printersRouter);
   app.use("/api/print-jobs", printJobsRouter);

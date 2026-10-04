@@ -45,6 +45,34 @@ const MANUFACTURER_COLOR_PRESETS: Record<string, ColorPreset[]> = {
     { name: "Silber", hex: "#A6A9AA" },
     { name: "Schwarz", hex: "#000000" }
   ],
+  // PETG Basic / PETG Translucent: Namen wie im Bambu-Lab-EU-Shop (Stand 2026-10-04), Hex-Werte aus den Farbmustern
+  // dort gemessen (Mittelwert der Bildmitte) - Naeherung, kein offizieller Farbcode.
+  "Bambu Lab::PETG Basic": [
+    { name: "Schwarz", hex: "#000000" },
+    { name: "Weiß", hex: "#FFFFFF" },
+    { name: "Grau", hex: "#7F7E83" },
+    { name: "Rot", hex: "#D6001C" },
+    { name: "Orange", hex: "#FF671E" },
+    { name: "Gelb", hex: "#FCE300" },
+    { name: "Grün", hex: "#01963A" },
+    { name: "Pinien-Grün", hex: "#034537" },
+    { name: "Marineblau", hex: "#0185D7" },
+    { name: "Reflex Blue", hex: "#001389" },
+    { name: "Misty Blue", hex: "#688197" },
+    { name: "Dunkelbeige", hex: "#DBC8B7" },
+    { name: "Dunkelbraun", hex: "#502C1E" }
+  ],
+  "Bambu Lab::PETG Translucent": [
+    { name: "Klar", hex: "#E0E0E0" },
+    { name: "Grau", hex: "#8E8E8E" },
+    { name: "Blaugrün", hex: "#77EDD7" },
+    { name: "Lichtblau", hex: "#61B0FF" },
+    { name: "Violett", hex: "#D6ABFF" },
+    { name: "Pink", hex: "#F9C1BD" },
+    { name: "Orange", hex: "#FF911A" },
+    { name: "Braun", hex: "#E5C688" },
+    { name: "Oliv", hex: "#748C45" }
+  ],
   "Bambu Lab::PLA Matte": [
     { name: "Matte Ivory-Weiß", hex: "#EDE8DA" },
     { name: "Matte Bone-Weiß", hex: "#CBC6B8" },

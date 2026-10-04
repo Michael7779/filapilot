@@ -93,6 +93,36 @@ export const spoolPriceSuggestionSchema = z.object({
 });
 export type SpoolPriceSuggestion = z.infer<typeof spoolPriceSuggestionSchema>;
 
+// Mehrere neue Spulen in einem Schritt (Dialog "Mehrere Spulen"): ein Lager, gemeinsamer Lagerort/"angebrochen", dazu
+// Eintraege je Hersteller + Material + Farbe + Lieferform mit Anzahl und Preis. Harte Obergrenzen gegen riesige Anfragen.
+export const MAX_BULK_ENTRIES = 100;
+export const MAX_BULK_SPOOLS = 200;
+export const bulkCreateSpoolsInputSchema = z
+  .object({
+    inventoryId: z.string().uuid(),
+    location: z.string().trim().max(60).nullable().default(null),
+    alreadyOpened: z.boolean().default(false),
+    items: z
+      .array(
+        z.object({
+          manufacturerId: z.string().uuid(),
+          materialId: z.string().uuid(),
+          colorName: z.string().trim().min(1).max(60),
+          colorHex: hexColor.nullable().default(null),
+          isRefill: z.boolean().default(false),
+          initialWeightG: z.number().int().positive().max(100_000),
+          purchasePriceCents: z.number().int().min(0).max(1_000_000).nullable().default(null),
+          count: z.number().int().min(1).max(50)
+        })
+      )
+      .min(1)
+      .max(MAX_BULK_ENTRIES)
+  })
+  .refine((input) => input.items.reduce((sum, item) => sum + item.count, 0) <= MAX_BULK_SPOOLS, {
+    message: `Hoechstens ${MAX_BULK_SPOOLS} Spulen auf einmal.`
+  });
+export type BulkCreateSpoolsInput = z.infer<typeof bulkCreateSpoolsInputSchema>;
+
 export const LOW_STOCK_THRESHOLD_RATIO = 0.15;
 
 // Archivierte Spulen in Listen: ausblenden (Standard), mit anzeigen oder nur diese.

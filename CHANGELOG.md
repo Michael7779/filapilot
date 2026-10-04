@@ -8,6 +8,12 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.27.0] - 2026-10-04
+
+### Hinzugefuegt
+- Spulen: Neuer Knopf "Mehrere Spulen" zum schnellen Anlegen vieler Spulen auf einmal. Hersteller und Material wählen, die Farben anklicken (jeder Klick fügt eine Spule zur Liste hinzu, mehrfaches Klicken zählt hoch, mit +/− lässt sich die Anzahl ändern) und alles mit einem Klick anlegen. Man kann zwischendurch Material oder Lieferform wechseln; der Preis wird je Material und Lieferform vorgeschlagen und lässt sich in der Liste ändern. Lagerort und "schon angebrochen" gelten für alle Spulen.
+- Bambu Lab PETG Basic und PETG Translucent haben jetzt eigene Farblisten (Namen aus dem Bambu-Lab-Shop) in den Farbknöpfen.
+
 ## [0.26.1] - 2026-10-04
 
 ### Behoben
