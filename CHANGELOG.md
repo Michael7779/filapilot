@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.25.0] - 2026-10-04
+
+### Hinzugefuegt
+- Spulen-Liste: Ein Klick auf eine Spaltenüberschrift sortiert die ganze Liste nach dieser Spalte, ein weiterer Klick dreht die Reihenfolge um (auf- und absteigend). Spulen ohne Eintrag (z. B. ohne Preis oder Lagerort) stehen immer am Ende. Die Auswahl "Sortieren nach" in der Suche setzt die Sortierung wieder zurück.
+
 ## [0.24.0] - 2026-10-01
 
 ### Hinzugefuegt

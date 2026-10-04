@@ -485,7 +485,7 @@
     "actions": "Actions",
     "view": { "label": "View", "standard": "Standard", "compact": "Compact", "list": "List", "swatch": "Color tiles" },
     "pager": { "perPage": "Spools per page", "all": "All", "prev": "Back", "next": "Next", "page": "Page {{page}} of {{count}}" },
-    "list": { "color": "Color", "nozzle": "Nozzle", "bed": "Bed", "weight": "Remaining weight", "length": "Remaining length", "approx": "≈", "purchasedAt": "Purchased", "addedAt": "Added", "lastModifiedAt": "Last modified", "status": "Status", "active": "Active" },
+    "list": { "sortBy": "Sort by {{column}}", "color": "Color", "nozzle": "Nozzle", "bed": "Bed", "weight": "Remaining weight", "length": "Remaining length", "approx": "≈", "purchasedAt": "Purchased", "addedAt": "Added", "lastModifiedAt": "Last modified", "status": "Status", "active": "Active" },
     "showArchived": "Show archive",
     "archive": "Archive",
     "unarchive": "Restore",

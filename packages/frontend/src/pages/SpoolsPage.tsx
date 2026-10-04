@@ -7,7 +7,10 @@ import {
   filterSpools,
   isFilterActive,
   sortSpools,
+  sortSpoolsByColumn,
+  type SpoolColumnSort,
   type SpoolFilter,
+  type SpoolSortColumn,
   type SpoolSortKey
 } from "@filapilot/shared";
 import type {
@@ -58,8 +61,15 @@ export function SpoolsPage(): React.JSX.Element {
     setPage(1);
   };
   const [sort, setSort] = useState<SpoolSortKey>("name");
+  // Sortierung per Klick auf eine Spaltenueberschrift (nur Listenansicht); hat Vorrang vor dem Sortier-Dropdown.
+  const [columnSort, setColumnSort] = useState<SpoolColumnSort | null>(null);
   const [page, setPage] = useState(1);
   const { view, pageSize, setView, setPageSize } = useSpoolPreferences();
+  const activeColumnSort = view === "list" ? columnSort : null;
+  const handleColumnSort = (column: SpoolSortColumn): void => {
+    setColumnSort((current) => ({ column, direction: current?.column === column && current.direction === "asc" ? "desc" : "asc" }));
+    setPage(1);
+  };
   const [spools, setSpools] = useState<SpoolWithRelations[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
@@ -279,13 +289,18 @@ export function SpoolsPage(): React.JSX.Element {
 
   // Ungeoeffnete Spulen zuerst geclustert (innerhalb jeder Gruppe bleibt die gewaehlte Sortierung erhalten) -
   // Grundlage fuer die zwei Abschnitte "Ungeoeffnet"/"Angefangen" im Standard-Bestand.
+  // Mit aktiver Spaltensortierung entfaellt die Clusterung, damit die Reihenfolge der Spalte durchgehend gilt.
   const visibleSpools = useMemo(() => {
-    const sorted = sortSpools(filterSpools(spools, filter, LOW_STOCK_THRESHOLD_RATIO), sort, i18n.language);
+    const filtered = filterSpools(spools, filter, LOW_STOCK_THRESHOLD_RATIO);
+    if (activeColumnSort) {
+      return sortSpoolsByColumn(sortSpools(filtered, sort, i18n.language), activeColumnSort, i18n.language, materials);
+    }
+    const sorted = sortSpools(filtered, sort, i18n.language);
     return [...sorted.filter((spool) => !spool.openedAt), ...sorted.filter((spool) => spool.openedAt)];
-  }, [spools, filter, sort, i18n.language]);
+  }, [spools, filter, sort, activeColumnSort, materials, i18n.language]);
   const unopenedVisible = visibleSpools.filter((spool) => !spool.openedAt);
   const startedVisible = visibleSpools.filter((spool) => spool.openedAt);
-  const showOpenedGroups = unopenedVisible.length > 0 && startedVisible.length > 0;
+  const showOpenedGroups = !activeColumnSort && unopenedVisible.length > 0 && startedVisible.length > 0;
   let emptyText = "";
   if (spools.length === 0) {
     emptyText = t("spools.empty");
@@ -303,6 +318,8 @@ export function SpoolsPage(): React.JSX.Element {
       materials={materials}
       customFieldDefinitions={customFieldDefinitions}
       isAll={isAll}
+      columnSort={activeColumnSort}
+      onColumnSort={handleColumnSort}
       canEdit={canEdit}
       onEdit={openEdit}
       onArchive={(spool, archive) => void handleArchive(spool, archive)}
@@ -420,6 +437,7 @@ export function SpoolsPage(): React.JSX.Element {
         <>
           <SpoolFilterBar spools={spools} filter={filter} sort={sort} onFilterChange={setFilter} onSortChange={(next) => {
               setSort(next);
+              setColumnSort(null);
               setPage(1);
             }}
           />

@@ -168,3 +168,11 @@
   `tests/security/spools.test.ts` (ignoriert vom Client mitgeschicktes `lastModifiedAt`),
   `tests/security/spoolWeigh.test.ts`, `tests/integration/printJobTracker.test.ts`,
   `tests/integration/bambuSyncService.test.ts`.
+- **R27**: Ab 0.25.0: In der Listenansicht der Spulen sortiert ein Klick auf eine Spaltenueberschrift die gesamte
+  gefilterte Liste (nicht nur die aktuelle Seite) auf-/absteigend (`sortSpoolsByColumn()` in
+  `packages/shared/src/spoolColumnSort.ts`; Spalten: Farbe, Hersteller, Material, Lager, Duese, Bett, Restgewicht,
+  Restlaenge, Lagerort, Preis, Gekauft am, Hinzugefuegt am, Geaendert am, Notiz, Status). Spulen ohne Wert stehen in
+  beiden Richtungen am Ende, Gleichstand behaelt die bisherige Reihenfolge. Die Spaltensortierung hat Vorrang vor dem
+  "Sortieren nach"-Dropdown und hebt die Gruppierung "Ungeoeffnet/Angefangen" auf; das Dropdown setzt sie zurueck.
+  Reine Client-Logik auf der bereits rechtegeprueft geladenen Liste, keine neue Route. Test:
+  `tests/unit/spoolColumnSort.test.ts`; die Oberflaeche wurde nicht im Browser geprueft (kein Dev-Server aktiv).

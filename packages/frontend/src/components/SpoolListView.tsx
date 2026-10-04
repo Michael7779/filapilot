@@ -1,10 +1,22 @@
 import { useTranslation } from "react-i18next";
-import { effectiveLastModifiedAt, estimateRemainingLengthM, remainingPercent, type SpoolWithRelations } from "@filapilot/shared";
+import { effectiveLastModifiedAt, estimateRemainingLengthM, remainingPercent, type SpoolSortColumn, type SpoolWithRelations } from "@filapilot/shared";
 import { SpoolActions } from "./SpoolActions.js";
 import { ColorDot, WeightBar, type SpoolViewProps } from "./SpoolViews.js";
 
 const headClass = "whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-[var(--color-text-secondary)]";
 const cellClass = "whitespace-nowrap px-3 py-2 align-middle";
+
+const ARIA_SORT = { asc: "ascending", desc: "descending" } as const;
+
+// Pfeil nach oben/unten fuer die aktive Sortierung, sonst ein dezentes Doppel-Chevron.
+function SortIcon({ direction }: { direction: "asc" | "desc" | null }): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 12 12" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 4.5 6 1.5l3 3" opacity={direction === null ? 0.4 : Number(direction === "asc") || 0.25} />
+      <path d="M3 7.5 6 10.5l3-3" opacity={direction === null ? 0.4 : Number(direction === "desc") || 0.25} />
+    </svg>
+  );
+}
 
 // "–" ohne bekannte Dichte des Materials, sonst "≈ 335 m" (Naeherung, siehe estimateRemainingLengthM).
 function formatLength(meters: number | null, locale: string, t: (key: string) => string): string {
@@ -30,8 +42,25 @@ function statusKey(spool: SpoolWithRelations): string {
 }
 
 // Liste: eine Zeile pro Spule mit ALLEN Angaben (Material, Farbe, Temperaturen, Gewicht, Lagerort, Preis, Datum, Notiz, Zusatzfelder).
-export function ListView({ spools, materials, isAll, customFieldDefinitions, ...handlers }: SpoolViewProps): React.JSX.Element {
+export function ListView({ spools, materials, isAll, customFieldDefinitions, columnSort, onColumnSort, ...handlers }: SpoolViewProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
+  // Klick auf die Ueberschrift sortiert nach der Spalte; erneuter Klick dreht die Richtung um (Logik in der Spulen-Seite).
+  const sortHead = (column: SpoolSortColumn, label: string): React.JSX.Element => {
+    const direction = columnSort?.column === column ? columnSort.direction : null;
+    return (
+      <th key={column} className={headClass} aria-sort={direction ? ARIA_SORT[direction] : undefined}>
+        <button
+          type="button"
+          onClick={() => onColumnSort?.(column)}
+          title={t("spools.list.sortBy", { column: label })}
+          className="inline-flex items-center gap-1 font-medium hover:text-[var(--color-text)]"
+        >
+          {label}
+          <SortIcon direction={direction} />
+        </button>
+      </th>
+    );
+  };
   // "Gekauft am" bleibt ein reines Datum (kein Zeitpunkt, nur ein Kalendertag). "Hinzugefuegt am" und "Geaendert
   // am" sind echte Zeitpunkte und zeigen deshalb auch die Uhrzeit.
   const date = (value: Date | string | null): string => (value ? new Date(value).toLocaleDateString(i18n.language) : "–");
@@ -57,22 +86,22 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, ...
       <table className="w-full min-w-[1000px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-[var(--color-border)]">
-            <th className={headClass}>{t("spools.list.color")}</th>
-            <th className={headClass}>{t("spools.manufacturer")}</th>
-            <th className={headClass}>{t("spools.material")}</th>
-            {isAll && <th className={headClass}>{t("spools.inventory")}</th>}
-            <th className={headClass}>{t("spools.list.nozzle")}</th>
-            <th className={headClass}>{t("spools.list.bed")}</th>
-            <th className={headClass}>{t("spools.list.weight")}</th>
-            <th className={headClass}>{t("spools.list.length")}</th>
-            <th className={headClass}>{t("spools.filter.location")}</th>
-            <th className={headClass}>{t("spools.filter.price")}</th>
-            <th className={headClass}>{t("spools.list.purchasedAt")}</th>
-            <th className={headClass}>{t("spools.list.addedAt")}</th>
-            <th className={headClass}>{t("spools.list.lastModifiedAt")}</th>
-            <th className={headClass}>{t("spools.note")}</th>
+            {sortHead("color", t("spools.list.color"))}
+            {sortHead("manufacturer", t("spools.manufacturer"))}
+            {sortHead("material", t("spools.material"))}
+            {isAll && sortHead("inventory", t("spools.inventory"))}
+            {sortHead("nozzle", t("spools.list.nozzle"))}
+            {sortHead("bed", t("spools.list.bed"))}
+            {sortHead("weight", t("spools.list.weight"))}
+            {sortHead("length", t("spools.list.length"))}
+            {sortHead("location", t("spools.filter.location"))}
+            {sortHead("price", t("spools.filter.price"))}
+            {sortHead("purchasedAt", t("spools.list.purchasedAt"))}
+            {sortHead("addedAt", t("spools.list.addedAt"))}
+            {sortHead("lastModifiedAt", t("spools.list.lastModifiedAt"))}
+            {sortHead("note", t("spools.note"))}
             {customFieldDefinitions.length > 0 && <th className={headClass}>{t("spools.customFields")}</th>}
-            <th className={headClass}>{t("spools.list.status")}</th>
+            {sortHead("status", t("spools.list.status"))}
             <th className={headClass}>
               <span className="sr-only">{t("spools.actions")}</span>
             </th>

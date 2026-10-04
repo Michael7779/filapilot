@@ -1,5 +1,13 @@
 import { useTranslation } from "react-i18next";
-import { LOW_STOCK_THRESHOLD_RATIO, remainingPercent, type CustomFieldDefinition, type Material, type SpoolWithRelations } from "@filapilot/shared";
+import {
+  LOW_STOCK_THRESHOLD_RATIO,
+  remainingPercent,
+  type CustomFieldDefinition,
+  type Material,
+  type SpoolColumnSort,
+  type SpoolSortColumn,
+  type SpoolWithRelations
+} from "@filapilot/shared";
 import { SpoolActions, type SpoolHandlers } from "./SpoolActions.js";
 import { formatBedTemp } from "../lib/formatTemps.js";
 
@@ -9,6 +17,9 @@ export interface SpoolViewProps extends SpoolHandlers {
   isAll: boolean;
   // Nur von ListView genutzt (Spalte "Zusatzfelder"); die anderen Ansichten reichen es ungenutzt durch.
   customFieldDefinitions: readonly CustomFieldDefinition[];
+  // Nur von ListView genutzt (klickbare Spaltenueberschriften); die Sortierung selbst macht die Spulen-Seite.
+  columnSort?: SpoolColumnSort | null;
+  onColumnSort?: (column: SpoolSortColumn) => void;
 }
 
 function isLow(spool: SpoolWithRelations): boolean {

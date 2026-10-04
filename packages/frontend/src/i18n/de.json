@@ -485,7 +485,7 @@
     "actions": "Aktionen",
     "view": { "label": "Ansicht", "standard": "Standard", "compact": "Kompakt", "list": "Liste", "swatch": "Farbkacheln" },
     "pager": { "perPage": "Spulen pro Seite", "all": "Alle", "prev": "Zurück", "next": "Weiter", "page": "Seite {{page}} von {{count}}" },
-    "list": { "color": "Farbe", "nozzle": "Düse", "bed": "Bett", "weight": "Restgewicht", "length": "Restlänge", "approx": "≈", "purchasedAt": "Gekauft am", "addedAt": "Hinzugefügt am", "lastModifiedAt": "Geändert am", "status": "Status", "active": "Aktiv" },
+    "list": { "sortBy": "Nach {{column}} sortieren", "color": "Farbe", "nozzle": "Düse", "bed": "Bett", "weight": "Restgewicht", "length": "Restlänge", "approx": "≈", "purchasedAt": "Gekauft am", "addedAt": "Hinzugefügt am", "lastModifiedAt": "Geändert am", "status": "Status", "active": "Aktiv" },
     "showArchived": "Archiv anzeigen",
     "archive": "Archivieren",
     "unarchive": "Wiederherstellen",
