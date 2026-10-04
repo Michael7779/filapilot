@@ -10,6 +10,7 @@ import {
   sortSpoolsByColumn,
   type SpoolColumnSort,
   type SpoolFilter,
+  type SpoolPriceSuggestion,
   type SpoolSortColumn,
   type SpoolSortKey
 } from "@filapilot/shared";
@@ -97,6 +98,7 @@ export function SpoolsPage(): React.JSX.Element {
   const editableInventories = inventories.filter((inventory) => inventory.role === "OWNER" || inventory.role === "EDITOR");
   const [photoUploadEnabled, setPhotoUploadEnabled] = useState(false);
   const [defaultManufacturerId, setDefaultManufacturerId] = useState<string | null>(null);
+  const [priceSuggestions, setPriceSuggestions] = useState<SpoolPriceSuggestion[]>([]);
 
   // silent: im Hintergrund nachladen, ohne die Seite (und einen offenen Dialog) durch die Ladeanzeige zu ersetzen
   const load = useCallback(async (silent = false) => {
@@ -108,13 +110,15 @@ export function SpoolsPage(): React.JSX.Element {
     }
     setLoadError(null);
     try {
-      const [spoolsData, materialsData, manufacturersData, customFieldsData, formDefaults] = await Promise.all([
+      const [spoolsData, materialsData, manufacturersData, customFieldsData, formDefaults, suggestionsData] = await Promise.all([
         apiRequest<SpoolWithRelations[]>(`/spools?inventoryId=${selectedId}&archived=${showArchived ? "include" : "exclude"}`),
         apiRequest<Material[]>("/materials"),
         apiRequest<Manufacturer[]>("/manufacturers"),
         apiRequest<CustomFieldDefinition[]>("/custom-field-definitions"),
-        fetchSpoolFormDefaults()
+        fetchSpoolFormDefaults(),
+        apiRequest<SpoolPriceSuggestion[]>("/spools/price-suggestions")
       ]);
+      setPriceSuggestions(suggestionsData);
       setPhotoUploadEnabled(formDefaults.photoUploadEnabled);
       setDefaultManufacturerId(formDefaults.defaultManufacturerId);
       setSpools(spoolsData);
@@ -499,6 +503,7 @@ export function SpoolsPage(): React.JSX.Element {
           inventories={editableInventories}
           defaultInventoryId={selectedId ?? ""}
           defaultManufacturerId={defaultManufacturerId}
+          priceSuggestions={priceSuggestions}
           onSubmit={handleSubmitSpool}
         />
       )}

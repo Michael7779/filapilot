@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Manufacturer, Material } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
+import { MaterialPriceFields, centsToEuroInput, euroInputToCents, priceSummary } from "./MaterialPriceFields.js";
 
 const INPUT_CLASS =
   "rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]";
@@ -182,6 +183,8 @@ function MaterialModal({
   const [bedMaxC, setBedMaxC] = useState(initial?.bedTempMaxC != null ? String(initial.bedTempMaxC) : "");
   const [density, setDensity] = useState(initial?.densityGCm3 != null ? String(initial.densityGCm3) : "");
   const [diameter, setDiameter] = useState(String(initial?.filamentDiameterMm ?? 1.75));
+  const [priceRefill, setPriceRefill] = useState(centsToEuroInput(initial?.priceRefillCents ?? null));
+  const [priceWithSpool, setPriceWithSpool] = useState(centsToEuroInput(initial?.priceWithSpoolCents ?? null));
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -202,7 +205,9 @@ function MaterialModal({
           bedTempC: bedC ? Number(bedC) : null,
           bedTempMaxC: bedMaxC ? Number(bedMaxC) : null,
           densityGCm3: density ? Number(density) : null,
-          filamentDiameterMm: Number(diameter) || 1.75
+          filamentDiameterMm: Number(diameter) || 1.75,
+          priceRefillCents: euroInputToCents(priceRefill),
+          priceWithSpoolCents: euroInputToCents(priceWithSpool)
         })
       });
       onSaved();
@@ -267,6 +272,7 @@ function MaterialModal({
         </label>
       </div>
       <p className="-mt-2 text-xs text-[var(--color-text-muted)]">{t("catalog.densityHint")}</p>
+      <MaterialPriceFields priceWithSpool={priceWithSpool} priceRefill={priceRefill} onWithSpoolChange={setPriceWithSpool} onRefillChange={setPriceRefill} />
     </ModalForm>
   );
 }
@@ -397,6 +403,7 @@ export function CatalogSection(): React.JSX.Element {
                   {bedTempLabel(m.bedTempC, m.bedTempMaxC)}
                   {m.densityGCm3 !== null ? ` · ${m.densityGCm3} g/cm³` : ""}
                   {m.filamentDiameterMm !== 1.75 ? ` · ${m.filamentDiameterMm} mm` : ""}
+                  {priceSummary(m, i18n.language, t)}
                 </td>
                 <td className="py-2">
                   <RowActions

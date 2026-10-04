@@ -1,12 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
-import { availableMaterialsFor } from "@filapilot/shared";
+import { availableMaterialsFor, suggestPrice } from "@filapilot/shared";
 import { formatBedTemp } from "../lib/formatTemps.js";
 import type { PhotoChange } from "../lib/spoolPhoto.js";
 import { SpoolPhotoField } from "./SpoolPhotoField.js";
 import { SpoolColorFields } from "./SpoolColorFields.js";
 import { SpoolCustomFieldsFields } from "./SpoolCustomFieldsFields.js";
+import { SpoolPackagingField } from "./SpoolPackagingField.js";
 import type {
   CreateManufacturerInput,
   CreateMaterialInput,
@@ -16,6 +17,7 @@ import type {
   Inventory,
   Manufacturer,
   Material,
+  SpoolPriceSuggestion,
   SpoolWithRelations
 } from "@filapilot/shared";
 
@@ -39,6 +41,8 @@ interface SpoolFormModalProps {
   // Vom Admin in den Einstellungen hinterlegter Standard-Hersteller; nur bei einer neuen Spule vorbelegt,
   // eine bestehende Spule behaelt immer ihren eigenen Hersteller.
   defaultManufacturerId: string | null;
+  // Zuletzt eingetragene Preise je Hersteller + Material + Lieferform - Vorbelegung des Preises bei einer neuen Spule.
+  priceSuggestions: SpoolPriceSuggestion[];
   onSubmit: (input: CreateSpoolInput, photo: PhotoChange) => Promise<void>;
 }
 
@@ -70,6 +74,7 @@ export function SpoolFormModal({
   inventories,
   defaultInventoryId,
   defaultManufacturerId,
+  priceSuggestions,
   onSubmit
 }: SpoolFormModalProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
@@ -90,6 +95,9 @@ export function SpoolFormModal({
   const [inventoryId, setInventoryId] = useState(initialSpool?.inventoryId ?? defaultInventoryId);
   // Nur beim Neuanlegen relevant - eine neue Spule ist standardmaessig ungeoeffnet (siehe schema.prisma Spool.openedAt).
   const [alreadyOpened, setAlreadyOpened] = useState(false);
+  const [isRefill, setIsRefill] = useState(initialSpool?.isRefill ?? false);
+  // Sobald der Preis von Hand angefasst wurde (oder bei einer bestehenden Spule), wird er nicht mehr vorbelegt.
+  const [priceTouched, setPriceTouched] = useState(initialSpool !== null);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -106,7 +114,19 @@ export function SpoolFormModal({
   const availableMaterials = availableMaterialsFor(materials, chosenManufacturerId || null);
   const selectedMaterial = materials.find((material) => material.id === form.materialId);
   const selectedManufacturer = manufacturers.find((manufacturer) => manufacturer.id === form.manufacturerId);
+  // Lieferform (Nachfuellung / mit Spule) gibt es nur bei noch nicht angebrochenen Spulen.
+  const isUnopened = initialSpool ? initialSpool.openedAt === null : !alreadyOpened;
+  const suggestedPrice = suggestPrice(priceSuggestions, selectedMaterial, chosenManufacturerId, isUnopened && isRefill);
   const selectedBedTemp = selectedMaterial ? formatBedTemp(selectedMaterial.bedTempC, selectedMaterial.bedTempMaxC, t) : null;
+
+  // Bei einer neuen Spule den Preis vorbelegen, solange er nicht von Hand geaendert wurde; bei Wechsel von Material oder
+  // Lieferform wird er neu vorgeschlagen (ohne Vorschlag leer).
+  const suggestedCents = suggestedPrice?.priceCents ?? null;
+  useEffect(() => {
+    if (!priceTouched) {
+      setForm((current) => ({ ...current, purchasePriceEuro: suggestedCents === null ? "" : String(suggestedCents / 100) }));
+    }
+  }, [priceTouched, suggestedCents]);
 
   function handleManufacturerChange(manufacturerId: string): void {
     const stillFits = availableMaterialsFor(materials, manufacturerId || null).some(
@@ -145,7 +165,9 @@ export function SpoolFormModal({
       bedTempMaxC: null,
       // Dichte/Durchmesser gibt es hier nicht direkt ein - laesst sich unter Einstellungen -> Stammdaten nachtragen.
       densityGCm3: null,
-      filamentDiameterMm: 1.75
+      filamentDiameterMm: 1.75,
+      priceRefillCents: null,
+      priceWithSpoolCents: null
     });
     return created.id;
   }
@@ -181,6 +203,7 @@ export function SpoolFormModal({
           purchasedAt: null,
           location: form.location.trim() ? form.location.trim() : null,
           note: form.note.trim() ? form.note.trim() : null,
+          isRefill: isUnopened ? isRefill : (initialSpool?.isRefill ?? false),
           customFields,
           alreadyOpened
         },
@@ -380,6 +403,8 @@ export function SpoolFormModal({
           />
         </label>
 
+        {isUnopened && <SpoolPackagingField isRefill={isRefill} onChange={setIsRefill} />}
+
         <label className={LABEL_CLASS}>
           {t("spools.purchasePrice")}
           <input
@@ -387,9 +412,15 @@ export function SpoolFormModal({
             step="0.01"
             min={0}
             value={form.purchasePriceEuro}
-            onChange={(event) => setForm({ ...form, purchasePriceEuro: event.target.value })}
+            onChange={(event) => {
+              setPriceTouched(true);
+              setForm({ ...form, purchasePriceEuro: event.target.value });
+            }}
             className={SELECT_CLASS}
           />
+          {!priceTouched && suggestedPrice && (
+            <span className="text-xs font-normal text-[var(--color-text-muted)]">{t(`spools.priceHint.${suggestedPrice.source}`)}</span>
+          )}
         </label>
 
         <label className={LABEL_CLASS}>

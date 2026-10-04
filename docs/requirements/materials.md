@@ -75,3 +75,12 @@
 - **R11**: Ab 0.23.2 liefert `availableMaterialsFor(materials, manufacturerId)` nur die eigenen Produkte
   eines Herstellers, sofern er welche hat; generische (herstellerlose) Materialien nur als Fallback ohne
   gewaehlten Hersteller oder fuer einen Hersteller ganz ohne eigenes Produkt. Test: `tests/unit/availableMaterials.test.ts`
+- **R12**: Ab 0.26.0: Ein Material hat zwei optionale Richtpreise in Cent je Spule (`priceRefillCents` =
+  Nachfuellung, `priceWithSpoolCents` = Filament mit Spule; `Int?`, 0 bis 1.000.000). Pflege nur ueber die
+  Admin-Routen der Materialien (Nutzer -> 403; negative oder krumme Werte -> 400), Eingabe in Einstellungen ->
+  Filamente. Sie dienen als Vorbelegung des Kaufpreises (siehe `spools.md` R29). Die mitgelieferte Vorlage
+  (`catalogData.ts`, `CATALOG_VERSION` 4) enthaelt fuer Bambu Lab die guenstigsten Staffelpreise (ab 10 Spulen, je
+  1 kg) aus dem Bambu-Lab-EU-Shop, Stand 2026-10-04; PVA nur als 0,5-kg-Spule. Beim Einspielen der Vorlage werden
+  Preise bei bestehenden Materialien nur nachgetragen, wenn BEIDE Preise leer sind - nie ueberschrieben. Neu in der
+  Vorlage: Bambu Lab "PETG Basic" und "PETG Translucent". Tests: `tests/integration/catalogPrices.test.ts`,
+  `tests/security/spoolPriceSuggestions.test.ts`.

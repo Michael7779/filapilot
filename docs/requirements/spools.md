@@ -176,3 +176,18 @@
   "Sortieren nach"-Dropdown und hebt die Gruppierung "Ungeoeffnet/Angefangen" auf; das Dropdown setzt sie zurueck.
   Reine Client-Logik auf der bereits rechtegeprueft geladenen Liste, keine neue Route. Test:
   `tests/unit/spoolColumnSort.test.ts`; die Oberflaeche wurde nicht im Browser geprueft (kein Dev-Server aktiv).
+- **R28**: Ab 0.26.0: Eine Spule hat `isRefill` (Boolean, Standard `false` = "Filament mit Spule", `true` =
+  "Nachfuellung" ohne Spule). Das Formular zeigt die Auswahl nur bei ungeoeffneten Spulen
+  (`openedAt === null` bzw. neue Spule ohne "Schon angebrochen"); die Liste hat dazu die sortierbare Spalte
+  "Lieferform" (nur bei ungeoeffneten Spulen gefuellt), die Karten zeigen "Ungeoeffnet · Nachfuellung/mit Spule", der
+  Export die Spalte "Nachfuellung". Der Server validiert `isRefill` mit Zod (Nicht-Boolean -> 400) und ein PATCH ohne
+  das Feld laesst den Wert unveraendert. Test: `tests/security/spoolPriceSuggestions.test.ts`,
+  `tests/unit/spoolColumnSort.test.ts`.
+- **R29**: Ab 0.26.0: Beim Anlegen einer Spule wird der Kaufpreis vorbelegt (`suggestPrice()` in
+  `packages/shared/src/spoolPrice.ts`): 1. zuletzt eingetragener Preis fuer dieselbe Kombination aus Hersteller,
+  Material und Lieferform (farbunabhaengig, auch archivierte Spulen), 2. Richtpreis des Materials fuer diese
+  Lieferform, 3. kein Vorschlag. Preise der jeweils anderen Lieferform werden nie uebernommen. Die Daten kommen von
+  `GET /api/spools/price-suggestions` (SCOPE: user): nur Spulen der Lager mit Mitgliedschaft
+  (`accessibleInventoryIds`), liefert ausschliesslich IDs + Preis. Von Hand geaenderte Preise werden nicht mehr
+  ueberschrieben. Negativ-Tests: kein Cookie -> 401, `mustChangePassword` -> 403, Preis aus fremdem Lager taucht nie
+  auf (`tests/security/spoolPriceSuggestions.test.ts`); Logik: `tests/unit/spoolPrice.test.ts`.

@@ -16,6 +16,13 @@ function remainingLengthM(spool: SpoolWithRelations, diameterMm: number | null, 
   return meters === null ? null : Math.round(meters);
 }
 
+function refillCell(spool: SpoolWithRelations): CellValue {
+  if (spool.openedAt) {
+    return null;
+  }
+  return spool.isRefill ? "ja" : "nein";
+}
+
 const COLUMNS: ExportColumn[] = [
   { header: "Hersteller", width: 16, value: (spool) => spool.manufacturerName },
   { header: "Material", width: 16, value: (spool) => spool.materialName },
@@ -27,6 +34,8 @@ const COLUMNS: ExportColumn[] = [
   { header: "Restlaenge (m, ungefaehr)", width: 14, value: remainingLengthM },
   { header: "Lagerort", width: 14, value: (spool) => spool.location ?? null },
   { header: "Kaufpreis (EUR)", width: 12, value: (spool) => (spool.purchasePriceCents === null ? null : spool.purchasePriceCents / 100) },
+  // Nur bei ungeoeffneten Spulen gefuellt (angebrochene Spulen: leer)
+  { header: "Nachfuellung", width: 12, value: refillCell },
   { header: "Gekauft am", width: 12, value: (spool) => (spool.purchasedAt ? new Date(spool.purchasedAt) : null) },
   { header: "Hinzugefuegt am", width: 14, value: (spool) => new Date(spool.createdAt) },
   { header: "Notiz", width: 24, value: (spool) => spool.note ?? null },

@@ -63,7 +63,7 @@ function StatusBadge({ spool }: { spool: SpoolWithRelations }): React.JSX.Elemen
   if (!spool.openedAt) {
     return (
       <span className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>
-        {t("spools.unopened")}
+        {t("spools.unopened")} · {spool.isRefill ? t("spools.packaging.refill") : t("spools.packaging.withSpoolShort")}
       </span>
     );
   }
@@ -134,7 +134,7 @@ export function CompactView({ spools, isAll, ...handlers }: SpoolViewProps): Rea
             {spool.manufacturerName} {spool.materialName}
           </div>
           <WeightBar spool={spool} />
-          <div className="mt-1 flex items-center justify-between gap-1 text-xs text-[var(--color-text-secondary)]">
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-xs text-[var(--color-text-secondary)]">
             <span>
               {spool.remainingWeightG} g ({Math.round(remainingPercent(spool))} %)
             </span>
@@ -160,7 +160,7 @@ export function SwatchView({ spools, ...handlers }: SpoolViewProps): React.JSX.E
           <div className="p-2.5">
             <div className="truncate text-sm font-semibold">{spool.colorName}</div>
             <div className="truncate text-xs text-[var(--color-text-muted)]">{spool.materialName}</div>
-            <div className="mt-1 flex items-center justify-between gap-1 text-xs text-[var(--color-text-secondary)]">
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-xs text-[var(--color-text-secondary)]">
               <span>
                 {spool.remainingWeightG} g ({Math.round(remainingPercent(spool))} %)
               </span>

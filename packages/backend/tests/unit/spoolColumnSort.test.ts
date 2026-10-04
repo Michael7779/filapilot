@@ -21,6 +21,7 @@ function spool(over: Partial<SpoolWithRelations>): SpoolWithRelations {
     initialWeightG: 1000,
     remainingWeightG: 500,
     purchasePriceCents: null,
+    isRefill: false,
     purchasedAt: null,
     location: null,
     note: null,
@@ -75,6 +76,15 @@ describe("Spulen: Spaltensortierung der Listenansicht", () => {
     // Ohne lastModifiedAt gilt createdAt
     assert.deepEqual(names(sortSpoolsByColumn(list, { column: "lastModifiedAt", direction: "asc" }, "de", materials)), ["Weiss", "blau", "Rot"]);
     assert.equal(sortSpoolsByColumn(list, { column: "status", direction: "asc" }, "de", materials)[0]?.colorName, "Weiss");
+  });
+
+  it("sortiert die Lieferform: mit Spule vor Nachfuellung, angebrochene Spulen (ohne Angabe) zuletzt", () => {
+    const mitSpule = spool({ colorName: "Mit", openedAt: null, isRefill: false });
+    const refill = spool({ colorName: "Refill", openedAt: null, isRefill: true });
+    const angebrochen = spool({ colorName: "Offen", isRefill: true });
+    const mixed = [angebrochen, refill, mitSpule];
+    assert.deepEqual(names(sortSpoolsByColumn(mixed, { column: "packaging", direction: "asc" }, "de", materials)), ["Mit", "Refill", "Offen"]);
+    assert.deepEqual(names(sortSpoolsByColumn(mixed, { column: "packaging", direction: "desc" }, "de", materials)), ["Refill", "Mit", "Offen"]);
   });
 
   it("behaelt bei Gleichstand die Eingabereihenfolge und veraendert die Eingabe nicht", () => {

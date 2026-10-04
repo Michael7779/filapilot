@@ -3,7 +3,7 @@
 // keine garantierten Werte - im Zweifel gilt das Datenblatt auf der Spule. Admins koennen alles unter
 // Einstellungen -> Stammdaten aendern. Bei jeder inhaltlichen Aenderung CATALOG_VERSION erhoehen, dann
 // werden fehlende Eintraege beim naechsten Zugriff nachgetragen (bestehende und geloeschte bleiben unberuehrt).
-export const CATALOG_VERSION = 3;
+export const CATALOG_VERSION = 4;
 
 export interface CatalogMaterial {
   manufacturer: string | null;
@@ -12,6 +12,9 @@ export interface CatalogMaterial {
   maxC: number;
   bedC: number | null;
   densityGCm3: number | null;
+  // Richtpreis in Cent je Spule (Nachfuellung / mit Spule), siehe Material.priceRefillCents. null = unbekannt.
+  priceRefillCents: number | null;
+  priceWithSpoolCents: number | null;
 }
 
 // Dichte haengt praktisch nur von der Material-Chemie ab, nicht von der Marke - deshalb ueber den Namen erkannt statt
@@ -69,13 +72,36 @@ export const CATALOG_MANUFACTURERS = [
   "Voxelab"
 ] as const;
 
+// Bambu Lab: guenstigster Staffelpreis (ab 10 Spulen, je 1 kg) im Bambu-Lab-EU-Shop (eu.store.bambulab.com), Stand
+// 2026-10-04, in Cent: [Nachfuellung ohne Spule, Filament mit Spule]. null = dort nicht einzeln erhaeltlich. PVA gibt es nur
+// als 0,5-kg-Spule (Preis je Spule). Nur ein Richtwert - der Shop aendert Preise; Admins pflegen sie unter Stammdaten.
+const BAMBU_LAB_PRICES: Record<string, [number | null, number | null]> = {
+  ABS: [1019, 1199],
+  ASA: [null, 2499],
+  "PA6-CF": [null, 8299],
+  "PAHT-CF": [null, 10199],
+  PC: [null, 4299],
+  "PETG Basic": [959, 1139],
+  "PETG HF": [1019, 1199],
+  "PETG Translucent": [1019, 1199],
+  "PLA Basic": [1019, 1199],
+  "PLA Matte": [1019, 1199],
+  "PLA Silk": [1019, 1199],
+  "PLA-CF": [2699, 2999],
+  PVA: [null, 4199],
+  "TPU 95A HF": [null, 3499]
+};
+
 const m = (
   manufacturer: string | null,
   name: string,
   minC: number,
   maxC: number,
   bedC: number | null
-): CatalogMaterial => ({ manufacturer, name, minC, maxC, bedC, densityGCm3: densityFor(name) });
+): CatalogMaterial => {
+  const [priceRefillCents, priceWithSpoolCents] = (manufacturer === "Bambu Lab" ? BAMBU_LAB_PRICES[name] : undefined) ?? [null, null];
+  return { manufacturer, name, minC, maxC, bedC, densityGCm3: densityFor(name), priceRefillCents, priceWithSpoolCents };
+};
 
 export const CATALOG_MATERIALS: CatalogMaterial[] = [
   // Allgemein (fuer jeden Hersteller waehlbar)
@@ -104,7 +130,9 @@ export const CATALOG_MATERIALS: CatalogMaterial[] = [
   m("Bambu Lab", "PA6-CF", 260, 290, 100),
   m("Bambu Lab", "PAHT-CF", 260, 290, 100),
   m("Bambu Lab", "PC", 260, 290, 110),
+  m("Bambu Lab", "PETG Basic", 220, 250, 75),
   m("Bambu Lab", "PETG HF", 230, 260, 70),
+  m("Bambu Lab", "PETG Translucent", 220, 250, 75),
   m("Bambu Lab", "PLA Basic", 190, 230, 45),
   m("Bambu Lab", "PLA Matte", 190, 230, 45),
   m("Bambu Lab", "PLA Silk", 190, 230, 45),

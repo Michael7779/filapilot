@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { AuditEntry } from "@filapilot/shared";
 
+const PRICE_KEYS = new Set(["purchasePriceCents", "priceRefillCents", "priceWithSpoolCents"]);
+
 export function formatValue(key: string, value: unknown, translate: (key: string, fallback: string) => string): string {
   if (value === null || value === undefined || value === "") {
     return "—";
@@ -9,7 +11,7 @@ export function formatValue(key: string, value: unknown, translate: (key: string
   if (typeof value === "boolean") {
     return translate(value ? "audit.yes" : "audit.no", String(value));
   }
-  if (key === "purchasePriceCents" && typeof value === "number") {
+  if (PRICE_KEYS.has(key) && typeof value === "number") {
     return `${(value / 100).toFixed(2)} €`;
   }
   if (typeof value === "string") {

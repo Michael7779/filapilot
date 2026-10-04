@@ -242,6 +242,10 @@ model Material {
   densityGCm3    Float?
   // Durchmesser des Filaments in mm (fast immer 1,75, selten 2,85) - fuer die Restlaengen-Naeherung der Spule.
   filamentDiameterMm Float @default(1.75)
+  // Richtpreis (Cent) je Spule: Nachfuellung (ohne Spule) bzw. Filament mit Spule - Vorbelegung des Kaufpreises beim
+  // Anlegen einer Spule, wenn es noch keine eigene Spule dieser Art gibt. null = unbekannt.
+  priceRefillCents    Int?
+  priceWithSpoolCents Int?
   spools         Spool[]
   wishlistItems  WishlistItem[]
   createdAt      DateTime      @default(now())
@@ -283,6 +287,9 @@ model Spool {
   // uebernommen - die Route validiert jeden Schluessel/Wert gegen die bekannten Definitionen (siehe customFields.ts).
   customFields        Json       @default("{}")
   purchasePriceCents  Int?
+  // true = Nachfuellung (Filament ohne Spule), false = Filament mit Spule. Nur bei ungeoeffneten Spulen von Bedeutung
+  // (die Oberflaeche zeigt es dann); steuert die Preis-Vorbelegung beim Anlegen.
+  isRefill            Boolean    @default(false)
   purchasedAt         DateTime?
   location            String?
   // Optional nur wegen der Datenuebernahme per "db push"; ensureDefaultInventory() fuellt es, der Code schreibt nie ohne Lager.

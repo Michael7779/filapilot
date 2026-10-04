@@ -132,6 +132,35 @@ spoolsRouter.get(
   })
 );
 
+// Preis-Vorschlaege fuer das Formular "Neue Spule": je Hersteller + Material + Art (Nachfuellung / mit Spule) der zuletzt
+// eingetragene Kaufpreis, unabhaengig von der Farbe - auch von archivierten Spulen (aufgebrauchte Spulen vergessen den Preis nicht).
+// Threat-Model: Ein Benutzer koennte darueber Kaufpreise aus Lagern lesen, in denen er kein Mitglied ist. Serverseitig
+// erzwungen: nur Spulen der Lager mit Mitgliedschaft (accessibleInventoryIds, aus der Datenbank berechnet, nie aus dem
+// Client); die Route nimmt keine Parameter entgegen und liefert nur IDs + Preis, keine Spulen-Details. Negativ-Tests:
+// kein Cookie -> 401, Preis einer fremden Spule taucht nicht auf (tests/security/spoolPriceSuggestions.test.ts).
+// SCOPE: user
+spoolsRouter.get(
+  "/price-suggestions",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const inventoryIds = await accessibleInventoryIds(getAuthenticatedUser(req));
+    const rows = await prisma.spool.findMany({
+      where: { inventoryId: { in: inventoryIds }, purchasePriceCents: { not: null } },
+      select: { manufacturerId: true, materialId: true, isRefill: true, purchasePriceCents: true },
+      orderBy: { createdAt: "desc" },
+      distinct: ["manufacturerId", "materialId", "isRefill"]
+    });
+    sendData(
+      res,
+      rows.flatMap((row) =>
+        row.purchasePriceCents === null
+          ? []
+          : [{ manufacturerId: row.manufacturerId, materialId: row.materialId, isRefill: row.isRefill, priceCents: row.purchasePriceCents }]
+      )
+    );
+  })
+);
+
 // Export als Datei zum Herunterladen (CSV/JSON) - vor "/:id" registriert, sonst wuerde "export" als ID gelesen.
 // Threat-Model: Ein Benutzer ohne Zugriff koennte den Bestand eines fremden Lagers exportieren (Kaufpreise,
 // Lagerort). Serverseitig erzwungen: dieselbe Rechtepruefung wie beim Lesen der Liste (VIEWER, "all" nur eigene

@@ -62,6 +62,8 @@ export function toPublicMaterial(material: PrismaMaterial): Material {
     bedTempMaxC: material.bedTempMaxC,
     densityGCm3: material.densityGCm3,
     filamentDiameterMm: material.filamentDiameterMm,
+    priceRefillCents: material.priceRefillCents,
+    priceWithSpoolCents: material.priceWithSpoolCents,
     manufacturerId: material.manufacturerId
   };
 }
@@ -87,6 +89,7 @@ export function toPublicSpool(spool: PrismaSpool): Spool {
     tareWeightG: spool.tareWeightG,
     photoUrl: spool.photoUrl,
     purchasePriceCents: spool.purchasePriceCents,
+    isRefill: spool.isRefill,
     purchasedAt: spool.purchasedAt,
     location: spool.location,
     note: spool.note,

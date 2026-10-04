@@ -26,8 +26,11 @@ async function seedCatalog(): Promise<void> {
   // Nur nachtragen, was fehlt - bestehende (auch vom Admin geaenderte) Eintraege bleiben unberuehrt. Ausnahme:
   // die Dichte ist ein neues Feld (0.18.0) - ein leerer Wert kann nie eine bewusste Admin-Aenderung gewesen sein,
   // deshalb wird er bei einem Namens-/Hersteller-Treffer mit der Vorlage nachgetragen (nur wenn noch leer).
-  // Beim ersten Einspielen einer neuen Version fehlende Hersteller-Eintraege ergaenzen.
-  const existing = await prisma.material.findMany({ select: { id: true, name: true, manufacturerId: true, densityGCm3: true } });
+  // Ebenso die Richtpreise (0.26.0): sind BEIDE Preise leer, werden sie aus der Vorlage nachgetragen; ein schon
+  // gepflegter Preis wird nie ueberschrieben.
+  const existing = await prisma.material.findMany({
+    select: { id: true, name: true, manufacturerId: true, densityGCm3: true, priceRefillCents: true, priceWithSpoolCents: true }
+  });
   const known = new Set(existing.map((material) => `${material.manufacturerId ?? ""}|${material.name}`));
   const catalogByKey = new Map(
     CATALOG_MATERIALS.map((entry) => [`${(entry.manufacturer ? idByName.get(entry.manufacturer) : null) ?? ""}|${entry.name}`, entry])
@@ -44,7 +47,9 @@ async function seedCatalog(): Promise<void> {
         printTempMinC: entry.minC,
         printTempMaxC: entry.maxC,
         bedTempC: entry.bedC,
-        densityGCm3: entry.densityGCm3
+        densityGCm3: entry.densityGCm3,
+        priceRefillCents: entry.priceRefillCents,
+        priceWithSpoolCents: entry.priceWithSpoolCents
       }
     ];
   });
@@ -77,6 +82,24 @@ async function seedCatalog(): Promise<void> {
       action: "EVENT",
       area: "MATERIAL",
       description: `Dichte aus Vorlage nachgetragen: ${toBackfill.length} Materialien ergaenzt`
+    });
+  }
+  const pricesToBackfill = existing.flatMap((material) => {
+    const template = catalogByKey.get(`${material.manufacturerId ?? ""}|${material.name}`);
+    const hasNoPrice = material.priceRefillCents === null && material.priceWithSpoolCents === null;
+    return template && hasNoPrice && (template.priceRefillCents !== null || template.priceWithSpoolCents !== null)
+      ? [{ id: material.id, priceRefillCents: template.priceRefillCents, priceWithSpoolCents: template.priceWithSpoolCents }]
+      : [];
+  });
+  if (pricesToBackfill.length > 0) {
+    await Promise.all(
+      pricesToBackfill.map(({ id, ...prices }) => prisma.material.update({ where: { id }, data: prices }))
+    );
+    await recordAudit({
+      actor: SYSTEM_ACTOR,
+      action: "EVENT",
+      area: "MATERIAL",
+      description: `Richtpreise aus Vorlage nachgetragen: ${pricesToBackfill.length} Materialien ergaenzt`
     });
   }
   await prisma.settings.update({ where: { id: 1 }, data: { catalogVersion: CATALOG_VERSION } });

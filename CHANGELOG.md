@@ -8,6 +8,16 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.26.0] - 2026-10-04
+
+### Hinzugefuegt
+- Neue Spule: Der Kaufpreis wird jetzt vorgeschlagen. Zuerst gilt der zuletzt eingetragene Preis für dasselbe Material desselben Herstellers (die Farbe spielt keine Rolle, auch aufgebrauchte Spulen zählen), sonst der Richtpreis des Materials. Ein von Hand geänderter Preis bleibt unverändert.
+- Spulen haben eine Lieferform: "Filament mit Spule" oder "Nachfüllung". Sie lässt sich bei noch nicht angebrochenen Spulen im Formular wählen und steht in der Liste (neue sortierbare Spalte "Lieferform"), auf den Karten ("Ungeöffnet · Nachfüllung") und im Excel-/CSV-Export. Nachfüllung und Spule bekommen je einen eigenen Preisvorschlag.
+- Einstellungen → Filamente: Materialien haben zwei Richtpreise (mit Spule / Nachfüllung). Für Bambu Lab sind die günstigsten Staffelpreise (ab 10 Spulen) aus dem Bambu-Lab-Shop vom 4. Oktober 2026 hinterlegt, z. B. PLA Basic 11,99 € mit Spule und 10,19 € Nachfüllung, PETG Basic 11,39 € / 9,59 €. Neu im Katalog: Bambu Lab PETG Basic und PETG Translucent.
+
+### Hinweis zum Update
+- Das Update ergänzt zwei Spalten für die Richtpreise im Material und eine Spalte "Nachfüllung" bei den Spulen (alle bestehenden Spulen gelten als "mit Spule"). Dabei geht nichts verloren. Beim ersten Start tragen die mitgelieferten Vorlagen die Bambu-Lab-Richtpreise bei bestehenden Materialien nach, aber nur, wenn dort noch gar kein Preis steht - eigene Preise werden nie überschrieben.
+
 ## [0.25.1] - 2026-10-04
 
 ### Behoben

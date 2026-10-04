@@ -27,7 +27,8 @@ export function spoolSnapshot(
     tareWeightG: spool.tareWeightG,
     location: spool.location,
     note: spool.note,
-    purchasePriceCents: spool.purchasePriceCents
+    purchasePriceCents: spool.purchasePriceCents,
+    isRefill: spool.isRefill
   };
 }
 
@@ -46,7 +47,9 @@ export function materialSnapshot(material: PrismaMaterial, manufacturerName: str
     bedTempC: material.bedTempC,
     bedTempMaxC: material.bedTempMaxC,
     densityGCm3: material.densityGCm3,
-    filamentDiameterMm: material.filamentDiameterMm
+    filamentDiameterMm: material.filamentDiameterMm,
+    priceRefillCents: material.priceRefillCents,
+    priceWithSpoolCents: material.priceWithSpoolCents
   };
 }
 

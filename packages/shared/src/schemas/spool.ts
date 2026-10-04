@@ -21,6 +21,8 @@ export const spoolSchema = z.object({
   // Vom Server verwaltet (Upload ueber PUT /api/spools/:id/photo), nie vom Client frei setzbar.
   photoUrl: z.string().nullable(),
   purchasePriceCents: z.number().int().min(0).nullable(),
+  // true = Nachfuellung (ohne Spule), false = Filament mit Spule; relevant fuer ungeoeffnete Spulen.
+  isRefill: z.boolean(),
   purchasedAt: z.coerce.date().nullable(),
   location: z.string().max(60).nullable(),
   note: z.string().max(500).nullable(),
@@ -62,6 +64,7 @@ export const createSpoolInputSchema = spoolSchema
     // Neuere, optionale Felder: weglassen ist gleichbedeutend mit "kein Wert" (Abwaertskompatibilitaet).
     colorHex2: hexColor.nullable().optional().default(null),
     note: z.string().trim().max(500).nullable().optional().default(null),
+    isRefill: z.boolean().optional().default(false),
     tareWeightG: z.number().int().min(0).nullable().optional().default(null),
     customFields: rawCustomFieldValuesSchema.optional().default({}),
     // Eine manuell angelegte Spule ist standardmaessig ungeoeffnet; true = diese Spule ist schon angebrochen
@@ -79,6 +82,16 @@ export const spoolWithRelationsSchema = spoolSchema.extend({
   inventoryName: z.string().nullable()
 });
 export type SpoolWithRelations = z.infer<typeof spoolWithRelationsSchema>;
+
+// Zuletzt eingetragener Kaufpreis je Hersteller + Material + Art (Nachfuellung/mit Spule), unabhaengig von der Farbe -
+// Vorbelegung des Preisfelds beim Anlegen einer neuen Spule.
+export const spoolPriceSuggestionSchema = z.object({
+  manufacturerId: z.string().uuid(),
+  materialId: z.string().uuid(),
+  isRefill: z.boolean(),
+  priceCents: z.number().int().min(0)
+});
+export type SpoolPriceSuggestion = z.infer<typeof spoolPriceSuggestionSchema>;
 
 export const LOW_STOCK_THRESHOLD_RATIO = 0.15;
 

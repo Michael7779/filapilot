@@ -19,6 +19,7 @@ export const SPOOL_SORT_COLUMNS = [
   "addedAt",
   "lastModifiedAt",
   "note",
+  "packaging",
   "status"
 ] as const;
 export type SpoolSortColumn = (typeof SPOOL_SORT_COLUMNS)[number];
@@ -71,6 +72,9 @@ function columnValue(spool: SpoolWithRelations, column: SpoolSortColumn, materia
       return effectiveLastModifiedAt(spool).getTime();
     case "note":
       return spool.note;
+    case "packaging":
+      // Nur bei ungeoeffneten Spulen bekannt: mit Spule vor Nachfuellung
+      return spool.openedAt ? null : Number(spool.isRefill);
     case "status":
       return statusRank(spool);
   }

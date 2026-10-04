@@ -34,6 +34,14 @@ function bedTempCell(bedTempC: number | null, bedTempMaxC: number | null): strin
   return bedTempMaxC !== null ? `${bedTempC}–${bedTempMaxC} °C` : `${bedTempC} °C`;
 }
 
+// Lieferform nur bei ungeoeffneten Spulen: "Nachfüllung" bzw. "Filament mit Spule", sonst "–".
+function packagingLabel(spool: SpoolWithRelations, t: (key: string) => string): string {
+  if (spool.openedAt) {
+    return "–";
+  }
+  return t(spool.isRefill ? "spools.packaging.refill" : "spools.packaging.withSpool");
+}
+
 function statusKey(spool: SpoolWithRelations): string {
   if (spool.archivedAt) {
     return spool.archiveReason === "CLOUD_REMOVED" ? "spools.archivedCloud" : "spools.archived";
@@ -101,6 +109,7 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
             {sortHead("lastModifiedAt", t("spools.list.lastModifiedAt"))}
             {sortHead("note", t("spools.note"))}
             {customFieldDefinitions.length > 0 && <th className={headClass}>{t("spools.customFields")}</th>}
+            {sortHead("packaging", t("spools.packaging.listLabel"))}
             {sortHead("status", t("spools.list.status"))}
             <th className={headClass}>
               <span className="sr-only">{t("spools.actions")}</span>
@@ -151,6 +160,7 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
                     {customFieldSummary(spool) || "–"}
                   </td>
                 )}
+                <td className={cellClass}>{packagingLabel(spool, t)}</td>
                 <td className={cellClass} style={!spool.archivedAt && !spool.openedAt ? { color: "var(--accent)" } : undefined}>
                   {t(statusKey(spool))}
                 </td>
