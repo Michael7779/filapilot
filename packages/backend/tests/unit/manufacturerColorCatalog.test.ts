@@ -24,6 +24,7 @@ describe("getColorPresets", () => {
       assert.equal(new Set(presets.map((preset) => preset.name)).size, presets.length, material);
     }
     assert.ok(getColorPresets("Bambu Lab", "PETG Translucent").some((preset) => preset.name === "Klar"));
+    assert.ok(getColorPresets("Bambu Lab", "PETG Basic").some((preset) => preset.name === "Natur"));
   });
 
   it("faellt auf die generische Liste zurueck, wenn kein Material gewaehlt ist", () => {

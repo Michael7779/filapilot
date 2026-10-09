@@ -8,6 +8,7 @@ import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/prisma.js";
 import { hashPassword } from "../../src/services/authService.js";
+import { NO_TAR } from "../helpers/platform.js";
 
 describe("Backups (Uebersicht + Wiederherstellung) - Negativ-Tests", () => {
   const app = createApp();
@@ -95,7 +96,7 @@ describe("Backups (Uebersicht + Wiederherstellung) - Negativ-Tests", () => {
     assert.equal(status.body.data.state, "idle");
   });
 
-  it("laesst Admins eine Sicherung als tar herunterladen; ungueltige/unbekannte Zeitstempel werden abgelehnt", async () => {
+  it("laesst Admins eine Sicherung als tar herunterladen; ungueltige/unbekannte Zeitstempel werden abgelehnt", { skip: NO_TAR }, async () => {
     const ok = await request(app)
       .get(`/api/settings/backups/${TIMESTAMP}/download`)
       .set("Cookie", adminCookie)

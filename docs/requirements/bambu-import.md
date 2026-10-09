@@ -91,3 +91,9 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   wenn der Hex-Wert GENAU einer Farbe aus `getColorPresets(Hersteller, Material)` entspricht (z.B. Bambu Lab PLA
   Basic `#00AE42` = "Bambu-Gruen"), sonst den allgemeinen Namen. Bestehende Spulen werden nicht umbenannt. Test:
   `tests/unit/bambuMapping.test.ts`.
+- **R15**: Ab 0.28.0: Beim ersten Start mit Katalog-Version 5 korrigiert `renameLegacyImportColors()`
+  (`services/spoolColorRenameService.ts`, aufgerufen aus `catalogService.ts`) einmalig aeltere Cloud-Importe: nur Spulen
+  mit `bambuCloudId`, deren Name genau dem alten RGB-Ergebnis (`legacyNearestColorName`) ihres Farbwerts entspricht, bekommen
+  den Namen nach `importColorName()` (R14). Von Hand geaenderte Namen, Spulen ohne Cloud-Bezug und schon richtige Namen
+  bleiben unberuehrt; `lastModifiedAt` aendert sich nicht; je Umbenennung ein Protokoll-Eintrag (SYSTEM). Laeuft nur einmal.
+  Test: `tests/integration/legacyColorRename.test.ts`, `tests/unit/bambuMapping.test.ts`.

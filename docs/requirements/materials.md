@@ -84,6 +84,6 @@
   Preise bei bestehenden Materialien nur nachgetragen, wenn BEIDE Preise leer sind - nie ueberschrieben. Neu in der
   Vorlage: Bambu Lab "PETG Basic" und "PETG Translucent". Tests: `tests/integration/catalogPrices.test.ts`,
   `tests/security/spoolPriceSuggestions.test.ts`.
-- **R13**: Ab 0.27.0: `getColorPresets()` kennt eigene Farben fuer Bambu Lab "PETG Basic" und "PETG Translucent" (Namen
+- **R13**: Ab 0.27.0: `getColorPresets()` kennt eigene Farben fuer Bambu Lab "PETG Basic" (inkl. "Natur" mit geschaetztem Hex-Wert) und "PETG Translucent" (Namen
   wie im Bambu-Lab-EU-Shop, Stand 2026-10-04; die Hex-Werte sind aus den Farbmustern dort gemessene Naeherungen, kein
   offizieller Farbcode). Test: `tests/unit/manufacturerColorCatalog.test.ts`.

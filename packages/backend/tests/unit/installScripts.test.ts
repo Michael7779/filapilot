@@ -5,10 +5,11 @@ import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { NO_BASH } from "../helpers/platform.js";
 
 const SCRIPTS_DIR = new URL("../../../../scripts/", import.meta.url);
 
-describe("Installations-Skripte (init-env.sh, set-env.sh)", () => {
+describe("Installations-Skripte (init-env.sh, set-env.sh)", { skip: NO_BASH }, () => {
   let project = "";
 
   beforeEach(async () => {

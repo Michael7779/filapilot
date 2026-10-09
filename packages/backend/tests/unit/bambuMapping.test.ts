@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { nearestColorName, normalizeHexColor } from "@filapilot/shared";
+import { importColorName, legacyNearestColorName, nearestColorName, normalizeHexColor } from "@filapilot/shared";
 import { mapBambuSpool, parseBambuHits } from "../../src/services/bambuImportService.js";
 
 describe("Bambu-Import: Zuordnung einer Spule", () => {
@@ -98,6 +98,12 @@ describe("Farbnamen", () => {
     assert.equal(nearestColorName("#042F56"), "Dunkelblau");
     assert.equal(nearestColorName("#757575"), "Grau");
     assert.equal(nearestColorName("#9B9EA0"), "Grau");
+  });
+
+  it("die alte RGB-Zuordnung (nur fuer die Korrektur aelterer Importe) ergibt fuer #61C680 weiterhin das alte \"Grau\"", () => {
+    assert.equal(legacyNearestColorName("#61C680"), "Grau");
+    assert.equal(legacyNearestColorName(null), "Unbekannt");
+    assert.equal(importColorName("#61C680", "Bambu Lab", "PLA Basic"), "Hellgrün");
   });
 
   it("nimmt den Herstellernamen, wenn der Hex-Wert genau zu einer bekannten Farbe des Materials passt", () => {

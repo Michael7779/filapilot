@@ -1,6 +1,7 @@
 import { prisma } from "../prisma.js";
 import { env } from "../env.js";
 import { SYSTEM_ACTOR, recordAudit } from "./auditService.js";
+import { renameLegacyImportColors } from "./spoolColorRenameService.js";
 import { CATALOG_MANUFACTURERS, CATALOG_MATERIALS, CATALOG_VERSION } from "./catalogData.js";
 
 let running: Promise<void> | null = null;
@@ -101,6 +102,10 @@ async function seedCatalog(): Promise<void> {
       area: "MATERIAL",
       description: `Richtpreise aus Vorlage nachgetragen: ${pricesToBackfill.length} Materialien ergaenzt`
     });
+  }
+  // Einmalig (0.28.0): aeltere Cloud-Importe bekommen den korrekten Farbnamen (nur automatisch vergebene Namen).
+  if (settings.catalogVersion < 5) {
+    await renameLegacyImportColors();
   }
   await prisma.settings.update({ where: { id: 1 }, data: { catalogVersion: CATALOG_VERSION } });
 }

@@ -10,6 +10,7 @@ import { createApp } from "../../src/app.js";
 import { prisma } from "../../src/prisma.js";
 import { hashPassword } from "../../src/services/authService.js";
 import { validateArchiveEntries } from "../../src/services/backupImportService.js";
+import { NO_TAR } from "../helpers/platform.js";
 
 const TS = "2026-09-25T01-00-00-000Z";
 
@@ -67,7 +68,7 @@ describe("Sicherung hochladen - Negativ-Tests", () => {
     assert.deepEqual(await folderEntries(), []);
   });
 
-  it("lehnt Archive mit fremden Dateien, Pfaden oder ohne Datenbank-Dump ab - und entpackt nichts", async () => {
+  it("lehnt Archive mit fremden Dateien, Pfaden oder ohne Datenbank-Dump ab - und entpackt nichts", { skip: NO_TAR }, async () => {
     const foreign = await makeTar("foreign", { [`filapilot-db-${TS}.sql`]: "-- dump", "evil.sh": "rm -rf /" });
     assert.equal((await upload(adminCookie, foreign)).status, 400);
 
@@ -81,7 +82,7 @@ describe("Sicherung hochladen - Negativ-Tests", () => {
     await assert.rejects(fs.access(path.join(folder, "..", `filapilot-db-${TS}.sql`)));
   });
 
-  it("lehnt Verknuepfungen im Archiv ab", async () => {
+  it("lehnt Verknuepfungen im Archiv ab", { skip: NO_TAR }, async () => {
     const dir = await fs.mkdtemp(path.join(work, "link-"));
     await fs.symlink("/etc/passwd", path.join(dir, `filapilot-db-${TS}.sql`));
     const target = path.join(work, "link.tar");
@@ -90,7 +91,7 @@ describe("Sicherung hochladen - Negativ-Tests", () => {
     assert.deepEqual(await folderEntries(), []);
   });
 
-  it("nimmt eine gueltige Sicherung an, zeigt sie in der Uebersicht und lehnt dieselbe ein zweites Mal ab (409)", async () => {
+  it("nimmt eine gueltige Sicherung an, zeigt sie in der Uebersicht und lehnt dieselbe ein zweites Mal ab (409)", { skip: NO_TAR }, async () => {
     const valid = await makeTar("valid", { [`filapilot-db-${TS}.sql`]: "-- dump", [`filapilot-settings-${TS}.json`]: "{}" });
     const ok = await upload(adminCookie, valid);
     assert.equal(ok.status, 201);

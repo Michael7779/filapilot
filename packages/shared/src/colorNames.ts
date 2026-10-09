@@ -1,3 +1,5 @@
+import { getColorPresets } from "./manufacturerColorCatalog.js";
+
 // Feste Liste deutscher Farbnamen fuer den Import: Bambu liefert nur einen Hex-Wert, FilaPilot zeigt einen Namen.
 // Der Name ist der naechste Eintrag im Lab-Farbraum (wahrnehmungsnah) und laesst sich nach dem Import jederzeit aendern.
 // Im RGB-Raum wurde z.B. ein helles Gruen (#61C680) dem Grau statt dem Gruen zugeordnet, weil dort Farbigkeit kaum zaehlt.
@@ -71,6 +73,53 @@ function toLab(hex: string): [number, number, number] {
   const y = f(0.2126 * r + 0.7152 * g + 0.0722 * b);
   const z = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
   return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+
+// Die alte Namensliste und Zuordnung (bis 0.26.0, naechster Eintrag im RGB-Raum). Nur noch fuer die einmalige Korrektur
+// aelterer Importe: eine Spule gilt als "vom Import benannt", wenn ihr Name genau diesem alten Ergebnis entspricht -
+// von Hand geaenderte Namen werden so nie angefasst.
+const LEGACY_COLOR_NAMES: { name: string; hex: string }[] = [
+  { name: "Schwarz", hex: "#1A1A1A" },
+  { name: "Weiß", hex: "#F5F5F0" },
+  { name: "Grau", hex: "#8C8C88" },
+  { name: "Silber", hex: "#B8B8B8" },
+  { name: "Rot", hex: "#D14343" },
+  { name: "Orange", hex: "#E8622C" },
+  { name: "Gelb", hex: "#F2C94C" },
+  { name: "Gold", hex: "#C9A227" },
+  { name: "Grün", hex: "#4C8C3C" },
+  { name: "Türkis", hex: "#00B1B7" },
+  { name: "Blau", hex: "#2F6FED" },
+  { name: "Dunkelblau", hex: "#042F56" },
+  { name: "Violett", hex: "#7F56D9" },
+  { name: "Rosa", hex: "#E38BB3" },
+  { name: "Braun", hex: "#7A5230" },
+  { name: "Beige", hex: "#D8C3A0" }
+];
+
+export function legacyNearestColorName(hex: string | null): string {
+  if (!hex) {
+    return "Unbekannt";
+  }
+  const [r, g, b] = channels(hex);
+  let best = "Unbekannt";
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const entry of LEGACY_COLOR_NAMES) {
+    const [er, eg, eb] = channels(entry.hex);
+    const distance = (r - er) ** 2 + (g - eg) ** 2 + (b - eb) ** 2;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = entry.name;
+    }
+  }
+  return best;
+}
+
+// Farbname fuer importierte Spulen: der Name des Herstellers, wenn der Hex-Wert GENAU einer seiner bekannten Farben fuer
+// dieses Material entspricht (z.B. Bambu Lab PLA Basic #00AE42 = "Bambu-Grün"), sonst der naechste allgemeine Name.
+export function importColorName(colorHex: string | null, vendor: string, materialName: string): string {
+  const exact = colorHex ? getColorPresets(vendor, materialName).find((preset) => preset.hex.toUpperCase() === colorHex) : undefined;
+  return exact?.name ?? nearestColorName(colorHex);
 }
 
 export function nearestColorName(hex: string | null): string {

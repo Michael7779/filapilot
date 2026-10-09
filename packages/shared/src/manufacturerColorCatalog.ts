@@ -60,7 +60,9 @@ const MANUFACTURER_COLOR_PRESETS: Record<string, ColorPreset[]> = {
     { name: "Reflex Blue", hex: "#001389" },
     { name: "Misty Blue", hex: "#688197" },
     { name: "Dunkelbeige", hex: "#DBC8B7" },
-    { name: "Dunkelbraun", hex: "#502C1E" }
+    { name: "Dunkelbraun", hex: "#502C1E" },
+    // "Natur" hat im Shop kein eigenes Farbmuster - der Wert ist eine Schaetzung (naturfarbenes, leicht cremiges PETG).
+    { name: "Natur", hex: "#EBE6D8" }
   ],
   "Bambu Lab::PETG Translucent": [
     { name: "Klar", hex: "#E0E0E0" },

@@ -8,6 +8,17 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.28.0] - 2026-10-09
+
+### Behoben
+- Bereits aus der Bambu-Cloud importierte Spulen bekommen beim Update einmalig den richtigen Farbnamen (z. B. ein helles Grün hieß fälschlich "Grau"). Geändert werden nur Namen, die der Import selbst vergeben hatte; von Hand geänderte Namen bleiben unberührt. Jede Umbenennung steht im Änderungsprotokoll der Spule.
+
+### Hinzugefuegt
+- Bambu Lab PETG Basic: Farbe "Natur" in den Farbknöpfen (der Farbwert ist geschätzt, der Shop hat dafür kein Farbmuster).
+
+### Hinweis zum Update
+- Rein technisch: Die Entwicklungs-Tests, die /bin/bash oder tar brauchen, werden auf Windows übersprungen statt als Fehler zu erscheinen. Auf der Synology laufen sie unverändert.
+
 ## [0.27.1] - 2026-10-09
 
 ### Behoben

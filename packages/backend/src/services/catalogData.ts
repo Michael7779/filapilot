@@ -3,7 +3,7 @@
 // keine garantierten Werte - im Zweifel gilt das Datenblatt auf der Spule. Admins koennen alles unter
 // Einstellungen -> Stammdaten aendern. Bei jeder inhaltlichen Aenderung CATALOG_VERSION erhoehen, dann
 // werden fehlende Eintraege beim naechsten Zugriff nachgetragen (bestehende und geloeschte bleiben unberuehrt).
-export const CATALOG_VERSION = 4;
+export const CATALOG_VERSION = 5;
 
 export interface CatalogMaterial {
   manufacturer: string | null;
