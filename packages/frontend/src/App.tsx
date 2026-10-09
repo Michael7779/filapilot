@@ -15,6 +15,7 @@ import type { UserPublic } from "@filapilot/shared";
 import { Sidebar } from "./components/Sidebar.js";
 import { BottomNav } from "./components/BottomNav.js";
 import { UpdateBanner } from "./components/UpdateBanner.js";
+import { InstalledAppTopStrip } from "./components/InstalledAppTopStrip.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { SetupPage } from "./pages/SetupPage.js";
@@ -148,6 +149,7 @@ function AuthBootstrap({ children }: { children: React.JSX.Element }): React.JSX
 export default function App(): React.JSX.Element {
   return (
     <BrowserRouter>
+      <InstalledAppTopStrip />
       <UpdateBanner />
       <AuthBootstrap>
         <Routes>

@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.27.1] - 2026-10-09
+
+### Behoben
+- Installierte App auf dem iPhone (iOS 26/27): Der obere Rand unter der Statusleiste sah verwischt aus. Es gibt jetzt einen unsichtbaren Streifen am oberen Rand, der iOS einen festen Bezugspunkt mit der Seitenfarbe gibt. Nach dem Update die App einmal komplett schließen (im App-Umschalter nach oben wischen) und neu öffnen. Ob der Rand damit wirklich scharf wird, lässt sich nur auf einem echten iPhone mit iOS 27 prüfen - im Browser oder Simulator ist der Effekt nicht nachzustellen. Hilft es dort nicht, melden.
+
 ## [0.27.0] - 2026-10-04
 
 ### Hinzugefuegt

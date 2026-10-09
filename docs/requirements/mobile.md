@@ -32,3 +32,18 @@
   `TITLE_BY_PATH`) - nicht nur auf einer Teilmenge. Befund (0.22.5, Funktions-Audit): `/wunschliste` fehlte in
   der Zuordnung, die Titelzeile zeigte dort faelschlich "Dashboard". Behoben. Test: manuell per Browser
   (jede Route in der Navigation aufgerufen, Titel mit dem Menüpunkt verglichen).
+- **R4**: Ab 0.27.1: In der als Homescreen-App installierten Web-App (iOS: `navigator.standalone === true` oder
+  `display-mode: standalone`, siehe `src/lib/installedApp.ts`) liegt einmal im Wurzel-Layout (`App.tsx`, ausserhalb
+  der Seiten, damit auch Login/Einrichtung ihn haben) ein unsichtbarer, fester, 11 px hoher Streifen am oberen Rand
+  (`InstalledAppTopStrip.tsx`): `aria-hidden`, `pointer-events-none`, Hintergrund `--color-bg` (dieselbe Variable wie
+  `<body>`), dazu `background-clip: text` bei transparenter Schrift und ohne Text - es wird nichts gezeichnet. Zweck:
+  iOS 26/27 legt sonst einen Unschaerfe-Verlauf ueber den oberen Rand, wenn WebKit dort kein festes, deckendes Element
+  findet (nicht von Apple dokumentiert; Ansatz nach FreshRSS PR 9382). Im normalen Browser-Tab wird nichts gerendert.
+  FilaPilot hat nur ein helles Farbschema; kommt ein dunkles, muss `--color-bg` dort umdefiniert werden (der Streifen
+  folgt automatisch, ein Test erinnert daran). Frontend-Tests: `packages/frontend/tests/unit/installedAppTopStrip.test.tsx`
+  (`pnpm --filter frontend test`). Befund/Grenze: Die Wirksamkeit ist NICHT im Browser oder Simulator belegbar und
+  steht aus, bis sie auf einem echten iPhone mit iOS 27 geprueft wurde. Offen/Alternativen, falls es nicht hilft:
+  (a) `apple-mobile-web-app-status-bar-style` setzen (aktuell gar nicht gesetzt; greift erst nach Loeschen und neuem
+  Hinzufuegen der App), (b) die Kopfzeile um einen Zusatzabstand aus `safe-area-inset-top` plus Reserve nach unten
+  schieben. Beobachtung dazu: `TopBar` hat feste Hoehe `h-14` plus `pt-[env(safe-area-inset-top)]` - auf dem iPhone
+  bleibt dadurch kaum Platz fuer den Inhalt der Kopfzeile (Kandidat fuer (b)).
