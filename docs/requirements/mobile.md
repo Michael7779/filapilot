@@ -41,8 +41,8 @@
   findet (nicht von Apple dokumentiert; Ansatz nach FreshRSS PR 9382). Im normalen Browser-Tab wird nichts gerendert.
   FilaPilot hat nur ein helles Farbschema; kommt ein dunkles, muss `--color-bg` dort umdefiniert werden (der Streifen
   folgt automatisch, ein Test erinnert daran). Frontend-Tests: `packages/frontend/tests/unit/installedAppTopStrip.test.tsx`
-  (`pnpm --filter frontend test`). Befund/Grenze: Die Wirksamkeit ist NICHT im Browser oder Simulator belegbar und
-  steht aus, bis sie auf einem echten iPhone mit iOS 27 geprueft wurde. Offen/Alternativen, falls es nicht hilft:
+  (`pnpm --filter frontend test`). Wirksamkeit: Im Browser oder Simulator nicht belegbar; am 2026-10-09 vom Betreiber auf einem
+  echten iPhone (iOS 27) bestaetigt ("laeuft und sieht gut aus"). Offen/Alternativen, falls es nicht hilft:
   (a) `apple-mobile-web-app-status-bar-style` setzen (aktuell gar nicht gesetzt; greift erst nach Loeschen und neuem
   Hinzufuegen der App), (b) die Kopfzeile um einen Zusatzabstand aus `safe-area-inset-top` plus Reserve nach unten
   schieben. Beobachtung dazu: `TopBar` hat feste Hoehe `h-14` plus `pt-[env(safe-area-inset-top)]` - auf dem iPhone
