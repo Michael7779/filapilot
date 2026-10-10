@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { effectiveLastModifiedAt, estimateRemainingLengthM, remainingPercent, type SpoolSortColumn, type SpoolWithRelations } from "@filapilot/shared";
+import { remainingPercent, type SpoolSortColumn, type SpoolWithRelations } from "@filapilot/shared";
 import { SpoolActions } from "./SpoolActions.js";
+import { SpoolListDetail } from "./SpoolListDetail.js";
 import { ColorDot, WeightBar, type SpoolViewProps } from "./SpoolViews.js";
 
 const headClass = "whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-[var(--color-text-secondary)]";
-const cellClass = "whitespace-nowrap px-3 py-2 align-middle";
 
 const ARIA_SORT = { asc: "ascending", desc: "descending" } as const;
 
@@ -18,28 +19,12 @@ function SortIcon({ direction }: { direction: "asc" | "desc" | null }): React.JS
   );
 }
 
-// "–" ohne bekannte Dichte des Materials, sonst "≈ 335 m" (Naeherung, siehe estimateRemainingLengthM).
-function formatLength(meters: number | null, locale: string, t: (key: string) => string): string {
-  if (meters === null) {
-    return "–";
-  }
-  return `${t("spools.list.approx")} ${Math.round(meters).toLocaleString(locale)} m`;
-}
-
-// "60 °C" bei nur einem Wert, sonst "60–80 °C" als Bereich (Material.bedTempMaxC).
-function bedTempCell(bedTempC: number | null, bedTempMaxC: number | null): string {
-  if (bedTempC === null) {
-    return "–";
-  }
-  return bedTempMaxC !== null ? `${bedTempC}–${bedTempMaxC} °C` : `${bedTempC} °C`;
-}
-
-// Lieferform nur bei ungeoeffneten Spulen: "Nachfüllung" bzw. "Filament mit Spule", sonst "–".
-function packagingLabel(spool: SpoolWithRelations, t: (key: string) => string): string {
-  if (spool.openedAt) {
-    return "–";
-  }
-  return t(spool.isRefill ? "spools.packaging.refill" : "spools.packaging.withSpool");
+function ChevronIcon({ open }: { open: boolean }): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 12 12" className={`h-3 w-3 transition-transform motion-reduce:transition-none ${open ? "rotate-90" : ""}`} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 2l4 4-4 4" />
+    </svg>
+  );
 }
 
 function statusKey(spool: SpoolWithRelations): string {
@@ -49,67 +34,97 @@ function statusKey(spool: SpoolWithRelations): string {
   return spool.openedAt ? "spools.list.active" : "spools.unopened";
 }
 
-// Liste: eine Zeile pro Spule mit ALLEN Angaben (Material, Farbe, Temperaturen, Gewicht, Lagerort, Preis, Datum, Notiz, Zusatzfelder).
-export function ListView({ spools, materials, isAll, customFieldDefinitions, columnSort, onColumnSort, ...handlers }: SpoolViewProps): React.JSX.Element {
-  const { t, i18n } = useTranslation();
+interface SpoolRowsProps {
+  open: boolean;
+  columnCount: number;
+  archived: boolean;
+  main: React.JSX.Element;
+  detail: React.JSX.Element;
+}
+
+// Hauptzeile + (aufgeklappt) Detailzeile.
+function SpoolRows({ open, columnCount, archived, main, detail }: SpoolRowsProps): React.JSX.Element {
+  return (
+    <>
+      <tr className={`border-b border-[var(--color-border)] last:border-b-0 ${archived ? "opacity-70" : ""}`}>{main}</tr>
+      {open && (
+        <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg)] last:border-b-0">
+          <td colSpan={columnCount} className="py-3 pl-12 pr-4">
+            {detail}
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+// Liste: pro Spule eine Zeile mit den Kernangaben (Farbe, Hersteller/Material, Restgewicht, Lagerort, Status);
+// alles Weitere (Temperaturen, Preis, Datum, Notiz, Zusatzfelder) klappt unter der Zeile auf.
+export function ListView({ spools, materials, isAll, customFieldDefinitions, columnSort, onColumnSort, density = "normal", ...handlers }: SpoolViewProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const compact = density === "compact";
+  const cellClass = `px-3 align-middle ${compact ? "py-1" : "py-2.5"}`;
+  const allOpen = spools.length > 0 && spools.every((spool) => expanded.has(spool.id));
+  const columnCount = isAll ? 8 : 7;
+
+  function toggle(id: string): void {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
   // Klick auf die Ueberschrift sortiert nach der Spalte; erneuter Klick dreht die Richtung um (Logik in der Spulen-Seite).
-  const sortHead = (column: SpoolSortColumn, label: string): React.JSX.Element => {
+  const sortButton = (column: SpoolSortColumn, label: string): React.JSX.Element => {
     const direction = columnSort?.column === column ? columnSort.direction : null;
     return (
-      <th key={column} className={headClass} aria-sort={direction ? ARIA_SORT[direction] : undefined}>
-        <button
-          type="button"
-          onClick={() => onColumnSort?.(column)}
-          title={t("spools.list.sortBy", { column: label })}
-          className="inline-flex items-center gap-1 font-medium hover:text-[var(--color-text)]"
-        >
-          {label}
-          <SortIcon direction={direction} />
-        </button>
-      </th>
+      <button
+        type="button"
+        onClick={() => onColumnSort?.(column)}
+        title={t("spools.list.sortBy", { column: label })}
+        className="inline-flex items-center gap-1 font-medium hover:text-[var(--color-text-primary)]"
+      >
+        {label}
+        <SortIcon direction={direction} />
+      </button>
     );
   };
-  // "Gekauft am" bleibt ein reines Datum (kein Zeitpunkt, nur ein Kalendertag). "Hinzugefuegt am" und "Geaendert
-  // am" sind echte Zeitpunkte und zeigen deshalb auch die Uhrzeit.
-  const date = (value: Date | string | null): string => (value ? new Date(value).toLocaleDateString(i18n.language) : "–");
-  const dateTime = (value: Date | string): string =>
-    new Date(value).toLocaleString(i18n.language, { dateStyle: "medium", timeStyle: "short" });
-  const price = (spool: SpoolWithRelations): string =>
-    spool.purchasePriceCents === null ? "–" : (spool.purchasePriceCents / 100).toLocaleString(i18n.language, { style: "currency", currency: "EUR" });
-  const customFieldSummary = (spool: SpoolWithRelations): string =>
-    customFieldDefinitions
-      .filter((definition) => spool.customFields[definition.id] != null && spool.customFields[definition.id] !== "")
-      .map((definition) => {
-        const value = spool.customFields[definition.id];
-        let display = String(value);
-        if (definition.kind === "BOOLEAN") {
-          display = value ? t("audit.yes") : t("audit.no");
-        }
-        return `${definition.name}: ${display}`;
-      })
-      .join(" · ");
+  const ariaSort = (column: SpoolSortColumn): "ascending" | "descending" | undefined => (columnSort?.column === column ? ARIA_SORT[columnSort.direction] : undefined);
+  const sortHead = (column: SpoolSortColumn, label: string): React.JSX.Element => (
+    <th key={column} className={headClass} aria-sort={ariaSort(column)}>
+      {sortButton(column, label)}
+    </th>
+  );
 
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-white">
-      <table className="w-full min-w-[1000px] border-collapse text-sm">
+      <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-[var(--color-border)]">
+            <th className="w-9 px-2 py-2">
+              <button
+                type="button"
+                onClick={() => setExpanded(allOpen ? new Set() : new Set(spools.map((spool) => spool.id)))}
+                aria-label={t(allOpen ? "spools.list.collapseAll" : "spools.list.expandAll")}
+                title={t(allOpen ? "spools.list.collapseAll" : "spools.list.expandAll")}
+                className="rounded-md p-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"
+              >
+                <ChevronIcon open={allOpen} />
+              </button>
+            </th>
             {sortHead("color", t("spools.list.color"))}
-            {sortHead("manufacturer", t("spools.manufacturer"))}
-            {sortHead("material", t("spools.material"))}
+            <th className={headClass} aria-sort={ariaSort("manufacturer") ?? ariaSort("material")}>
+              {sortButton("manufacturer", t("spools.manufacturer"))}
+              <span className="mx-1 font-normal">·</span>
+              {sortButton("material", t("spools.material"))}
+            </th>
             {isAll && sortHead("inventory", t("spools.inventory"))}
-            {sortHead("nozzle", t("spools.list.nozzle"))}
-            {sortHead("bed", t("spools.list.bed"))}
             {sortHead("weight", t("spools.list.weight"))}
-            {sortHead("length", t("spools.list.length"))}
             {sortHead("location", t("spools.filter.location"))}
-            {sortHead("price", t("spools.filter.price"))}
-            {sortHead("purchasedAt", t("spools.list.purchasedAt"))}
-            {sortHead("addedAt", t("spools.list.addedAt"))}
-            {sortHead("lastModifiedAt", t("spools.list.lastModifiedAt"))}
-            {sortHead("note", t("spools.note"))}
-            {customFieldDefinitions.length > 0 && <th className={headClass}>{t("spools.customFields")}</th>}
-            {sortHead("packaging", t("spools.packaging.listLabel"))}
             {sortHead("status", t("spools.list.status"))}
             <th className={headClass}>
               <span className="sr-only">{t("spools.actions")}</span>
@@ -118,56 +133,70 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
         </thead>
         <tbody>
           {spools.map((spool) => {
-            const temps = materials.find((material) => material.id === spool.materialId);
+            const open = expanded.has(spool.id);
             const percent = Math.round(remainingPercent(spool));
+            // Ein Klick auf eine Zelle klappt die Zeile auf; die Aktionen und der Pfeil bleiben davon unberuehrt.
+            const toggleCell = { onClick: () => toggle(spool.id), className: `${cellClass} cursor-pointer` };
             return (
-              <tr key={spool.id} className={`border-b border-[var(--color-border)] last:border-b-0 ${spool.archivedAt ? "opacity-70" : ""}`}>
-                <td className={cellClass}>
-                  <span className="flex items-center gap-2">
-                    <ColorDot hex={spool.colorHex} hex2={spool.colorHex2} size="h-4 w-4" />
-                    <span>
-                      <span className="font-medium">{spool.colorName}</span>
-                      {spool.colorHex && <span className="ml-1 text-xs text-[var(--color-text-muted)]">{spool.colorHex.toUpperCase()}</span>}
-                    </span>
-                  </span>
-                </td>
-                <td className={cellClass}>{spool.manufacturerName}</td>
-                <td className={cellClass}>{spool.materialName}</td>
-                {isAll && <td className={cellClass}>{spool.inventoryName ?? "–"}</td>}
-                <td className={cellClass}>{temps ? `${temps.printTempMinC}–${temps.printTempMaxC} °C` : "–"}</td>
-                <td className={cellClass}>{temps ? bedTempCell(temps.bedTempC, temps.bedTempMaxC) : "–"}</td>
-                <td className={cellClass}>
-                  <div className="w-36">
-                    <WeightBar spool={spool} />
-                    <span className="text-xs text-[var(--color-text-secondary)]">
-                      {spool.remainingWeightG} g / {spool.initialWeightG} g ({percent} %)
-                    </span>
-                  </div>
-                </td>
-                <td className={cellClass}>
-                  {formatLength(estimateRemainingLengthM(spool.remainingWeightG, temps?.densityGCm3 ?? null, temps?.filamentDiameterMm), i18n.language, t)}
-                </td>
-                <td className={cellClass}>{spool.location ?? "–"}</td>
-                <td className={cellClass}>{price(spool)}</td>
-                <td className={cellClass}>{date(spool.purchasedAt)}</td>
-                <td className={cellClass}>{dateTime(spool.createdAt)}</td>
-                <td className={cellClass}>{dateTime(effectiveLastModifiedAt(spool))}</td>
-                <td className={`${cellClass} max-w-[160px] truncate`} title={spool.note ?? ""}>
-                  {spool.note ?? "–"}
-                </td>
-                {customFieldDefinitions.length > 0 && (
-                  <td className={`${cellClass} max-w-[200px] truncate`} title={customFieldSummary(spool)}>
-                    {customFieldSummary(spool) || "–"}
-                  </td>
-                )}
-                <td className={cellClass}>{packagingLabel(spool, t)}</td>
-                <td className={cellClass} style={!spool.archivedAt && !spool.openedAt ? { color: "var(--accent)" } : undefined}>
-                  {t(statusKey(spool))}
-                </td>
-                <td className={cellClass}>
-                  <SpoolActions spool={spool} {...handlers} />
-                </td>
-              </tr>
+              <SpoolRows
+                key={spool.id}
+                open={open}
+                columnCount={columnCount}
+                archived={Boolean(spool.archivedAt)}
+                main={
+                  <>
+                    <td className="px-2 align-middle">
+                      <button
+                        type="button"
+                        onClick={() => toggle(spool.id)}
+                        aria-expanded={open}
+                        aria-label={t(open ? "spools.list.collapseRow" : "spools.list.expandRow")}
+                        className="rounded-md p-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"
+                      >
+                        <ChevronIcon open={open} />
+                      </button>
+                    </td>
+                    <td {...toggleCell} className={`${toggleCell.className} whitespace-nowrap`}>
+                      <span className="flex items-center gap-2">
+                        <ColorDot hex={spool.colorHex} hex2={spool.colorHex2} size={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+                        <span>
+                          <span className="font-medium">{spool.colorName}</span>
+                          {spool.colorHex && <span className="ml-1 text-xs text-[var(--color-text-muted)]">{spool.colorHex.toUpperCase()}</span>}
+                        </span>
+                      </span>
+                    </td>
+                    <td {...toggleCell}>
+                      {spool.manufacturerName} · {spool.materialName}
+                    </td>
+                    {isAll && <td {...toggleCell}>{spool.inventoryName ?? "–"}</td>}
+                    <td {...toggleCell}>
+                      <div className="w-36 max-w-full">
+                        <WeightBar spool={spool} />
+                        <span className="text-xs text-[var(--color-text-secondary)]">
+                          {spool.remainingWeightG} g / {spool.initialWeightG} g ({percent} %)
+                        </span>
+                      </div>
+                    </td>
+                    <td {...toggleCell} className={`${toggleCell.className} whitespace-nowrap`}>
+                      {spool.location ?? "–"}
+                    </td>
+                    <td {...toggleCell} className={`${toggleCell.className} whitespace-nowrap`} style={!spool.archivedAt && !spool.openedAt ? { color: "var(--accent)" } : undefined}>
+                      {t(statusKey(spool))}
+                    </td>
+                    <td className="px-3 align-middle">
+                      <SpoolActions spool={spool} {...handlers} labelledReorder />
+                    </td>
+                  </>
+                }
+                detail={
+                  <SpoolListDetail
+                    spool={spool}
+                    material={materials.find((entry) => entry.id === spool.materialId)}
+                    customFieldDefinitions={customFieldDefinitions}
+                    renderLabel={sortButton}
+                  />
+                }
+              />
             );
           })}
         </tbody>

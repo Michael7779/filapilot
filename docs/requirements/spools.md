@@ -69,7 +69,8 @@
   serverseitige Filterung, keine Rechte-Auswirkung). Test: `tests/unit/spoolFilter.test.ts`; die Oberflaeche wurde manuell geprueft.
 - **R14**: Ab 0.16.0: Ansicht (standard/compact/list/swatch) und Seitengroesse (12/24/48/96/alle) der Spulenliste werden pro Konto gespeichert
   (`PATCH /api/users/me/preferences`, SCOPE self, nur feste Werte, fremde userId ignoriert; Browser-Merker nur als Startwert). Die Liste zeigt alle Angaben der Spule.
-  Tests: `tests/security/preferences.test.ts`; die Oberflaeche wurde manuell geprueft.
+  Ab 0.29.0 sitzt die Auswahl "Spulen pro Seite" oben neben der Anzahl-Zeile bei den Filtern (`SpoolPageSizeSelect`), unten
+  bleibt nur das Blaettern. Tests: `tests/security/preferences.test.ts`; die Oberflaeche wurde manuell geprueft.
 - **R15**: Ab 0.19.0: Eine Spule hat eine optionale zweite Farbe (`colorHex2`, zweifarbiges Filament), eine Notiz (max. 500 Zeichen) und
   Werte fuer die Admin-definierten Zusatzfelder (`customFields`, siehe `custom-fields.md`); neue Felder sind beim Anlegen optional (Weglassen = kein Wert).
   `GET /api/spools/:id/history` (VIEWER) zeigt das Aenderungsprotokoll genau dieser Spule (aus dem allgemeinen Protokoll gefiltert auf `area=SPOOL`
@@ -201,3 +202,10 @@
   `mustChangePassword` -> 403, Fremder -> 404, Betrachter -> 403, zu viele/ungueltige Werte -> 400,
   falsche Material/Hersteller-Kombination -> 400 ohne angelegte Spule (`tests/security/spoolsBulk.test.ts`);
   Listenlogik: `tests/unit/bulkSpoolList.test.ts`. Die Oberflaeche wurde manuell im Browser geprueft.
+- **R31**: Ab 0.29.0: Die Listenansicht zeigt pro Spule sieben Kernangaben (Pfeil, Farbe, Hersteller · Material, Restgewicht, Lagerort, Status, Aktionen; bei "alle Lager" zusaetzlich das Lager) und passt ohne seitliches Scrollen auf einen Desktop-Bildschirm.
+  Alle weiteren Angaben (Duese, Bett, Restlaenge, Preis, Gekauft/Hinzugefuegt/Geaendert am, Lieferform, Notiz, Zusatzfelder) stehen in einer aufklappbaren Zeile; der Pfeil in der Kopfzeile klappt alle auf/zu.
+  Sortierbar bleiben alle bisherigen Spalten (die aufgeklappten Beschriftungen sind Sortier-Knoepfe). Reine Darstellung, kein Server-/Rechte-Einfluss. Die Oberflaeche wurde manuell im Browser geprueft.
+- **R32**: Ab 0.29.0: Umschalter "Normal / Kompakt" (Zeilenhoehe) fuer die Listenansicht, nur pro Browser in `localStorage` gemerkt (kein Konto-Wert, keine Schema-Aenderung). Manuell im Browser geprueft.
+- **R33**: Ab 0.29.0: Ein-Klick-"Zur Wunschliste" als eigener Knopf an jeder Spule in allen Ansichten; knappe Spulen (<= 15 % Rest, nicht archiviert, `isLowStockSpool`) zeigen in Liste und Standardansicht den beschrifteten Knopf "Nachbestellen".
+  Steht die Spule (Hersteller + Material + Farbe) schon als offener/bestellter Wunsch auf der Liste (`isSpoolOnWishlist`, alte Wuensche ohne Farbfeld werden am Titel erkannt, erledigte zaehlen nicht), ist der Knopf ausgegraut.
+  Keine neue Route (nutzt `POST /api/wishlist`, R1/R7 in wishlist.md). Test: `tests/unit/wishlistMatch.test.ts`; Oberflaeche manuell im Browser geprueft.

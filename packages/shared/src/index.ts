@@ -28,3 +28,4 @@ export * from "./schemas/wishlist.js";
 export * from "./schemas/spoolDrying.js";
 export * from "./schemas/spoolWeigh.js";
 export * from "./schemas/spoolmanImport.js";
+export * from "./wishlistMatch.js";

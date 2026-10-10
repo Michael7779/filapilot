@@ -127,4 +127,28 @@ describe("Wunschliste (instanzweit) - Negativ-Tests", () => {
     assert.equal(cleared.body.data.materialId, null);
     assert.equal(cleared.body.data.materialName, null);
   });
+
+  it("speichert eine optionale Wunschfarbe (Name + Farbwert), weist ungueltige Werte ab (400), Aendern nur Ersteller/Admin (403)", async () => {
+    const created = await call("post", "/api/wishlist", alice, { title: "Mit Farbe", colorName: "Bambu-Grün", colorHex: "#00AE42" });
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.colorName, "Bambu-Grün");
+    assert.equal(created.body.data.colorHex, "#00AE42");
+
+    const withoutColor = await call("post", "/api/wishlist", alice, { title: "Ohne Farbe" });
+    assert.equal(withoutColor.body.data.colorName, null);
+    assert.equal(withoutColor.body.data.colorHex, null);
+
+    const badHex = await call("post", "/api/wishlist", alice, { title: "Kaputt", colorName: "Rot", colorHex: "rot" });
+    assert.equal(badHex.status, 400);
+    const longName = await call("post", "/api/wishlist", alice, { title: "Kaputt", colorName: "x".repeat(61) });
+    assert.equal(longName.status, 400);
+
+    // Die Farbe ist Inhalt wie Titel/Notiz/Menge - fremde Nutzer duerfen sie nicht aendern.
+    const forbidden = await call("patch", `/api/wishlist/${created.body.data.id}`, bob, { colorName: null, colorHex: null });
+    assert.equal(forbidden.status, 403);
+    const cleared = await call("patch", `/api/wishlist/${created.body.data.id}`, alice, { colorName: null, colorHex: null });
+    assert.equal(cleared.status, 200);
+    assert.equal(cleared.body.data.colorName, null);
+    assert.equal(cleared.body.data.colorHex, null);
+  });
 });

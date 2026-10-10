@@ -10,6 +10,7 @@ import {
 } from "@filapilot/shared";
 import { SpoolActions, type SpoolHandlers } from "./SpoolActions.js";
 import { formatBedTemp } from "../lib/formatTemps.js";
+import type { SpoolDensity } from "../hooks/useSpoolDensity.js";
 
 export interface SpoolViewProps extends SpoolHandlers {
   spools: readonly SpoolWithRelations[];
@@ -20,6 +21,8 @@ export interface SpoolViewProps extends SpoolHandlers {
   // Nur von ListView genutzt (klickbare Spaltenueberschriften); die Sortierung selbst macht die Spulen-Seite.
   columnSort?: SpoolColumnSort | null;
   onColumnSort?: (column: SpoolSortColumn) => void;
+  // Nur von ListView genutzt (Zeilenhoehe).
+  density?: SpoolDensity;
 }
 
 function isLow(spool: SpoolWithRelations): boolean {
@@ -91,7 +94,7 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
               </div>
               <span className="ml-auto flex items-center gap-1">
                 <StatusBadge spool={spool} />
-                <SpoolActions spool={spool} {...handlers} />
+                <SpoolActions spool={spool} {...handlers} labelledReorder />
               </span>
             </div>
             <div className="mb-2 text-xs text-[var(--color-text-muted)]">

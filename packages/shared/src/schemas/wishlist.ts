@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const colorNameSchema = z.string().trim().min(1).max(60);
+const colorHexSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+
 export const wishlistStatusSchema = z.enum(["OPEN", "ORDERED", "DONE"]);
 export type WishlistStatus = z.infer<typeof wishlistStatusSchema>;
 
@@ -15,6 +18,10 @@ export const wishlistItemSchema = z.object({
   manufacturerName: z.string().nullable(),
   materialId: z.string().uuid().nullable(),
   materialName: z.string().nullable(),
+  // Optionale Wunschfarbe (aus der Farbauswahl des Formulars, wie bei einer Spule); reiner Text, kein Katalog-Verweis,
+  // weil Farben nicht in der Datenbank gepflegt werden (siehe manufacturerColorCatalog.ts).
+  colorName: colorNameSchema.nullable(),
+  colorHex: colorHexSchema.nullable(),
   addedByUserId: z.string().uuid().nullable(),
   addedByName: z.string(),
   createdAt: z.coerce.date(),
@@ -28,7 +35,9 @@ export const createWishlistItemInputSchema = z.object({
   note: z.string().trim().max(500).nullable().default(null),
   quantity: z.number().int().min(1).max(999).default(1),
   manufacturerId: z.string().uuid().nullable().optional().default(null),
-  materialId: z.string().uuid().nullable().optional().default(null)
+  materialId: z.string().uuid().nullable().optional().default(null),
+  colorName: colorNameSchema.nullable().optional().default(null),
+  colorHex: colorHexSchema.nullable().optional().default(null)
 });
 export type CreateWishlistItemInput = z.infer<typeof createWishlistItemInputSchema>;
 
@@ -41,9 +50,11 @@ export const updateWishlistItemInputSchema = z
     quantity: z.number().int().min(1).max(999),
     status: wishlistStatusSchema,
     manufacturerId: z.string().uuid().nullable(),
-    materialId: z.string().uuid().nullable()
+    materialId: z.string().uuid().nullable(),
+    colorName: colorNameSchema.nullable(),
+    colorHex: colorHexSchema.nullable()
   })
   .partial();
 export type UpdateWishlistItemInput = z.infer<typeof updateWishlistItemInputSchema>;
 
-export const CONTENT_FIELDS = ["title", "note", "quantity", "manufacturerId", "materialId"] as const;
+export const CONTENT_FIELDS = ["title", "note", "quantity", "manufacturerId", "materialId", "colorName", "colorHex"] as const;

@@ -5,6 +5,7 @@ import {
   EMPTY_SPOOL_FILTER,
   LOW_STOCK_THRESHOLD_RATIO,
   filterSpools,
+  isSpoolOnWishlist,
   isFilterActive,
   sortSpools,
   sortSpoolsByColumn,
@@ -31,8 +32,10 @@ import { SpoolFilterBar } from "../components/SpoolFilterBar.js";
 import { BambuSyncStatus } from "../components/BambuSyncStatus.js";
 import { ListView } from "../components/SpoolListView.js";
 import { CompactView, StandardView, SwatchView } from "../components/SpoolViews.js";
-import { SpoolPager, SpoolViewSwitch } from "../components/SpoolViewControls.js";
+import { SpoolDensitySwitch, SpoolPager, SpoolPageSizeSelect, SpoolViewSwitch } from "../components/SpoolViewControls.js";
 import { useSpoolPreferences } from "../hooks/useSpoolPreferences.js";
+import { useSpoolDensity } from "../hooks/useSpoolDensity.js";
+import { useWishlistItems } from "../hooks/useWishlistItems.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
 import { SpoolHistoryModal } from "../components/SpoolHistoryModal.js";
 import { SpoolDryingModal } from "../components/SpoolDryingModal.js";
@@ -67,6 +70,8 @@ export function SpoolsPage(): React.JSX.Element {
   const [columnSort, setColumnSort] = useState<SpoolColumnSort | null>(null);
   const [page, setPage] = useState(1);
   const { view, pageSize, setView, setPageSize } = useSpoolPreferences();
+  const { density, setDensity } = useSpoolDensity();
+  const { items: wishlistItems, reload: reloadWishlist } = useWishlistItems();
   const activeColumnSort = view === "list" ? columnSort : null;
   const handleColumnSort = (column: SpoolSortColumn): void => {
     setColumnSort((current) => ({ column, direction: current?.column === column && current.direction === "asc" ? "desc" : "asc" }));
@@ -181,10 +186,13 @@ export function SpoolsPage(): React.JSX.Element {
         body: JSON.stringify({
           title: `${spool.manufacturerName} ${spool.materialName} ${spool.colorName}`,
           manufacturerId: spool.manufacturerId,
-          materialId: spool.materialId
+          materialId: spool.materialId,
+          colorName: spool.colorName,
+          colorHex: spool.colorHex
         })
       });
       setActionNotice(t("spools.addedToWishlist"));
+      await reloadWishlist();
     } catch (err) {
       setActionNotice(err instanceof ApiRequestError ? err.message : t("spools.addToWishlistFailed"));
     }
@@ -335,8 +343,14 @@ export function SpoolsPage(): React.JSX.Element {
       onWeigh={setWeighSpool}
       onMarkOpened={(spool) => void handleMarkOpened(spool)}
       onAddToWishlist={(spool) => void handleAddToWishlist(spool)}
+      wishlistedIds={wishlistedIds}
+      density={density}
       onDelete={(spool) => void handleDelete(spool)}
     />
+  );
+  const wishlistedIds = useMemo(
+    () => new Set(spools.filter((spool) => isSpoolOnWishlist(spool, wishlistItems)).map((spool) => spool.id)),
+    [spools, wishlistItems]
   );
   const archivedCount = spools.filter((spool) => spool.archivedAt).length;
   const totalRemainingG = visibleSpools.reduce((sum, spool) => sum + spool.remainingWeightG, 0);
@@ -438,6 +452,7 @@ export function SpoolsPage(): React.JSX.Element {
               ))}
             </span>
           )}
+          {view === "list" && <SpoolDensitySwitch density={density} onChange={setDensity} />}
           <SpoolViewSwitch view={view} onChange={setView} />
         </div>
       </div>
@@ -454,14 +469,17 @@ export function SpoolsPage(): React.JSX.Element {
               setPage(1);
             }}
           />
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            {isFilterActive(filter)
-              ? t("spools.filter.countSome", { shown: visibleSpools.length, total: spools.length })
-              : t("spools.filter.countAll", { count: spools.length })}
-            {showArchived && archivedCount > 0 ? ` (${t("spools.filter.archivedPart", { count: archivedCount })})` : ""}
-            {" · "}
-            {t("spools.filter.remainingTotal", { weight: formatWeight(totalRemainingG) })}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              {isFilterActive(filter)
+                ? t("spools.filter.countSome", { shown: visibleSpools.length, total: spools.length })
+                : t("spools.filter.countAll", { count: spools.length })}
+              {showArchived && archivedCount > 0 ? ` (${t("spools.filter.archivedPart", { count: archivedCount })})` : ""}
+              {" · "}
+              {t("spools.filter.remainingTotal", { weight: formatWeight(totalRemainingG) })}
+            </p>
+            <SpoolPageSizeSelect pageSize={pageSize} onPageSize={setPageSize} />
+          </div>
         </>
       )}
 
@@ -495,7 +513,7 @@ export function SpoolsPage(): React.JSX.Element {
                 );
               })
             : renderSpoolView(pagedSpools)}
-          <SpoolPager page={currentPage} pageCount={pageCount} pageSize={pageSize} total={visibleSpools.length} onPage={setPage} onPageSize={setPageSize} />
+          <SpoolPager page={currentPage} pageCount={pageCount} total={visibleSpools.length} onPage={setPage} />
         </>
       )}
 

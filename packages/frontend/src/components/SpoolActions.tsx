@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { SpoolWithRelations } from "@filapilot/shared";
+import { WishlistQuickButton } from "./WishlistQuickButton.js";
 
 export interface SpoolHandlers {
   canEdit: boolean;
@@ -11,6 +12,8 @@ export interface SpoolHandlers {
   onDelete: (spool: SpoolWithRelations) => void;
   onHistory: (spool: SpoolWithRelations) => void;
   onAddToWishlist: (spool: SpoolWithRelations) => void;
+  // IDs der Spulen, die schon als offener/bestellter Wunsch auf der Wunschliste stehen (siehe isSpoolOnWishlist).
+  wishlistedIds: ReadonlySet<string>;
   onDrying: (spool: SpoolWithRelations) => void;
   onWeigh: (spool: SpoolWithRelations) => void;
   onMarkOpened: (spool: SpoolWithRelations) => void;
@@ -18,6 +21,8 @@ export interface SpoolHandlers {
 
 interface SpoolActionsProps extends SpoolHandlers {
   spool: SpoolWithRelations;
+  // Beschrifteter "Nachbestellen"-Knopf bei knappen Spulen (nur wo genug Platz ist: Liste und Standardansicht).
+  labelledReorder?: boolean;
 }
 
 interface ActionItem {
@@ -39,6 +44,8 @@ export function SpoolActions({
   onDelete,
   onHistory,
   onAddToWishlist,
+  wishlistedIds,
+  labelledReorder = false,
   onDrying,
   onWeigh,
   onMarkOpened
@@ -111,13 +118,14 @@ export function SpoolActions({
   if (canEdit && !spool.archivedAt && !spool.openedAt) {
     items.push({ key: "markOpened", label: t("spools.markOpened"), run: () => onMarkOpened(spool) });
   }
-  items.push({ key: "wishlist", label: t("spools.addToWishlist"), run: () => onAddToWishlist(spool) });
   if (canEdit) {
     items.push({ key: "delete", label: t("common.delete"), danger: true, run: () => onDelete(spool) });
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <div className="flex items-center gap-0.5">
+      <WishlistQuickButton spool={spool} onList={wishlistedIds.has(spool.id)} onAdd={onAddToWishlist} labelled={labelledReorder} />
+      <div ref={rootRef} className="relative">
       <button
         ref={buttonRef}
         type="button"
@@ -157,6 +165,7 @@ export function SpoolActions({
           </ul>,
           document.body
         )}
+      </div>
     </div>
   );
 }

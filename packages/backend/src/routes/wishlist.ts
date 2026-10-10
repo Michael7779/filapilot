@@ -24,6 +24,8 @@ interface WishlistRow {
   manufacturer: { name: string } | null;
   materialId: string | null;
   material: { name: string } | null;
+  colorName: string | null;
+  colorHex: string | null;
   addedByUserId: string | null;
   addedByName: string;
   createdAt: Date;
@@ -42,6 +44,8 @@ function toPublic(row: WishlistRow): WishlistItem {
     manufacturerName: row.manufacturer?.name ?? null,
     materialId: row.materialId,
     materialName: row.material?.name ?? null,
+    colorName: row.colorName,
+    colorHex: row.colorHex,
     addedByUserId: row.addedByUserId,
     addedByName: row.addedByName,
     createdAt: row.createdAt,
@@ -61,7 +65,8 @@ function contentSnapshot(row: WishlistRow): Record<string, unknown> {
     quantity: row.quantity,
     status: row.status,
     manufacturerName: row.manufacturer?.name ?? null,
-    materialName: row.material?.name ?? null
+    materialName: row.material?.name ?? null,
+    colorName: row.colorName
   };
 }
 
@@ -93,7 +98,7 @@ async function assertCatalogRefsExist(manufacturerId?: string | null, materialId
 // Threat-Model: Ein anderer Nutzer koennte versuchen, Titel/Notiz/Menge eines fremden Wunsches zu veraendern oder
 // ihn zu loeschen (die Liste ist absichtlich instanzweit, jeder eingeloggte Nutzer sieht und ergaenzt sie fuer eine
 // Sammelbestellung). Serverseitig erzwungen: Lesen/Anlegen fuer jeden aktiven Nutzer; Inhalt (Titel/Notiz/Menge/
-// Hersteller-Material-Verweis) aendern oder loeschen nur der Ersteller oder ein Admin (403 sonst); den Status
+// Hersteller-Material-Verweis/Farbe) aendern oder loeschen nur der Ersteller oder ein Admin (403 sonst); den Status
 // (offen/bestellt/erledigt) darf bewusst jeder aktive Nutzer setzen, damit alle an der Sammelbestellung mitwirken
 // koennen; ein mitgeschickter Hersteller/Material-Verweis wird gegen die Stammdaten geprueft (400 bei unbekannt).
 // Negativ-Tests: kein Cookie -> 401, fremder Inhalt aendern/loeschen -> 403, fremden Status setzen -> 200 (erlaubt).

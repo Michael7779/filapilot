@@ -8,6 +8,21 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.29.0] - 2026-10-10
+
+### Hinzugefuegt
+- Wunschliste: Zu jedem Wunsch lässt sich jetzt eine Farbe auswählen. Das Auswahlfeld "Farbe" bietet die Farben des gewählten Herstellers und Materials an (wie beim Anlegen einer Spule) und ergänzt den Titel. Die Farbe erscheint mit Farbpunkt in der Liste.
+- Wunschliste: "Zur Wunschliste" an einer Spule übernimmt jetzt auch deren Farbe.
+
+### Geändert
+- Spulen: Die Auswahl "Spulen pro Seite" steht jetzt oben bei den Filtern statt ganz unten unter der Liste.
+- Spulen, Listenansicht: Die Liste passt jetzt auf den Bildschirm und muss nicht mehr seitlich gescrollt werden. Sie zeigt nur noch Farbe, Hersteller und Material, Restgewicht, Lagerort und Status. Ein Klick auf die Zeile (oder den Pfeil links) klappt alles Weitere auf: Temperaturen, Restlänge, Preis, Daten, Lieferform, Notiz und Zusatzfelder. Der Pfeil in der Kopfzeile klappt alle auf einmal auf oder zu. Wer nach einer aufgeklappten Angabe sortieren will, klickt auf deren Überschrift.
+- Spulen, Listenansicht: Neuer Umschalter "Normal / Kompakt" für die Zeilenhöhe. Die Wahl merkt sich der Browser.
+- Spulen: "Zur Wunschliste" ist jetzt ein eigener Knopf (Lesezeichen) an jeder Spule statt im Drei-Punkte-Menü. Knappe Spulen (höchstens 15 % Rest) zeigen in der Liste und der Standardansicht stattdessen den Knopf "Nachbestellen". Steht eine Spule schon als offener oder bestellter Wunsch auf der Liste, ist der Knopf ausgegraut, so entsteht kein doppelter Eintrag.
+
+### Hinweis zum Update
+- Rein technisch: Neue Spalten `colorName` und `colorHex` an der Wunschliste (optional, bestehende Einträge bleiben unverändert); das Update-Skript legt sie per Schema-Abgleich an.
+
 ## [0.28.0] - 2026-10-09
 
 ### Behoben

@@ -93,6 +93,10 @@ model WishlistItem {
   manufacturer    Manufacturer?  @relation(fields: [manufacturerId], references: [id], onDelete: SetNull)
   materialId      String?
   material        Material?      @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  // Optionale Wunschfarbe aus der Farbauswahl (Name + Hex wie bei Spool.colorName/colorHex) - bewusst als Text und
+  // nicht als Verweis, weil es keine Farb-Tabelle gibt; die Farbvorschlaege kommen aus dem Katalog im shared-Paket.
+  colorName       String?
+  colorHex        String?
   addedByUserId   String?
   addedByUser     User?          @relation("WishlistAddedBy", fields: [addedByUserId], references: [id], onDelete: SetNull)
   addedByName     String

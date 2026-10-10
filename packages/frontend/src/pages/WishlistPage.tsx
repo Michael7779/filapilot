@@ -3,14 +3,10 @@ import { useTranslation } from "react-i18next";
 import type { CreateWishlistItemInput, Manufacturer, Material, WishlistItem, WishlistStatus } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
+import { STATUS_ORDER, STATUS_STYLE } from "../lib/wishlistStatus.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
-
-const STATUS_ORDER: WishlistStatus[] = ["OPEN", "ORDERED", "DONE"];
-const STATUS_STYLE: Record<WishlistStatus, { bg: string; fg: string }> = {
-  OPEN: { bg: "var(--color-bg)", fg: "var(--color-text-secondary)" },
-  ORDERED: { bg: "#e4edfd", fg: "#1f4fb8" },
-  DONE: { bg: "#e3f4e8", fg: "#1a6b3a" }
-};
+import { ColorDot } from "../components/SpoolViews.js";
+import { WishlistColorSelect, colorOptionsFor, type WishlistColor } from "../components/WishlistColorSelect.js";
 
 const INPUT_CLASS = "rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)]";
 
@@ -28,6 +24,7 @@ export function WishlistPage(): React.JSX.Element {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [manufacturerId, setManufacturerId] = useState("");
   const [materialId, setMaterialId] = useState("");
+  const [color, setColor] = useState<WishlistColor | null>(null);
   const [editing, setEditing] = useState<WishlistItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -50,14 +47,33 @@ export function WishlistPage(): React.JSX.Element {
     ? materials.filter((material) => material.manufacturerId === manufacturerId || material.manufacturerId === null)
     : materials;
 
-  // Auswahl aus den Dropdowns setzt/ergaenzt den Titel - der bleibt trotzdem frei editierbar (z.B. fuer Farbe/Menge-Details).
-  function applyCatalogPick(nextManufacturerId: string, nextMaterialId: string): void {
-    const manufacturerName = manufacturers.find((manufacturer) => manufacturer.id === nextManufacturerId)?.name ?? "";
-    const materialName = materials.find((material) => material.id === nextMaterialId)?.name ?? "";
-    const combined = [manufacturerName, materialName].filter(Boolean).join(" ");
+  const manufacturerName = manufacturers.find((manufacturer) => manufacturer.id === manufacturerId)?.name ?? null;
+  const materialName = materials.find((material) => material.id === materialId)?.name ?? null;
+
+  // Auswahl aus den Dropdowns setzt/ergaenzt den Titel - der bleibt trotzdem frei editierbar (z.B. fuer Menge-Details).
+  // Die Farbliste haengt von Hersteller+Material ab: passt die gewaehlte Farbe nicht mehr dazu, wird sie zurueckgesetzt.
+  function applyCatalogPick(nextManufacturerId: string, nextMaterialId: string, nextColor: WishlistColor | null): void {
+    const nextManufacturerName = manufacturers.find((manufacturer) => manufacturer.id === nextManufacturerId)?.name ?? null;
+    const nextMaterialName = materials.find((material) => material.id === nextMaterialId)?.name ?? null;
+    const colorStillValid = nextColor && colorOptionsFor(nextManufacturerName, nextMaterialName, null, i18n.language).some((option) => option.name === nextColor.name);
+    const keptColor = colorStillValid ? nextColor : null;
+    setManufacturerId(nextManufacturerId);
+    setMaterialId(nextMaterialId);
+    setColor(keptColor);
+    const combined = [nextManufacturerName, nextMaterialName, keptColor?.name].filter(Boolean).join(" ");
     if (combined) {
       setTitle(combined);
     }
+  }
+
+  function resetForm(): void {
+    setTitle("");
+    setNote("");
+    setQuantity("1");
+    setManufacturerId("");
+    setMaterialId("");
+    setColor(null);
+    setEditing(null);
   }
 
   function canEditContent(item: WishlistItem): boolean {
@@ -78,19 +94,16 @@ export function WishlistPage(): React.JSX.Element {
         note: note.trim() ? note.trim() : null,
         quantity: Number(quantity) || 1,
         manufacturerId: manufacturerId || null,
-        materialId: materialId || null
+        materialId: materialId || null,
+        colorName: color?.name ?? null,
+        colorHex: color?.hex ?? null
       };
       if (editing) {
         await apiRequest(`/wishlist/${editing.id}`, { method: "PATCH", body: JSON.stringify(input) });
       } else {
         await apiRequest("/wishlist", { method: "POST", body: JSON.stringify(input) });
       }
-      setTitle("");
-      setNote("");
-      setQuantity("1");
-      setManufacturerId("");
-      setMaterialId("");
-      setEditing(null);
+      resetForm();
       await load();
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : t("wishlist.saveFailed"));
@@ -106,6 +119,7 @@ export function WishlistPage(): React.JSX.Element {
     setQuantity(String(item.quantity));
     setManufacturerId(item.manufacturerId ?? "");
     setMaterialId(item.materialId ?? "");
+    setColor(item.colorName && item.colorHex ? { name: item.colorName, hex: item.colorHex } : null);
   }
 
   async function setStatus(item: WishlistItem, status: WishlistStatus): Promise<void> {
@@ -151,10 +165,7 @@ export function WishlistPage(): React.JSX.Element {
           {t("spools.manufacturer")}
           <select
             value={manufacturerId}
-            onChange={(event) => {
-              setManufacturerId(event.target.value);
-              applyCatalogPick(event.target.value, materialId);
-            }}
+            onChange={(event) => applyCatalogPick(event.target.value, materialId, color)}
             className={INPUT_CLASS}
           >
             <option value="">{t("wishlist.anyManufacturer")}</option>
@@ -169,10 +180,7 @@ export function WishlistPage(): React.JSX.Element {
           {t("spools.material")}
           <select
             value={materialId}
-            onChange={(event) => {
-              setMaterialId(event.target.value);
-              applyCatalogPick(manufacturerId, event.target.value);
-            }}
+            onChange={(event) => applyCatalogPick(manufacturerId, event.target.value, color)}
             className={INPUT_CLASS}
           >
             <option value="">{t("wishlist.anyMaterial")}</option>
@@ -183,6 +191,13 @@ export function WishlistPage(): React.JSX.Element {
             ))}
           </select>
         </label>
+        <WishlistColorSelect
+          value={color}
+          onChange={(next) => applyCatalogPick(manufacturerId, materialId, next)}
+          manufacturerName={manufacturerName}
+          materialName={materialName}
+          className={INPUT_CLASS}
+        />
         <label className="col-span-2 flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
           {t("wishlist.itemTitle")}
           <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT_CLASS} />
@@ -206,14 +221,7 @@ export function WishlistPage(): React.JSX.Element {
         {editing && (
           <button
             type="button"
-            onClick={() => {
-              setEditing(null);
-              setTitle("");
-              setManufacturerId("");
-              setMaterialId("");
-              setNote("");
-              setQuantity("1");
-            }}
+            onClick={resetForm}
             className="col-span-2 rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium sm:col-auto"
           >
             {t("common.cancel")}
@@ -245,9 +253,10 @@ export function WishlistPage(): React.JSX.Element {
                     {t(`wishlist.status.${item.status}`)}
                   </span>
                 </div>
-                {(item.manufacturerName || item.materialName) && (
-                  <div className="text-xs text-[var(--color-text-muted)]">
-                    {[item.manufacturerName, item.materialName].filter(Boolean).join(" · ")}
+                {(item.manufacturerName || item.materialName || item.colorName) && (
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                    {item.colorHex && <ColorDot hex={item.colorHex} size="h-3 w-3" />}
+                    {[item.manufacturerName, item.materialName, item.colorName].filter(Boolean).join(" · ")}
                   </div>
                 )}
                 {item.note && <div className="text-sm text-[var(--color-text-secondary)]">{item.note}</div>}

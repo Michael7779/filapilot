@@ -29,6 +29,12 @@ Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
   Materials setzt den Verweis nur zurueck (SetNull), loescht den Wunsch nicht.
   Test: `tests/security/wishlist.test.ts`
 
+- **R7**: Ab 0.29.0: `colorName`/`colorHex` sind eine optionale Wunschfarbe (Name max. 60 Zeichen, Hex `#RRGGBB`; ungueltig
+  400). Reiner Text statt Katalog-Verweis, weil es keine Farb-Tabelle gibt - die Vorschlaege kommen im Formular als
+  Dropdown (alphabetisch, abhaengig von Hersteller+Material, wie "Neue Spule") aus `getColorPresets`. Die Farbe ist
+  Inhalt wie Titel/Notiz/Menge - aendern darf nur Ersteller:in oder Admin (403 sonst). "Zur Wunschliste" an einer Spule
+  uebernimmt deren Farbe. Test: `tests/security/wishlist.test.ts`
+
 Tests: `packages/backend/tests/security/wishlist.test.ts`. Oberflaeche manuell im Browser geprueft.
 
 ## 1.3 Aenderungen ab 0.20.0
