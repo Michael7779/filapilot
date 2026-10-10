@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   DEFAULT_SPOOL_PAGE_SIZE,
   spoolPageSizeSchema,
@@ -42,7 +42,9 @@ function defaultView(): SpoolView {
   return window.matchMedia("(max-width: 639px)").matches ? "compact" : "standard";
 }
 
-// Ansicht und Seitengroesse der Spulenliste: aus dem Konto (sonst Browser-Merker, sonst Standard); Aenderungen werden im Konto gespeichert.
+// Ansicht der Spulenliste: nur pro Browser/Geraet gemerkt (iPhone und Desktop duerfen unterschiedlich sein); ohne Merker
+// startet ein schmaler Bildschirm in "Kompakt", ein breiter in "Standard". Der alte Konto-Wert `spoolView` wird nicht mehr
+// gelesen oder geschrieben. Die Seitengroesse bleibt im Konto (sonst Browser-Merker, sonst Standard).
 export function useSpoolPreferences(): {
   view: SpoolView;
   pageSize: number;
@@ -52,7 +54,7 @@ export function useSpoolPreferences(): {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const cache = readCache();
-  const view = user?.spoolView ?? cache.spoolView ?? defaultView();
+  const [view, setViewState] = useState<SpoolView>(() => cache.spoolView ?? defaultView());
   const pageSize = user?.spoolPageSize ?? cache.spoolPageSize ?? DEFAULT_SPOOL_PAGE_SIZE;
 
   const save = useCallback(
@@ -62,13 +64,11 @@ export function useSpoolPreferences(): {
         // sofort anzeigen, dann im Konto speichern
         setUser({
           ...current,
-          ...(patch.spoolView !== undefined && { spoolView: patch.spoolView }),
           ...(patch.spoolPageSize !== undefined && { spoolPageSize: patch.spoolPageSize })
         });
       }
       writeCache({
         ...readCache(),
-        ...(patch.spoolView && { spoolView: patch.spoolView }),
         ...(typeof patch.spoolPageSize === "number" && { spoolPageSize: patch.spoolPageSize })
       });
       apiRequest<UserPublic>("/users/me/preferences", { method: "PATCH", body: JSON.stringify(patch) })
@@ -83,7 +83,10 @@ export function useSpoolPreferences(): {
   return {
     view,
     pageSize,
-    setView: (next) => save({ spoolView: next }),
+    setView: (next) => {
+      setViewState(next);
+      writeCache({ ...readCache(), spoolView: next });
+    },
     setPageSize: (next) => save({ spoolPageSize: next })
   };
 }

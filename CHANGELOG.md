@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.29.1] - 2026-10-10
+
+### Geändert
+- Spulen: Die gewählte Ansicht (Standard, Kompakt, Liste, Farbkacheln) wird jetzt pro Gerät gemerkt statt pro Benutzer. iPhone und Desktop können also unterschiedliche Ansichten haben. Beim ersten Öffnen auf einem Gerät startet ein schmaler Bildschirm in "Kompakt", ein breiter in "Standard"; "Spulen pro Seite" gilt weiterhin für das ganze Konto.
+
 ## [0.29.0] - 2026-10-10
 
 ### Hinzugefuegt
