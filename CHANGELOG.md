@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.29.2] - 2026-10-10
+
+### Geändert
+- Spulen: "Spulen pro Seite" wird jetzt ebenfalls pro Gerät gemerkt statt pro Benutzer, genau wie die Ansicht. Das Handy kann so zum Beispiel 12 pro Seite zeigen, während der Desktop alle anzeigt. Auf einem Gerät, auf dem du noch nichts gewählt hast, gilt der Standardwert.
+
 ## [0.29.1] - 2026-10-10
 
 ### Geändert

@@ -67,7 +67,7 @@
 - **R13**: Ab 0.15.0 lassen sich Spulen im Browser durchsuchen, filtern (Hersteller, Material, Farbe, Lagerort, Restgewicht, Kaufpreis, Fast leer), sortieren
   und zaehlen; die Logik ist rein (`packages/shared/src/spoolFilter.ts`), Oberflaeche `SpoolFilterBar.tsx`. Die Liste ist bereits auf das Lager begrenzt (keine
   serverseitige Filterung, keine Rechte-Auswirkung). Test: `tests/unit/spoolFilter.test.ts`; die Oberflaeche wurde manuell geprueft.
-- **R14**: Ab 0.16.0: Ansicht (standard/compact/list/swatch) und Seitengroesse (12/24/48/96/alle) der Spulenliste werden pro Konto gespeichert (Ansicht ab 0.29.1 NICHT mehr: sie wird pro Geraet nur im Browser gemerkt, siehe R34; das Konto-Feld `spoolView` und die Route nehmen den Wert weiter an, die Oberflaeche nutzt ihn aber nicht mehr)
+- **R14**: Ab 0.16.0: Ansicht (standard/compact/list/swatch) und Seitengroesse (12/24/48/96/alle) der Spulenliste werden pro Konto gespeichert (ab 0.29.1 Ansicht und ab 0.29.2 auch Seitengroesse NICHT mehr: sie werden pro Geraet nur im Browser gemerkt, siehe R34; die Konto-Felder `spoolView`/`spoolPageSize` und die Route nehmen die Werte weiter an, die Oberflaeche nutzt sie aber nicht mehr)
   (`PATCH /api/users/me/preferences`, SCOPE self, nur feste Werte, fremde userId ignoriert; Browser-Merker nur als Startwert). Die Liste zeigt alle Angaben der Spule.
   Ab 0.29.0 sitzt die Auswahl "Spulen pro Seite" oben neben der Anzahl-Zeile bei den Filtern (`SpoolPageSizeSelect`), unten
   bleibt nur das Blaettern. Tests: `tests/security/preferences.test.ts`; die Oberflaeche wurde manuell geprueft.
@@ -209,5 +209,5 @@
 - **R33**: Ab 0.29.0: Ein-Klick-"Zur Wunschliste" als eigener Knopf an jeder Spule in allen Ansichten; knappe Spulen (<= 15 % Rest, nicht archiviert, `isLowStockSpool`) zeigen in Liste und Standardansicht den beschrifteten Knopf "Nachbestellen".
   Steht die Spule (Hersteller + Material + Farbe) schon als offener/bestellter Wunsch auf der Liste (`isSpoolOnWishlist`, alte Wuensche ohne Farbfeld werden am Titel erkannt, erledigte zaehlen nicht), ist der Knopf ausgegraut.
   Keine neue Route (nutzt `POST /api/wishlist`, R1/R7 in wishlist.md). Test: `tests/unit/wishlistMatch.test.ts`; Oberflaeche manuell im Browser geprueft.
-- **R34**: Ab 0.29.1: Die Ansicht der Spulenliste wird pro Geraet im Browser (`localStorage`, Schluessel `filapilot.spoolPreferences`) gemerkt, nicht im Konto - iPhone und Desktop-Browser desselben Benutzers duerfen verschieden sein.
-  Ohne Merker startet ein schmaler Bildschirm (< 640 px) in "Kompakt", ein breiter in "Standard". Die Seitengroesse bleibt im Konto (R14). Keine Schema-/Routen-Aenderung. Test: `packages/frontend/tests/unit/spoolPreferences.test.tsx`.
+- **R34**: Ab 0.29.1 (Ansicht) bzw. 0.29.2 (Seitengroesse): Ansicht und Seitengroesse der Spulenliste werden pro Geraet im Browser (`localStorage`, Schluessel `filapilot.spoolPreferences`) gemerkt, nicht im Konto - iPhone und Desktop-Browser desselben Benutzers duerfen verschieden sein.
+  Ohne Merker startet ein schmaler Bildschirm (< 640 px) in "Kompakt", ein breiter in "Standard"; die Seitengroesse beginnt mit dem Standardwert. Ungueltige Merker-Werte werden verworfen. Keine Schema-/Routen-Aenderung. Test: `packages/frontend/tests/unit/spoolPreferences.test.tsx`.
