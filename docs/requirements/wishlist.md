@@ -101,3 +101,9 @@ Oberflaeche manuell im Browser geprueft.
   "unterschiedlich") gelten fuer die ganze Position und werden per Sammel-Route auf alle zugehoerigen Wuensche geschrieben.
   Bearbeiten/Loeschen bleibt je Einzelwunsch beim Ersteller bzw. Admin (R2). Test: `tests/unit/wishlistOrder.test.ts`;
   Oberflaeche manuell im Browser geprueft.
+- **R18**: Ab 0.31.0: Das Formular "Hinzufuegen" belegt den Hersteller mit dem Standard-Hersteller aus den Einstellungen vor
+  (`Settings.defaultManufacturerId`, gelesen ueber `GET /api/spools/photo-settings`, das jeder aktive Nutzer darf - keine neue
+  Route). `presetManufacturerId()` liefert ihn nur, wenn es ihn in der Herstellerliste gibt, sonst bleibt es bei "Beliebiger
+  Hersteller". Er bleibt aenderbar; die Vorbelegung greift einmalig, nie waehrend ein Wunsch bearbeitet wird oder nachdem schon
+  gewaehlt wurde, und nach dem Speichern/Abbrechen steht wieder der Standard-Hersteller im Formular. Der Titel wird dabei nicht
+  vorbelegt. Test: `tests/unit/wishlistOrder.test.ts` (Logik); Oberflaeche manuell im Browser geprueft.

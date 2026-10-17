@@ -5,7 +5,8 @@ import {
   NO_MANUFACTURER_FILTER,
   filterWishlistItems,
   groupWishlistByManufacturer,
-  isWishlistFilterActive
+  isWishlistFilterActive,
+  presetManufacturerId
 } from "@filapilot/shared";
 
 type FilterItem = Parameters<typeof filterWishlistItems>[0][number];
@@ -219,5 +220,22 @@ describe("Bestellliste: gleiche Wuensche zu einer Zeile zusammenfassen", () => {
     )[0]?.lines[0];
     assert.equal(line?.unitPriceCents, 1999);
     assert.equal(line?.priceMixed, false);
+  });
+});
+
+describe("presetManufacturerId: vorbelegter Hersteller im Wunschlisten-Formular", () => {
+  const manufacturers = [{ id: "m1" }, { id: "m2" }];
+
+  it("nimmt den Standard-Hersteller aus den Einstellungen, wenn es ihn gibt", () => {
+    assert.equal(presetManufacturerId("m2", manufacturers), "m2");
+  });
+
+  it("bleibt leer (= beliebiger Hersteller) ohne Standard-Hersteller", () => {
+    assert.equal(presetManufacturerId(null, manufacturers), "");
+  });
+
+  it("bleibt leer, wenn der Standard-Hersteller nicht (mehr) in der Liste steht oder die Liste noch leer ist", () => {
+    assert.equal(presetManufacturerId("m9", manufacturers), "");
+    assert.equal(presetManufacturerId("m1", []), "");
   });
 });

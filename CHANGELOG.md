@@ -17,6 +17,7 @@ erscheint nicht in der App.
 
 ### Geändert
 - Wunschliste, Bestellliste: Gleiche Wünsche (gleicher Hersteller, gleiches Material, gleiche Farbe) werden zu einer Position zusammengefasst, zum Beispiel "3x Bambu Lab TPU Schwarz" mit dem Hinweis, wer wie viele möchte. Auswählen, Status und Preis gelten für die ganze Position. Bearbeiten und Löschen geht weiter einzeln pro Wunsch.
+- Wunschliste: Beim Hinzufügen eines neuen Wunsches ist der Hersteller jetzt vorbelegt, und zwar mit dem Standard-Hersteller aus den Einstellungen (derselbe wie bei "Neue Spule"). Er lässt sich jederzeit ändern oder auf "Beliebiger Hersteller" stellen. Nach dem Speichern steht wieder der Standard-Hersteller im Formular.
 - Wunschliste und Spulen: Die Farbnamen von Bambu Lab entsprechen jetzt den Namen im Shop. Bereits angelegte Spulen behalten ihren Farbnamen. Beim Import vom Drucker bekommt dadurch zum Beispiel eine weiße PLA-Basic-Spule den Namen "Jade-Weiß" statt "Weiß".
 
 ### Behoben

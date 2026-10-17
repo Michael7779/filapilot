@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import type { CreateWishlistItemInput, Manufacturer, Material, WishlistItem } from "@filapilot/shared";
+import { presetManufacturerId, type CreateWishlistItemInput, type Manufacturer, type Material, type WishlistItem } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
+import { fetchSpoolFormDefaults } from "../lib/spoolPhoto.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { WishlistColorSelect, colorOptionsFor, type WishlistColor } from "./WishlistColorSelect.js";
 
@@ -26,6 +27,27 @@ export function WishlistForm({ editing, onSaved, onCancelEdit }: WishlistFormPro
   const [color, setColor] = useState<WishlistColor | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Standard-Hersteller aus den Einstellungen (wie im "Neue Spule"-Formular): vorbelegt, aber aenderbar
+  const [defaultManufacturerId, setDefaultManufacturerId] = useState<string | null>(null);
+  const presetApplied = useRef(false);
+  const presetId = presetManufacturerId(defaultManufacturerId, manufacturers);
+
+  useEffect(() => {
+    // Ohne Standard-Hersteller (oder bei einem Ladefehler) bleibt es bei "Beliebiger Hersteller"
+    fetchSpoolFormDefaults()
+      .then((defaults) => setDefaultManufacturerId(defaults.defaultManufacturerId))
+      .catch(() => setDefaultManufacturerId(null));
+  }, []);
+
+  // Einmalig vorbelegen, sobald Standard-Hersteller und Herstellerliste da sind - nie, wenn gerade ein Wunsch bearbeitet
+  // wird oder schon ein Hersteller gewaehlt wurde.
+  useEffect(() => {
+    if (presetApplied.current || editing || presetId === "") {
+      return;
+    }
+    presetApplied.current = true;
+    setManufacturerId((current) => (current === "" ? presetId : current));
+  }, [presetId, editing]);
 
   useEffect(() => {
     // Fuer die "wie bei Neue Spule"-Dropdowns, die den Titel vorbefuellen; Fehler dabei sind nicht kritisch.
@@ -72,7 +94,7 @@ export function WishlistForm({ editing, onSaved, onCancelEdit }: WishlistFormPro
     setTitle("");
     setNote("");
     setQuantity("1");
-    setManufacturerId("");
+    setManufacturerId(presetId);
     setMaterialId("");
     setColor(null);
     setError(null);

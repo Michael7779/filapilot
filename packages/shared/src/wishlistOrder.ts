@@ -219,3 +219,9 @@ export function groupWishlistByManufacturer<T extends GroupableItem>(items: read
     return compareText(a.manufacturerName, b.manufacturerName, locale);
   });
 }
+
+// Hersteller, der im Wunschlisten-Formular vorbelegt ist: der vom Admin eingestellte Standard-Hersteller (derselbe wie im
+// "Neue Spule"-Formular), solange es ihn in der Liste gibt. Leer heisst "Beliebiger Hersteller". Aenderbar bleibt er immer.
+export function presetManufacturerId(defaultManufacturerId: string | null, manufacturers: readonly { id: string }[]): string {
+  return defaultManufacturerId !== null && manufacturers.some((manufacturer) => manufacturer.id === defaultManufacturerId) ? defaultManufacturerId : "";
+}
