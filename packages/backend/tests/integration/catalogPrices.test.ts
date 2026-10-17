@@ -39,6 +39,9 @@ describe("Katalog: Bambu-Lab-Richtpreise", () => {
     assert.deepEqual([byName.get("PETG Basic")?.priceRefillCents, byName.get("PETG Basic")?.priceWithSpoolCents], [959, 1139]);
     // Material ohne einzelne Nachfuellung (nur mit Spule erhaeltlich)
     assert.deepEqual([byName.get("ASA")?.priceRefillCents, byName.get("ASA")?.priceWithSpoolCents], [null, 2499]);
+    // Neue Bambu-Lab-Linien (Katalogversion 6) werden bei bestehenden Installationen nachgetragen, mit Temperaturen
+    assert.deepEqual([byName.get("PLA Wood")?.printTempMinC, byName.get("PLA Wood")?.printTempMaxC], [190, 240]);
+    assert.ok(byName.has("PLA Silk Multi-Color") && byName.has("TPU 85A") && byName.has("Support for PA/PET"));
   });
 
   it("die Vorlage enthaelt nur gueltige Preise (ganze Cent, nicht negativ)", () => {

@@ -8,6 +8,23 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.31.0] - 2026-10-17
+
+### Hinzugefuegt
+- Wunschliste, Bestellliste: Zu jeder Position lässt sich der Preis je Spule eintragen (mit Komma oder Punkt). Die Summe der Zeile erscheint sofort. Ist beim Material ein Richtpreis hinterlegt, wird er als Vorschlag angeboten. Pro Hersteller lassen sich außerdem Versand und Rabatt eintragen.
+- Wunschliste: Neue Ansicht "Abrechnung". Sie zeigt pro Hersteller Ware, Versand, Rabatt und Summe und pro Person, was sie zahlen muss. Versand und Rabatt werden nach Warenwert auf die Personen verteilt, bis auf den Cent genau. Fehlt bei einer Position der Preis, weist die Abrechnung darauf hin. Sie lässt sich als CSV-Datei speichern (für Excel) oder als Text kopieren, zum Beispiel für den Messenger.
+- Bambu Lab: Der Katalog enthält jetzt alle Filamente des Bambu-Lab-Shops mit allen dort gelisteten Farben, zum Beispiel PLA Wood (u. a. Klassische Birke), PLA Matte mit allen 25 Farben (u. a. Aschgrau), PLA Marble, Galaxy, Sparkle, Metal, Glow, Aero, Translucent, Pure, Silk+, Silk Multi-Color, Basic Gradient, Tough+, PETG Matte, PETG-CF, TPU for AMS, TPU 85A/90A, ABS-GF, ASA-CF, PC FR, PET-CF und viele mehr. Das gilt für die Spulenverwaltung und für die Wunschliste.
+
+### Geändert
+- Wunschliste, Bestellliste: Gleiche Wünsche (gleicher Hersteller, gleiches Material, gleiche Farbe) werden zu einer Position zusammengefasst, zum Beispiel "3x Bambu Lab TPU Schwarz" mit dem Hinweis, wer wie viele möchte. Auswählen, Status und Preis gelten für die ganze Position. Bearbeiten und Löschen geht weiter einzeln pro Wunsch.
+- Wunschliste und Spulen: Die Farbnamen von Bambu Lab entsprechen jetzt den Namen im Shop. Bereits angelegte Spulen behalten ihren Farbnamen. Beim Import vom Drucker bekommt dadurch zum Beispiel eine weiße PLA-Basic-Spule den Namen "Jade-Weiß" statt "Weiß".
+
+### Behoben
+- Spulen: Wer im Formular Hersteller oder Material wechselt, behält keine Farbe mehr, die das neue Material gar nicht anbietet (zum Beispiel "Grau" bei PLA Matte). Eigene, von Hand getippte Farben bleiben erhalten.
+
+### Hinweis zum Update
+- Rein technisch: Neue Spalte `unitPriceCents` an der Wunschliste und neue Tabelle `wishlist_order_costs` (Versand und Rabatt je Hersteller). Das Update-Skript legt beides per Schema-Abgleich an. Neue Routen `GET /api/wishlist/costs` und `PUT /api/wishlist/costs/:manufacturerId`; `PATCH /api/wishlist/bulk` nimmt zusätzlich `unitPriceCents`. Die Katalogversion steigt auf 6, die neuen Bambu-Lab-Materialien werden beim nächsten Start nachgetragen (Preise bleiben leer, bestehende Materialien bleiben unberührt).
+
 ## [0.30.0] - 2026-10-17
 
 ### Hinzugefuegt

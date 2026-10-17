@@ -89,8 +89,10 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   zugeordnet). Die Namensliste kennt zusaetzlich Hellgruen, Dunkelgruen, Hellblau, Hellgrau, Dunkelgrau, Magenta und
   Dunkelrot sowie kraeftige Stuetzpunkte fuer reine Grundfarben. `mapBambuSpool()` nimmt zuerst den Herstellernamen,
   wenn der Hex-Wert GENAU einer Farbe aus `getColorPresets(Hersteller, Material)` entspricht (z.B. Bambu Lab PLA
-  Basic `#00AE42` = "Bambu-Gruen"), sonst den allgemeinen Namen. Bestehende Spulen werden nicht umbenannt. Test:
-  `tests/unit/bambuMapping.test.ts`.
+  Basic `#00AE42` = "Bambu-Gruen"), sonst den allgemeinen Namen. Bestehende Spulen werden nicht umbenannt. Ab 0.31.0 steht die vollstaendige Shop-Liste
+  dahinter (siehe `materials.md` R14): ein weisser PLA-Basic-Import (`#FFFFFF`) heisst jetzt "Jade-Weiss" statt "Weiss";
+  die bisherigen Drucker-Farbwerte (z.B. `#00AE42`) bleiben ueber `legacyImportColors.ts` erhalten. Test:
+  `tests/unit/bambuMapping.test.ts`, `tests/security/bambuImport.test.ts`.
 - **R15**: Ab 0.28.0: Beim ersten Start mit Katalog-Version 5 korrigiert `renameLegacyImportColors()`
   (`services/spoolColorRenameService.ts`, aufgerufen aus `catalogService.ts`) einmalig aeltere Cloud-Importe: nur Spulen
   mit `bambuCloudId`, deren Name genau dem alten RGB-Ergebnis (`legacyNearestColorName`) ihres Farbwerts entspricht, bekommen

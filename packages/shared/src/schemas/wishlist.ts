@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 const colorNameSchema = z.string().trim().min(1).max(60);
+// Ganze Cent-Betraege, wie bei den Spulenpreisen (max. 10.000 EUR)
+const priceCentsSchema = z.number().int().min(0).max(1_000_000);
 const colorHexSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 
 export const wishlistStatusSchema = z.enum(["OPEN", "ORDERED", "DONE"]);
@@ -14,6 +16,8 @@ export const wishlistItemSchema = z.object({
   status: wishlistStatusSchema,
   // Teil der Bestellliste (aus der Wunschliste ausgewaehlt); der Status gilt fuer beide Ansichten gemeinsam.
   inOrder: z.boolean(),
+  // Preis je Spule in Cent fuer die Abrechnung (null = noch nicht eingetragen)
+  unitPriceCents: priceCentsSchema.nullable(),
   // Optionaler Verweis auf einen Stammdaten-Eintrag (aus den Dropdowns im Formular); der Titel bleibt die
   // massgebliche, frei editierbare Anzeige. Name als Momentaufnahme, damit er auch nach Loeschen lesbar bleibt.
   manufacturerId: z.string().uuid().nullable(),
@@ -52,6 +56,7 @@ export const updateWishlistItemInputSchema = z
     quantity: z.number().int().min(1).max(999),
     status: wishlistStatusSchema,
     inOrder: z.boolean(),
+    unitPriceCents: priceCentsSchema.nullable(),
     manufacturerId: z.string().uuid().nullable(),
     materialId: z.string().uuid().nullable(),
     colorName: colorNameSchema.nullable(),
@@ -67,10 +72,24 @@ export const bulkUpdateWishlistInputSchema = z
   .object({
     ids: z.array(z.string().uuid()).min(1).max(BULK_WISHLIST_MAX_IDS),
     status: wishlistStatusSchema.optional(),
-    inOrder: z.boolean().optional()
+    inOrder: z.boolean().optional(),
+    unitPriceCents: priceCentsSchema.nullable().optional()
   })
   .strict()
-  .refine((input) => input.status !== undefined || input.inOrder !== undefined, { message: "status oder inOrder erforderlich" });
+  .refine((input) => input.status !== undefined || input.inOrder !== undefined || input.unitPriceCents !== undefined, {
+    message: "status, inOrder oder unitPriceCents erforderlich"
+  });
 export type BulkUpdateWishlistInput = z.infer<typeof bulkUpdateWishlistInputSchema>;
 
 export const CONTENT_FIELDS = ["title", "note", "quantity", "manufacturerId", "materialId", "colorName", "colorHex"] as const;
+
+// Nebenkosten je Hersteller fuer die Abrechnung (Versand und Rabatt in Cent); strict() lehnt fremde Schluessel ab.
+export const wishlistOrderCostSchema = z.object({
+  manufacturerId: z.string().uuid(),
+  shippingCents: priceCentsSchema,
+  discountCents: priceCentsSchema
+});
+export type WishlistOrderCost = z.infer<typeof wishlistOrderCostSchema>;
+
+export const setWishlistOrderCostInputSchema = z.object({ shippingCents: priceCentsSchema, discountCents: priceCentsSchema }).strict();
+export type SetWishlistOrderCostInput = z.infer<typeof setWishlistOrderCostInputSchema>;

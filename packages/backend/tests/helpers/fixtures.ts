@@ -32,6 +32,7 @@ export async function createLoggedInUser(app: Express, username: string, role: "
 export async function resetInventoryData(): Promise<void> {
   await prisma.auditLog.deleteMany();
   await prisma.wishlistItem.deleteMany();
+  await prisma.wishlistOrderCost.deleteMany();
   await prisma.printJob.deleteMany();
   await prisma.amsSlotAssignment.deleteMany();
   await prisma.spool.deleteMany();

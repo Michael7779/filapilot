@@ -19,3 +19,17 @@ export async function downloadFile(path: string, fallbackFilename: string): Prom
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+// Speichert Text als Datei direkt im Browser (kein Server noetig), z.B. die Abrechnung als CSV. Das BOM vorne sorgt dafuer,
+// dass Excel Umlaute richtig liest.
+export function saveTextFile(filename: string, content: string, mimeType: string): void {
+  const blob = new Blob(["﻿", content], { type: `${mimeType};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}

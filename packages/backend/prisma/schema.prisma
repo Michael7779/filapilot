@@ -90,6 +90,9 @@ model WishlistItem {
   // Gehoert zur tatsaechlichen Bestellliste der Sammelbestellung (instanzweit, wie der Status von jedem aktiven
   // Nutzer setzbar). Die Bestellliste ist keine eigene Tabelle, sondern die Auswahl aus der Wunschliste.
   inOrder         Boolean        @default(false)
+  // Preis je Spule in Cent fuer die Abrechnung der Sammelbestellung (null = noch nicht eingetragen); wie Status und
+  // Auswahl von jedem aktiven Nutzer setzbar.
+  unitPriceCents  Int?
   // Optionaler Verweis auf einen Stammdaten-Eintrag (aus den Dropdowns im Formular) - der Titel bleibt aber
   // die massgebliche, frei editierbare Anzeige; loeschen von Hersteller/Material entfernt nur den Verweis.
   manufacturerId  String?
@@ -110,6 +113,21 @@ model WishlistItem {
   updatedAt       DateTime       @updatedAt
 
   @@map("wishlist_items")
+}
+
+// Nebenkosten einer Sammelbestellung je Hersteller (Versand und Rabatt, in Cent). Sie gehoeren zur Bestellliste der
+// Wunschliste (WishlistItem) und werden in der Abrechnung nach Warenwert auf die Personen verteilt. Eine Zeile je
+// Hersteller; wird der Hersteller geloescht, verschwindet sie mit.
+model WishlistOrderCost {
+  id             String       @id @default(uuid())
+  manufacturerId String       @unique
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+  shippingCents  Int          @default(0)
+  discountCents  Int          @default(0)
+  updatedByName  String?
+  updatedAt      DateTime     @updatedAt
+
+  @@map("wishlist_order_costs")
 }
 
 // Vom Admin definierte Zusatzfelder (Name + Typ), deren Werte Spulen dynamisch befuellen (Spool.customFields).
@@ -267,6 +285,7 @@ model Manufacturer {
   spools    Spool[]
   materials Material[]
   wishlistItems WishlistItem[]
+  wishlistOrderCost WishlistOrderCost?
   defaultForSettings Settings[]
   createdAt DateTime   @default(now())
 

@@ -204,7 +204,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     assert.equal(preview.body.data.skipped, 1);
     const first = preview.body.data.rows.find((row: { cloudId: string }) => row.cloudId === "101");
     assert.deepEqual([first.vendor, first.materialName, first.colorHex, first.colorName, first.remainingG, first.totalG, first.deviceName], [
-      "Bambu Lab", "PLA Basic", "#FFFFFF", "Weiß", 931, 1000, "X1C"
+      "Bambu Lab", "PLA Basic", "#FFFFFF", "Jade-Weiß", 931, 1000, "X1C"
     ]);
     assert.equal(first.alreadyImported, false);
     assert.equal(first.manufacturerExists, false);
@@ -233,7 +233,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     assert.ok(white);
     assert.deepEqual(
       [white?.bambuCloudId, white?.manufacturer.name, white?.material.name, white?.colorName, white?.colorHex, white?.initialWeightG, white?.remainingWeightG, white?.location],
-      ["101", "Bambu Lab", "PLA Basic", "Weiß", "#FFFFFF", 1000, 931, "X1C"]
+      ["101", "Bambu Lab", "PLA Basic", "Jade-Weiß", "#FFFFFF", 1000, 931, "X1C"]
     );
     // Temperaturen kommen vom allgemeinen Material gleichen Typs ("PLA"), sonst Standardwerte
     assert.deepEqual([white?.material.printTempMinC, white?.material.printTempMaxC, white?.material.bedTempC], [195, 225, 55]);
@@ -244,7 +244,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     const whiteHistory = await prisma.auditLog.findMany({ where: { area: "SPOOL", entityId: white.id } });
     assert.equal(whiteHistory.length, 1);
     assert.equal(whiteHistory[0]?.action, "CREATE");
-    assert.match(whiteHistory[0]?.description ?? "", /Bambu Lab PLA Basic Weiß/);
+    assert.match(whiteHistory[0]?.description ?? "", /Bambu Lab PLA Basic Jade-Weiß/);
     assert.equal((whiteHistory[0]?.after as { remainingWeightG: number } | null)?.remainingWeightG, 931);
 
     // Die Sitzung ist nach dem Import weg (Token verworfen)
@@ -337,7 +337,7 @@ describe("Bambu-Import - Negativ-Tests und Ablauf", () => {
     const session = (await post(`${base(linkLagerId)}/file`, linkUser, { hits: HITS })).body.data.sessionId as string;
     const preview = await get(`${base(linkLagerId)}/${session}/preview`, linkUser);
     const row101 = preview.body.data.rows.find((r: { cloudId: string }) => r.cloudId === "101");
-    assert.deepEqual(row101.suggestedMatch, { spoolId: existing.id, label: "Bambu Lab PLA Basic Weiß" });
+    assert.deepEqual(row101.suggestedMatch, { spoolId: existing.id, label: "Bambu Lab PLA Basic Jade-Weiß" });
     const row102 = preview.body.data.rows.find((r: { cloudId: string }) => r.cloudId === "102");
     assert.equal(row102.suggestedMatch, null);
 

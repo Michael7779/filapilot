@@ -26,15 +26,23 @@ function filterItem(over: Partial<FilterItem>): FilterItem {
   };
 }
 
+let groupCounter = 0;
 function groupItem(over: Partial<GroupItem>): GroupItem {
+  groupCounter += 1;
   return {
+    id: `g-${groupCounter}`,
     title: "Irgendwas",
     quantity: 1,
     inOrder: false,
+    status: "OPEN",
+    unitPriceCents: null,
+    addedByName: "anna",
     manufacturerId: null,
     manufacturerName: null,
+    materialId: null,
     materialName: null,
     colorName: null,
+    colorHex: null,
     ...over
   };
 }
@@ -126,5 +134,90 @@ describe("groupWishlistByManufacturer", () => {
 
   it("liefert bei leerer Liste keine Gruppen", () => {
     assert.deepEqual(groupWishlistByManufacturer([], "de"), []);
+  });
+});
+
+describe("Bestellliste: gleiche Wuensche zu einer Zeile zusammenfassen", () => {
+  const bambu = { manufacturerId: "m1", manufacturerName: "Bambu Lab", materialId: "p1", materialName: "TPU", colorName: "Schwarz", colorHex: "#000000" };
+
+  it("fasst Eintraege mit gleichem Hersteller, Material und gleicher Farbe zusammen (Gross-/Kleinschreibung egal)", () => {
+    const [group] = groupWishlistByManufacturer(
+      [
+        groupItem({ ...bambu, title: "Bambu Lab TPU Schwarz", quantity: 1, addedByName: "micky" }),
+        groupItem({ ...bambu, title: "Bambu Lab TPU Schwarz", quantity: 2, addedByName: "marcus", colorName: "schwarz" }),
+        groupItem({ ...bambu, colorName: "Weiss", colorHex: "#ffffff", title: "Bambu Lab TPU Weiss" })
+      ],
+      "de"
+    );
+    assert.equal(group?.lines.length, 2);
+    const black = group?.lines.find((line) => line.colorName?.toLowerCase() === "schwarz");
+    assert.equal(black?.items.length, 2);
+    assert.equal(black?.totalQuantity, 3);
+    assert.deepEqual(black?.contributors, [
+      { name: "marcus", quantity: 2 },
+      { name: "micky", quantity: 1 }
+    ]);
+  });
+
+  it("unterscheidet Hersteller, Material und Farbe; ohne Farbe entscheidet der Titel", () => {
+    const [group] = groupWishlistByManufacturer(
+      [
+        groupItem({ ...bambu, materialId: "p2", materialName: "PLA" }),
+        groupItem({ ...bambu }),
+        groupItem({ manufacturerId: "m1", manufacturerName: "Bambu Lab", title: "Egal was A" }),
+        groupItem({ manufacturerId: "m1", manufacturerName: "Bambu Lab", title: "egal was a" }),
+        groupItem({ manufacturerId: "m1", manufacturerName: "Bambu Lab", title: "Egal was B" })
+      ],
+      "de"
+    );
+    assert.equal(group?.lines.length, 4);
+  });
+
+  it("addiert die Mengen derselben Person und zaehlt die Auswahl je Zeile (keine/teilweise/alle)", () => {
+    const [group] = groupWishlistByManufacturer(
+      [
+        groupItem({ ...bambu, quantity: 1, addedByName: "anna", inOrder: true }),
+        groupItem({ ...bambu, quantity: 2, addedByName: "anna", inOrder: false })
+      ],
+      "de"
+    );
+    const line = group?.lines[0];
+    assert.deepEqual(line?.contributors, [{ name: "anna", quantity: 3 }]);
+    assert.equal(line?.selection, "some");
+    assert.equal(line?.selectedQuantity, 1);
+    const [allSelected] = groupWishlistByManufacturer([groupItem({ ...bambu, inOrder: true }), groupItem({ ...bambu, inOrder: true })], "de");
+    assert.equal(allSelected?.lines[0]?.selection, "all");
+    const [noneSelected] = groupWishlistByManufacturer([groupItem({ ...bambu }), groupItem({ ...bambu })], "de");
+    assert.equal(noneSelected?.lines[0]?.selection, "none");
+  });
+
+  it("zeigt einen gemeinsamen Status, sonst MIXED", () => {
+    const status = (first: GroupItem["status"], second: GroupItem["status"]): string | undefined =>
+      groupWishlistByManufacturer([groupItem({ ...bambu, status: first }), groupItem({ ...bambu, status: second })], "de")[0]?.lines[0]?.status;
+    assert.equal(status("ORDERED", "ORDERED"), "ORDERED");
+    assert.equal(status("OPEN", "ORDERED"), "MIXED");
+  });
+
+  it("zeigt einen gemeinsamen Preis; unterschiedliche Preise sind 'gemischt', fehlende zaehlen nicht als Preis", () => {
+    const price = (first: number | null, second: number | null): { cents: number | null; mixed: boolean } | undefined => {
+      const line = groupWishlistByManufacturer(
+        [groupItem({ ...bambu, unitPriceCents: first, inOrder: true }), groupItem({ ...bambu, unitPriceCents: second, inOrder: true })],
+        "de"
+      )[0]?.lines[0];
+      return line ? { cents: line.unitPriceCents, mixed: line.priceMixed } : undefined;
+    };
+    assert.deepEqual(price(1999, 1999), { cents: 1999, mixed: false });
+    assert.deepEqual(price(null, null), { cents: null, mixed: false });
+    assert.deepEqual(price(1999, 2499), { cents: null, mixed: true });
+    assert.deepEqual(price(1999, null), { cents: null, mixed: true });
+  });
+
+  it("nimmt fuer den Preis nur die ausgewaehlten Eintraege, solange welche ausgewaehlt sind", () => {
+    const line = groupWishlistByManufacturer(
+      [groupItem({ ...bambu, unitPriceCents: 1999, inOrder: true }), groupItem({ ...bambu, unitPriceCents: 500, inOrder: false })],
+      "de"
+    )[0]?.lines[0];
+    assert.equal(line?.unitPriceCents, 1999);
+    assert.equal(line?.priceMixed, false);
   });
 });

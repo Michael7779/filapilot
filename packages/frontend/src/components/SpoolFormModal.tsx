@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
-import { availableMaterialsFor, suggestPrice } from "@filapilot/shared";
+import { availableMaterialsFor, colorAfterCatalogChange, suggestPrice } from "@filapilot/shared";
 import { formatBedTemp } from "../lib/formatTemps.js";
 import type { PhotoChange } from "../lib/spoolPhoto.js";
 import { SpoolPhotoField } from "./SpoolPhotoField.js";
@@ -128,11 +128,31 @@ export function SpoolFormModal({
     }
   }, [priceTouched, suggestedCents]);
 
+  // Eine aus der Voreinstellung gewaehlte Farbe bleibt nicht stehen, wenn das neue Hersteller/Material-Paar sie nicht
+  // anbietet (sonst steht z.B. "Grau" bei PLA Matte); von Hand getippte Farben bleiben.
+  function colorFieldsAfterChange(nextManufacturerId: string, nextMaterialId: string): { colorName: string; colorHex: string; colorHex2: string } {
+    const current = { colorName: form.colorName, colorHex: form.colorHex, colorHex2: form.colorHex2 };
+    const kept = colorAfterCatalogChange(
+      { name: form.colorName, hex: form.colorHex },
+      { manufacturerName: selectedManufacturer?.name ?? null, materialName: selectedMaterial?.name ?? null },
+      {
+        manufacturerName: manufacturers.find((manufacturer) => manufacturer.id === nextManufacturerId)?.name ?? null,
+        materialName: materials.find((material) => material.id === nextMaterialId)?.name ?? null
+      }
+    );
+    return kept ? current : { colorName: "", colorHex: "", colorHex2: "" };
+  }
+
   function handleManufacturerChange(manufacturerId: string): void {
     const stillFits = availableMaterialsFor(materials, manufacturerId || null).some(
       (material) => material.id === form.materialId
     );
-    setForm({ ...form, manufacturerId, materialId: stillFits ? form.materialId : "" });
+    const nextMaterialId = stillFits ? form.materialId : "";
+    setForm({ ...form, manufacturerId, materialId: nextMaterialId, ...colorFieldsAfterChange(manufacturerId, nextMaterialId) });
+  }
+
+  function handleMaterialChange(materialId: string): void {
+    setForm({ ...form, materialId, ...colorFieldsAfterChange(form.manufacturerId, materialId) });
   }
 
   // null = Validierung fehlgeschlagen, Fehlermeldung ist bereits gesetzt.
@@ -278,7 +298,7 @@ export function SpoolFormModal({
           {t("spools.material")}
           <select
             value={form.materialId}
-            onChange={(event) => setForm({ ...form, materialId: event.target.value })}
+            onChange={(event) => handleMaterialChange(event.target.value)}
             disabled={showNewMaterial || (!chosenManufacturerId && !showNewManufacturer)}
             className={SELECT_CLASS}
           >

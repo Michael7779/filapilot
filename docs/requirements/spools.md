@@ -211,3 +211,7 @@
   Keine neue Route (nutzt `POST /api/wishlist`, R1/R7 in wishlist.md). Test: `tests/unit/wishlistMatch.test.ts`; Oberflaeche manuell im Browser geprueft.
 - **R34**: Ab 0.29.1 (Ansicht) bzw. 0.29.2 (Seitengroesse): Ansicht und Seitengroesse der Spulenliste werden pro Geraet im Browser (`localStorage`, Schluessel `filapilot.spoolPreferences`) gemerkt, nicht im Konto - iPhone und Desktop-Browser desselben Benutzers duerfen verschieden sein.
   Ohne Merker startet ein schmaler Bildschirm (< 640 px) in "Kompakt", ein breiter in "Standard"; die Seitengroesse beginnt mit dem Standardwert. Ungueltige Merker-Werte werden verworfen. Keine Schema-/Routen-Aenderung. Test: `packages/frontend/tests/unit/spoolPreferences.test.tsx`.
+- **R35**: Ab 0.31.0: Wechselt man im Spulen-Formular Hersteller oder Material, wird eine aus der Farbvorauswahl gewaehlte Farbe
+  (Name UND Farbwert wie in der bisherigen Liste) zurueckgesetzt, wenn das neue Hersteller/Material-Paar sie nicht anbietet
+  (`colorAfterCatalogChange`); sonst blieb z.B. "Grau" bei PLA Matte stehen. Von Hand getippte oder im Farbwert angepasste Farben
+  bleiben erhalten. Test: `tests/unit/colorCatalog.test.ts`; Oberflaeche manuell im Browser geprueft.

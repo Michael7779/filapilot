@@ -33,7 +33,41 @@
     "status": { "OPEN": "Offen", "ORDERED": "Bestellt", "DONE": "Erledigt" },
     "statusLabel": "Status",
     "inOrder": "In der Bestellliste",
-    "tabs": { "list": "Wunschliste", "order": "Bestellliste ({{count}})" },
+    "tabs": { "list": "Wunschliste", "order": "Bestellliste ({{count}})", "settlement": "Abrechnung" },
+    "price": {
+      "label": "Preis je Spule",
+      "lineTotal": "{{quantity}}x = {{total}}",
+      "suggestion": "Vorschlag {{price}} übernehmen",
+      "invalid": "Ungültiger Betrag",
+    "mixed": "Unterschiedliche Preise – die Eingabe gilt für alle"
+    },
+    "costs": {
+      "shipping": "Versand",
+      "discount": "Rabatt",
+      "hint": "Wird nach Warenwert auf die Personen dieses Herstellers verteilt."
+    },
+    "settlement": {
+      "empty": "Noch nichts in der Bestellliste ausgewählt.",
+      "summary": "Gesamt {{total}} für {{persons}} Personen",
+      "hint": "Berechnet aus allen Einträgen der Bestellliste. Versand und Rabatt eines Herstellers werden nach Warenwert auf die Personen verteilt.",
+      "missingPrices": "Bei {{count}} Eintrag/Einträgen fehlt der Preis. Sie zählen als 0 €, die Abrechnung ist unvollständig.",
+      "byManufacturer": "Nach Hersteller",
+      "byPerson": "Nach Person",
+      "groupLine": "Ware {{goods}} · Versand {{shipping}} · Rabatt {{discount}} = {{total}}",
+      "total": "Summe",
+      "csv": "Als CSV speichern",
+      "csvFilename": "abrechnung-sammelbestellung.csv",
+      "copyText": "Als Text kopieren",
+      "copied": "Text kopiert.",
+      "copyFailed": "Kopieren nicht möglich.",
+      "labels": {
+        "person": "Person",
+        "item": "Artikel",
+        "amount": "Betrag",
+        "extras": "Versand/Rabatt",
+        "missingPrice": "Preis fehlt"
+      }
+    },
     "filter": {
       "search": "Wunschliste durchsuchen",
       "searchPlaceholder": "Suchen nach Titel, Hersteller, Farbe, Notiz, Person …",
@@ -49,7 +83,8 @@
       "onlySelected": "Nur Ausgewählte zeigen",
       "noneSelected": "Noch nichts für die Bestellung ausgewählt.",
       "noManufacturer": "Ohne Hersteller",
-      "groupSummary": "{{selected}} von {{total}} ausgewählt · {{spools}} Spulen",
+      "groupSummary": "{{selected}} von {{total}} Positionen ausgewählt · {{spools}} Spulen",
+      "statusMixed": "Gemischt",
       "selectAll": "Alle wählen",
       "selectNone": "Auswahl aufheben",
       "markOrdered": "Auswahl als bestellt",

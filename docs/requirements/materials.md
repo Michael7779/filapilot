@@ -41,7 +41,7 @@
 
 ## 1.1 Offene Punkte
 - OP-M2 ✅ (0.21.2): Betttemperatur kann jetzt ein Bereich sein, siehe R9.
-- OP-M3: Farb-Vorauswahl nur fuer Bambu Lab gepflegt (PLA Basic/Matte/Silk, PETG HF, ABS, ASA); andere
+- OP-M3: Farb-Vorauswahl nur fuer Bambu Lab gepflegt (ab 0.31.0 alle Filament-Linien des Bambu-Lab-Shops, siehe R14); andere
   Hersteller nutzen die generische Liste. Automatischer Abgleich mit Hersteller-Shops wurde bewusst
   verworfen (keine offizielle API, Daten tief im JS-DOM, Bruchgefahr bei Shop-Aenderungen, moegliche
   AGB-Konflikte) - Erweiterung auf weitere Hersteller bleibt manuelle Pflege in
@@ -87,3 +87,15 @@
 - **R13**: Ab 0.27.0: `getColorPresets()` kennt eigene Farben fuer Bambu Lab "PETG Basic" (inkl. "Natur" mit geschaetztem Hex-Wert) und "PETG Translucent" (Namen
   wie im Bambu-Lab-EU-Shop, Stand 2026-10-04; die Hex-Werte sind aus den Farbmustern dort gemessene Naeherungen, kein
   offizieller Farbcode). Test: `tests/unit/manufacturerColorCatalog.test.ts`.
+- **R14**: Ab 0.31.0: Der Bambu-Lab-Katalog ist vollstaendig. `CATALOG_MATERIALS` fuehrt alle Filament-Linien des Bambu-Lab-EU-Shops
+  (u.a. PLA Wood, Marble, Galaxy, Sparkle, Metal, Glow, Aero, Pure, Translucent, Silk+, Silk Multi-Color, Tough+, Basic Gradient,
+  PETG Matte/-CF, ABS-GF, ASA-CF/Aero, PC FR, PA6-GF, PET-CF, PPA-CF, PPS-CF, TPU for AMS/85A/90A, die Support-Materialien), mit
+  Temperaturen aus der Bambu-Lab-Wiki "Filament guide" (nicht einzeln gelistete Linien von der Materialfamilie abgeleitet);
+  `CATALOG_VERSION` 6, fehlende Materialien werden bei bestehenden Installationen nachgetragen (bestehende bleiben
+  unberuehrt). `getColorPresets()` liefert zu JEDEM dieser Materialien eine eigene Farbliste mit allen im Shop gelisteten
+  Farben (deutsche Namen wie im Shop, Stand 2026-10-17; Hex = Mittelwert des Farbmusters, Naeherung; durchsichtige Muster
+  #E0E0E0; "Natur" bei PETG Basic bleibt als Schaetzwert; die alte Liste "PLA Silk" bleibt fuer aeltere Spulen). Fuer den Import
+  vom Drucker gilt weiter die bisherige exakte Farbwert-Zuordnung (`legacyImportColors.ts`, z.B. #00AE42 = "Bambu-Grün"),
+  zuerst aber die neue Liste (`importColorName`). Preise der neuen Linien sind leer (unbekannt). Tests:
+  `tests/unit/bambuCatalog.test.ts`, `tests/unit/manufacturerColorCatalog.test.ts`, `tests/unit/colorCatalog.test.ts`,
+  `tests/integration/catalogPrices.test.ts`.

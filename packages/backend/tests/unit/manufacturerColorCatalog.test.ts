@@ -23,7 +23,7 @@ describe("getColorPresets", () => {
       assert.ok(presets.every((preset) => /^#[0-9A-F]{6}$/.test(preset.hex)), material);
       assert.equal(new Set(presets.map((preset) => preset.name)).size, presets.length, material);
     }
-    assert.ok(getColorPresets("Bambu Lab", "PETG Translucent").some((preset) => preset.name === "Klar"));
+    assert.ok(getColorPresets("Bambu Lab", "PETG Translucent").some((preset) => preset.name === "Transparent"));
     assert.ok(getColorPresets("Bambu Lab", "PETG Basic").some((preset) => preset.name === "Natur"));
   });
 

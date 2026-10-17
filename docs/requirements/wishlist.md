@@ -42,8 +42,8 @@ Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
   `inOrder` jeder aktive Nutzer setzen, auch bei fremden Eintraegen (`PATCH /api/wishlist/:id`, anonym 401, kein
   Boolean 400); es ist kein Inhalt - wer mit `inOrder` zugleich Titel/Menge/... eines fremden Wunsches schickt,
   bekommt 403. Test: `tests/security/wishlist.test.ts`
-- **R10**: Ab 0.30.0: `PATCH /api/wishlist/bulk` setzt `status` und/oder `inOrder` fuer bis zu 500 Wuensche auf einmal
-  (Body `{ ids, status?, inOrder? }`, Antwort `{ updated }`). `SCOPE: user`: jeder aktive Nutzer, anonym 401. Das Schema
+- **R10**: Ab 0.30.0: `PATCH /api/wishlist/bulk` setzt `status`, `inOrder` und (ab 0.31.0) `unitPriceCents` fuer bis zu 500
+  Wuensche auf einmal (Body `{ ids, status?, inOrder?, unitPriceCents? }`, Antwort `{ updated }`). `SCOPE: user`: jeder aktive Nutzer, anonym 401. Das Schema
   ist strict - Inhaltsfelder (Titel, Menge, ...), leere/zu lange/ungueltige ID-Liste, fehlendes `status`/`inOrder` oder
   unbekannter Status ergeben 400, sonst liesse sich die Ersteller-Pruefung (R2) umgehen. Unbekannte IDs zaehlen nicht mit.
   Ein Audit-Eintrag je Aufruf (`WISHLIST`, EVENT). Test: `tests/security/wishlist.test.ts`
@@ -57,9 +57,8 @@ Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
   Ansichten. Test: `tests/unit/wishlistOrder.test.ts` (Gruppierung), Oberflaeche manuell im Browser geprueft.
 
 ## 1.1.1 Befunde / bewusste Grenzen
-- Gleiche Wuensche mehrerer Nutzer (z.B. zweimal "PLA Basic Schwarz") werden in der Bestellliste NICHT zu einer
-  Zeile zusammengefasst, stehen aber durch die Sortierung nebeneinander; so bleibt jede Zeile einer Person
-  zugeordnet und Status/Auswahl je Eintrag eindeutig.
+- ✅ (0.31.0, war Befund): Gleiche Wuensche mehrerer Nutzer werden in der Bestellliste jetzt zu einer Position zusammengefasst,
+  siehe R17. Die Wunschliste selbst bleibt eine Liste einzelner Wuensche.
 - Die Liste laedt weiterhin bis zu 500 Eintraege auf einmal (Filter laufen im Browser); eine Seitenweise-Ladung
   (cursor-basiert) gibt es hier noch nicht.
 
@@ -76,3 +75,29 @@ Oberflaeche manuell im Browser geprueft.
 - Fehler behoben: Auf schmalen Bildschirmen (Handy) ueberlappten sich die Beschriftungen "Hersteller" und "Material"
   im Formular unlesbar (zu viele `flex-1`-Spalten in einer Zeile, unbrechbare Woerter liefen visuell ineinander).
   Das Formular ordnet die Felder unter `sm:` als 2-Spalten-Grid an, ab `sm:` wie bisher als Zeile.
+
+## 1.5 Preise, Abrechnung und Zusammenfassung (ab 0.31.0)
+- **R13**: `unitPriceCents` (`Int?`, 0 bis 1.000.000, ganze Cent) ist der Preis je Spule fuer die Abrechnung. Wie Status und
+  `inOrder` darf ihn jeder aktive Nutzer setzen (`PATCH /api/wishlist/:id`, Sammel-Route R10), auch bei fremden Wuenschen -
+  ohne Inhalt zu aendern: Titel/Menge/... zusammen mit dem Preis bei fremden Wuenschen ergeben 403. Ungueltige Betraege
+  (negativ, Dezimal, Text, zu gross) 400, anonym 401. Test: `tests/security/wishlist.test.ts`
+- **R14**: Tabelle `WishlistOrderCost` (gehoert zu `Manufacturer`, eine Zeile je Hersteller, Loeschen des Herstellers loescht sie):
+  Nebenkosten `shippingCents`/`discountCents` (je 0 bis 1.000.000). `GET /api/wishlist/costs` und
+  `PUT /api/wishlist/costs/:manufacturerId` (SCOPE user: jeder aktive Nutzer; anonym 401; krumme Betraege, fremde Schluessel,
+  keine UUID 400; unbekannter Hersteller 404; zweites Setzen ueberschreibt). Jede Aenderung steht im Aenderungsprotokoll.
+  `DELETE /api/wishlist/done` loescht die Nebenkosten von Herstellern, fuer die nichts mehr auf der Liste steht, damit sie nicht
+  in die naechste Bestellung rutschen. Test: `tests/security/wishlist.test.ts`
+- **R15**: `computeSettlement` rechnet die Abrechnung rein im Browser aus allen Eintraegen der Bestellliste (`inOrder`, unabhaengig
+  von Suche/Filter): Ware je Person = Menge mal Preis; Versand minus Rabatt eines Herstellers wird nach Warenwert (groesster Rest,
+  Summe exakt, Rundungs-Cent geht nie verloren) auf die Personen verteilt, die dort etwas bestellt haben (alle Warenwerte 0 =
+  gleichmaessig); Eintraege ohne Hersteller haben keine Nebenkosten; Eintraege ohne Preis zaehlen als 0 und werden gemeldet
+  (`missingPriceCount`). Person = Name, der beim Hinzufuegen gespeichert wurde. Test: `tests/unit/wishlistSettlement.test.ts`
+- **R16**: Export der Abrechnung ohne Server: CSV (Semikolon, Dezimalkomma, BOM, Zellen mit `= + - @` am Anfang werden gegen
+  Formel-Einschleusung mit `'` entschaerft) und Text zum Kopieren (Zwischenablage mit Fallback fuer HTTP ohne sicheren Kontext).
+  Test: `tests/unit/wishlistSettlement.test.ts`; Oberflaeche manuell im Browser geprueft.
+- **R17**: Die Bestellliste fasst Wuensche mit gleichem Hersteller, Material und gleicher Farbe (ohne Farbe: gleichem Titel,
+  ohne Beachtung der Gross-/Kleinschreibung) je Hersteller zu einer Position zusammen (`WishlistOrderLine`): Menge summiert,
+  Beitragende je Person aufgelistet, Auswahl (keine/teilweise/alle), Status (gemeinsam oder "gemischt") und Preis (gemeinsam oder
+  "unterschiedlich") gelten fuer die ganze Position und werden per Sammel-Route auf alle zugehoerigen Wuensche geschrieben.
+  Bearbeiten/Loeschen bleibt je Einzelwunsch beim Ersteller bzw. Admin (R2). Test: `tests/unit/wishlistOrder.test.ts`;
+  Oberflaeche manuell im Browser geprueft.

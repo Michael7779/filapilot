@@ -12,6 +12,8 @@ interface WishlistItemRowProps {
   leading?: ReactNode;
   // Zeigt in der Wunschliste, dass der Eintrag zur Bestellliste gehoert
   showInOrderBadge?: boolean;
+  // Zusatz unter den Angaben, z.B. das Preisfeld der Bestellliste
+  extra?: ReactNode;
   onStatus: (item: WishlistItem, status: WishlistStatus) => void;
   onEdit: (item: WishlistItem) => void;
   onRemove: (item: WishlistItem) => void;
@@ -22,7 +24,7 @@ function toStatus(value: string): WishlistStatus {
 }
 
 // Eine Zeile der Wunsch- bzw. Bestellliste; beide Ansichten zeigen denselben Eintrag und denselben Status.
-export function WishlistItemRow({ item, canEdit, leading, showInOrderBadge, onStatus, onEdit, onRemove }: WishlistItemRowProps): React.JSX.Element {
+export function WishlistItemRow({ item, canEdit, leading, showInOrderBadge, extra, onStatus, onEdit, onRemove }: WishlistItemRowProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
   return (
     <li className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
@@ -53,6 +55,7 @@ export function WishlistItemRow({ item, canEdit, leading, showInOrderBadge, onSt
           {t("wishlist.addedBy", { name: item.addedByName, date: new Date(item.createdAt).toLocaleDateString(i18n.language) })}
           {item.updatedByName && item.updatedByName !== item.addedByName ? ` · ${t("wishlist.updatedBy", { name: item.updatedByName })}` : ""}
         </div>
+        {extra}
       </div>
       <select
         value={item.status}

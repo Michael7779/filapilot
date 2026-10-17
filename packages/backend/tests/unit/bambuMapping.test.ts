@@ -21,7 +21,7 @@ describe("Bambu-Import: Zuordnung einer Spule", () => {
     assert.equal(mapped.materialName, "PLA Basic");
     assert.equal(mapped.typeName, "PLA");
     assert.equal(mapped.colorHex, "#FFFFFF");
-    assert.equal(mapped.colorName, "Weiß");
+    assert.equal(mapped.colorName, "Jade-Weiß");
     assert.deepEqual([mapped.remainingG, mapped.totalG], [931, 1000]);
     assert.equal(mapped.deviceName, "X1C Werkstatt");
   });

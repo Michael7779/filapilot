@@ -33,7 +33,41 @@
     "status": { "OPEN": "Open", "ORDERED": "Ordered", "DONE": "Done" },
     "statusLabel": "Status",
     "inOrder": "In the order list",
-    "tabs": { "list": "Wishlist", "order": "Order list ({{count}})" },
+    "tabs": { "list": "Wishlist", "order": "Order list ({{count}})", "settlement": "Settlement" },
+    "price": {
+      "label": "Price per spool",
+      "lineTotal": "{{quantity}}x = {{total}}",
+      "suggestion": "Use suggestion {{price}}",
+      "invalid": "Invalid amount",
+    "mixed": "Different prices – your entry applies to all"
+    },
+    "costs": {
+      "shipping": "Shipping",
+      "discount": "Discount",
+      "hint": "Split by goods value among the people of this manufacturer."
+    },
+    "settlement": {
+      "empty": "Nothing selected in the order list yet.",
+      "summary": "Total {{total}} for {{persons}} people",
+      "hint": "Calculated from all entries in the order list. Shipping and discount of a manufacturer are split by goods value among the people.",
+      "missingPrices": "{{count}} entry/entries have no price. They count as €0, so the settlement is incomplete.",
+      "byManufacturer": "By manufacturer",
+      "byPerson": "By person",
+      "groupLine": "Goods {{goods}} · shipping {{shipping}} · discount {{discount}} = {{total}}",
+      "total": "Total",
+      "csv": "Save as CSV",
+      "csvFilename": "group-order-settlement.csv",
+      "copyText": "Copy as text",
+      "copied": "Text copied.",
+      "copyFailed": "Could not copy.",
+      "labels": {
+        "person": "Person",
+        "item": "Item",
+        "amount": "Amount",
+        "extras": "Shipping/discount",
+        "missingPrice": "Price missing"
+      }
+    },
     "filter": {
       "search": "Search the wishlist",
       "searchPlaceholder": "Search by title, manufacturer, color, note, person …",
@@ -49,7 +83,8 @@
       "onlySelected": "Show selected only",
       "noneSelected": "Nothing selected for the order yet.",
       "noManufacturer": "No manufacturer",
-      "groupSummary": "{{selected}} of {{total}} selected · {{spools}} spools",
+      "groupSummary": "{{selected}} of {{total}} items selected · {{spools}} spools",
+      "statusMixed": "Mixed",
       "selectAll": "Select all",
       "selectNone": "Clear selection",
       "markOrdered": "Mark selection ordered",

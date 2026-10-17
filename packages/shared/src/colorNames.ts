@@ -1,3 +1,4 @@
+import { getLegacyImportColors } from "./legacyImportColors.js";
 import { getColorPresets } from "./manufacturerColorCatalog.js";
 
 // Feste Liste deutscher Farbnamen fuer den Import: Bambu liefert nur einen Hex-Wert, FilaPilot zeigt einen Namen.
@@ -118,7 +119,8 @@ export function legacyNearestColorName(hex: string | null): string {
 // Farbname fuer importierte Spulen: der Name des Herstellers, wenn der Hex-Wert GENAU einer seiner bekannten Farben fuer
 // dieses Material entspricht (z.B. Bambu Lab PLA Basic #00AE42 = "Bambu-Grün"), sonst der naechste allgemeine Name.
 export function importColorName(colorHex: string | null, vendor: string, materialName: string): string {
-  const exact = colorHex ? getColorPresets(vendor, materialName).find((preset) => preset.hex.toUpperCase() === colorHex) : undefined;
+  const sameHex = (preset: { hex: string }): boolean => preset.hex.toUpperCase() === colorHex;
+  const exact = colorHex ? (getColorPresets(vendor, materialName).find(sameHex) ?? getLegacyImportColors(vendor, materialName).find(sameHex)) : undefined;
   return exact?.name ?? nearestColorName(colorHex);
 }
 

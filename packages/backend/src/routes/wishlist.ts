@@ -4,8 +4,10 @@ import {
   CONTENT_FIELDS,
   bulkUpdateWishlistInputSchema,
   createWishlistItemInputSchema,
+  setWishlistOrderCostInputSchema,
   updateWishlistItemInputSchema,
-  type WishlistItem
+  type WishlistItem,
+  type WishlistOrderCost
 } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
@@ -27,6 +29,7 @@ interface WishlistRow {
   quantity: number;
   status: string;
   inOrder: boolean;
+  unitPriceCents: number | null;
   manufacturerId: string | null;
   manufacturer: { name: string } | null;
   materialId: string | null;
@@ -48,6 +51,7 @@ function toPublic(row: WishlistRow): WishlistItem {
     quantity: row.quantity,
     status: row.status as WishlistItem["status"],
     inOrder: row.inOrder,
+    unitPriceCents: row.unitPriceCents,
     manufacturerId: row.manufacturerId,
     manufacturerName: row.manufacturer?.name ?? null,
     materialId: row.materialId,
@@ -73,6 +77,7 @@ function contentSnapshot(row: WishlistRow): Record<string, unknown> {
     quantity: row.quantity,
     status: row.status,
     inOrder: row.inOrder,
+    unitPriceCents: row.unitPriceCents,
     manufacturerName: row.manufacturer?.name ?? null,
     materialName: row.material?.name ?? null,
     colorName: row.colorName
@@ -138,6 +143,9 @@ wishlistRouter.delete(
       return;
     }
     await prisma.wishlistItem.deleteMany({ where: { status: "DONE" } });
+    // Nebenkosten (Versand/Rabatt) gehoeren zu einer laufenden Sammelbestellung: ist fuer einen Hersteller nichts mehr auf
+    // der Liste, verschwinden sie mit, damit sie nicht in die naechste Bestellung rutschen.
+    await prisma.wishlistOrderCost.deleteMany({ where: { manufacturer: { wishlistItems: { none: {} } } } });
     await recordAudit({
       actor: actorFromRequest(req),
       action: "EVENT",
@@ -172,6 +180,49 @@ wishlistRouter.post(
   })
 );
 
+// Nebenkosten je Hersteller fuer die Abrechnung der Sammelbestellung. Threat-Model: anonym -> 401; wie Status/Auswahl darf
+// jeder aktive Nutzer sie setzen (gemeinsame Sammelbestellung, Aenderungen stehen im Protokoll). Serverseitig erzwungen:
+// nur ganze Cent-Betraege 0..1.000.000 und ausschliesslich shippingCents/discountCents (strict, sonst 400), ein
+// unbekannter Hersteller ergibt 404. Negativ-Tests: tests/security/wishlist.test.ts.
+// SCOPE: user
+wishlistRouter.get(
+  "/costs",
+  ...requireActiveUser,
+  asyncHandler(async (_req, res) => {
+    const rows = await prisma.wishlistOrderCost.findMany({ select: { manufacturerId: true, shippingCents: true, discountCents: true } });
+    sendData(res, rows satisfies WishlistOrderCost[]);
+  })
+);
+
+// SCOPE: user
+wishlistRouter.put(
+  "/costs/:manufacturerId",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const manufacturerId = idParamSchema.parse(req.params.manufacturerId);
+    const input = setWishlistOrderCostInputSchema.parse(req.body);
+    const user = getAuthenticatedUser(req);
+    const manufacturer = await prisma.manufacturer.findUnique({ where: { id: manufacturerId }, select: { name: true } });
+    if (!manufacturer) {
+      throw new AppError("NOT_FOUND", "Hersteller wurde nicht gefunden.");
+    }
+    const saved = await prisma.wishlistOrderCost.upsert({
+      where: { manufacturerId },
+      create: { manufacturerId, ...input, updatedByName: user.username },
+      update: { ...input, updatedByName: user.username },
+      select: { manufacturerId: true, shippingCents: true, discountCents: true }
+    });
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "EVENT",
+      area: "WISHLIST",
+      entityId: manufacturerId,
+      description: `Nebenkosten ${manufacturer.name}: Versand ${(saved.shippingCents / 100).toFixed(2)} EUR, Rabatt ${(saved.discountCents / 100).toFixed(2)} EUR`
+    });
+    sendData(res, saved satisfies WishlistOrderCost);
+  })
+);
+
 // Bestellliste: Auswahl (inOrder) und/oder Status fuer mehrere Wuensche auf einmal setzen. Threat-Model: anonym -> 401;
 // eingeloggte Nutzer duerfen Auswahl und Status wie bei der Einzel-Route auch bei fremden Wuenschen setzen (gemeinsame
 // Sammelbestellung), aber NIE Inhalt - das Schema ist strict(), Titel/Menge/... werden mit 400 abgelehnt, und die IDs sind
@@ -186,7 +237,13 @@ wishlistRouter.patch(
     const user = getAuthenticatedUser(req);
     const result = await prisma.wishlistItem.updateMany({
       where: { id: { in: input.ids } },
-      data: omitUndefined({ status: input.status, inOrder: input.inOrder, updatedByUserId: user.id, updatedByName: user.username })
+      data: omitUndefined({
+        status: input.status,
+        inOrder: input.inOrder,
+        unitPriceCents: input.unitPriceCents,
+        updatedByUserId: user.id,
+        updatedByName: user.username
+      })
     });
     if (result.count > 0) {
       const changes: string[] = [];
@@ -195,6 +252,9 @@ wishlistRouter.patch(
       }
       if (input.inOrder !== undefined) {
         changes.push(input.inOrder ? "in die Bestellliste" : "aus der Bestellliste");
+      }
+      if (input.unitPriceCents !== undefined) {
+        changes.push("Preis");
       }
       await recordAudit({
         actor: actorFromRequest(req),

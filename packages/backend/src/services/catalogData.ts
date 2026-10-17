@@ -3,7 +3,7 @@
 // keine garantierten Werte - im Zweifel gilt das Datenblatt auf der Spule. Admins koennen alles unter
 // Einstellungen -> Stammdaten aendern. Bei jeder inhaltlichen Aenderung CATALOG_VERSION erhoehen, dann
 // werden fehlende Eintraege beim naechsten Zugriff nachgetragen (bestehende und geloeschte bleiben unberuehrt).
-export const CATALOG_VERSION = 5;
+export const CATALOG_VERSION = 6;
 
 export interface CatalogMaterial {
   manufacturer: string | null;
@@ -139,6 +139,40 @@ export const CATALOG_MATERIALS: CatalogMaterial[] = [
   m("Bambu Lab", "PLA-CF", 210, 240, 55),
   m("Bambu Lab", "PVA", 190, 210, 55),
   m("Bambu Lab", "TPU 95A HF", 220, 240, 35),
+  // Weitere Bambu-Lab-Linien (Stand 2026-10-17, alle Filamente des Bambu-Lab-EU-Shops). Temperaturen aus der Bambu-Lab-Wiki
+  // "Filament guide" (wiki.bambulab.com/en/general/filament-guide-material-table): Duesentemperatur nach Tabelle, Bett als
+  // typischer Wert aus dem dort genannten Bereich. Nicht einzeln aufgefuehrte Linien (Pure, Translucent, Aero, Silk+, Tough+,
+  // Gradient, Multi-Color, Sparkle, Galaxy, ASA-CF/Aero, PC FR, Support for ABS) sind von der Materialfamilie abgeleitet.
+  m("Bambu Lab", "ABS-GF", 240, 280, 90),
+  m("Bambu Lab", "ASA Aero", 240, 280, 90),
+  m("Bambu Lab", "ASA-CF", 240, 280, 90),
+  m("Bambu Lab", "PA6-GF", 260, 300, 100),
+  m("Bambu Lab", "PC FR", 260, 290, 110),
+  m("Bambu Lab", "PET-CF", 260, 300, 100),
+  m("Bambu Lab", "PETG Matte", 240, 270, 70),
+  m("Bambu Lab", "PETG-CF", 240, 270, 70),
+  m("Bambu Lab", "PLA Aero", 190, 230, 45),
+  m("Bambu Lab", "PLA Basic Gradient", 190, 230, 45),
+  m("Bambu Lab", "PLA Galaxy", 190, 230, 45),
+  m("Bambu Lab", "PLA Glow", 210, 240, 45),
+  m("Bambu Lab", "PLA Marble", 190, 230, 45),
+  m("Bambu Lab", "PLA Metal", 190, 230, 45),
+  m("Bambu Lab", "PLA Pure", 190, 230, 45),
+  m("Bambu Lab", "PLA Silk Multi-Color", 190, 230, 45),
+  m("Bambu Lab", "PLA Silk+", 190, 230, 45),
+  m("Bambu Lab", "PLA Sparkle", 190, 230, 45),
+  m("Bambu Lab", "PLA Tough+", 190, 230, 45),
+  m("Bambu Lab", "PLA Translucent", 190, 230, 45),
+  m("Bambu Lab", "PLA Wood", 190, 240, 45),
+  m("Bambu Lab", "PPA-CF", 285, 320, 100),
+  m("Bambu Lab", "PPS-CF", 310, 340, 100),
+  m("Bambu Lab", "Support for ABS", 240, 280, 90),
+  m("Bambu Lab", "Support for PA/PET", 260, 300, 100),
+  m("Bambu Lab", "Support for PLA", 190, 240, 45),
+  m("Bambu Lab", "Support for PLA/PETG", 190, 240, 45),
+  m("Bambu Lab", "TPU 85A", 200, 250, 35),
+  m("Bambu Lab", "TPU 90A", 200, 250, 35),
+  m("Bambu Lab", "TPU for AMS", 200, 250, 35),
 
   m("ColorFabb", "PLA/PHA", 200, 230, 55),
   m("ColorFabb", "XT", 240, 270, 75),
