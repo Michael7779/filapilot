@@ -35,7 +35,36 @@ Oberflaeche: `pages/WishlistPage.tsx`, eigener Nav-Punkt "Wunschliste".
   Inhalt wie Titel/Notiz/Menge - aendern darf nur Ersteller:in oder Admin (403 sonst). "Zur Wunschliste" an einer Spule
   uebernimmt deren Farbe. Test: `tests/security/wishlist.test.ts`
 
-Tests: `packages/backend/tests/security/wishlist.test.ts`. Oberflaeche manuell im Browser geprueft.
+- **R8**: Ab 0.30.0: Die Menge wird in der Wunsch- und der Bestellliste immer angezeigt, auch bei 1 ("1x"). Reine
+  Oberflaeche, manuell im Browser geprueft (Desktop und Handy-Breite).
+- **R9**: Ab 0.30.0: `inOrder` (Standard `false`) markiert, ob ein Wunsch zur tatsaechlichen Bestellliste gehoert. Die
+  Bestellliste ist keine eigene Tabelle, sondern diese Auswahl aus der Wunschliste (instanzweit). Wie der Status darf
+  `inOrder` jeder aktive Nutzer setzen, auch bei fremden Eintraegen (`PATCH /api/wishlist/:id`, anonym 401, kein
+  Boolean 400); es ist kein Inhalt - wer mit `inOrder` zugleich Titel/Menge/... eines fremden Wunsches schickt,
+  bekommt 403. Test: `tests/security/wishlist.test.ts`
+- **R10**: Ab 0.30.0: `PATCH /api/wishlist/bulk` setzt `status` und/oder `inOrder` fuer bis zu 500 Wuensche auf einmal
+  (Body `{ ids, status?, inOrder? }`, Antwort `{ updated }`). `SCOPE: user`: jeder aktive Nutzer, anonym 401. Das Schema
+  ist strict - Inhaltsfelder (Titel, Menge, ...), leere/zu lange/ungueltige ID-Liste, fehlendes `status`/`inOrder` oder
+  unbekannter Status ergeben 400, sonst liesse sich die Ersteller-Pruefung (R2) umgehen. Unbekannte IDs zaehlen nicht mit.
+  Ein Audit-Eintrag je Aufruf (`WISHLIST`, EVENT). Test: `tests/security/wishlist.test.ts`
+- **R11**: Ab 0.30.0: Suche und Filter (Status, Hersteller inkl. "ohne Hersteller", Material, hinzugefuegt von) laufen im
+  Browser ueber `filterWishlistItems`: Suche ohne Gross-/Kleinschreibung ueber Titel, Notiz, Hersteller, Material, Farbe
+  und Ersteller; mehrere Woerter muessen alle vorkommen. Gilt fuer beide Ansichten. Test: `tests/unit/wishlistOrder.test.ts`
+- **R12**: Ab 0.30.0: Die Bestellliste zeigt die Wuensche aller Nutzer nach Hersteller gruppiert
+  (`groupWishlistByManufacturer`: Gruppen alphabetisch, "ohne Hersteller" zuletzt; in der Gruppe nach Material, Farbe,
+  Titel; Summen gesamt/ausgewaehlt). Auswahl per Checkbox, je Hersteller "Alle waehlen"/"Auswahl aufheben" und
+  "Auswahl als bestellt/erledigt"; der Status ist derselbe wie in der Wunschliste, eine Aenderung gilt in beiden
+  Ansichten. Test: `tests/unit/wishlistOrder.test.ts` (Gruppierung), Oberflaeche manuell im Browser geprueft.
+
+## 1.1.1 Befunde / bewusste Grenzen
+- Gleiche Wuensche mehrerer Nutzer (z.B. zweimal "PLA Basic Schwarz") werden in der Bestellliste NICHT zu einer
+  Zeile zusammengefasst, stehen aber durch die Sortierung nebeneinander; so bleibt jede Zeile einer Person
+  zugeordnet und Status/Auswahl je Eintrag eindeutig.
+- Die Liste laedt weiterhin bis zu 500 Eintraege auf einmal (Filter laufen im Browser); eine Seitenweise-Ladung
+  (cursor-basiert) gibt es hier noch nicht.
+
+Tests: `packages/backend/tests/security/wishlist.test.ts`, `packages/backend/tests/unit/wishlistOrder.test.ts`.
+Oberflaeche manuell im Browser geprueft.
 
 ## 1.3 Aenderungen ab 0.20.0
 - Das Formular "Hinzufügen" bekommt zusaetzlich Hersteller-/Material-Dropdowns aus dem bestehenden Stammdaten-Katalog

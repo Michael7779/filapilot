@@ -1,32 +1,27 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { CreateWishlistItemInput, Manufacturer, Material, WishlistItem, WishlistStatus } from "@filapilot/shared";
+import { EMPTY_WISHLIST_FILTER, filterWishlistItems, type WishlistFilter, type WishlistItem, type WishlistStatus } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
-import { sortAlphabetically } from "../lib/sortAlphabetically.js";
-import { STATUS_ORDER, STATUS_STYLE } from "../lib/wishlistStatus.js";
+import { STATUS_ORDER } from "../lib/wishlistStatus.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
-import { ColorDot } from "../components/SpoolViews.js";
-import { WishlistColorSelect, colorOptionsFor, type WishlistColor } from "../components/WishlistColorSelect.js";
+import { WishlistFilterBar } from "../components/WishlistFilterBar.js";
+import { WishlistForm } from "../components/WishlistForm.js";
+import { WishlistItemRow } from "../components/WishlistItemRow.js";
+import { WishlistOrderView, type BulkPatch } from "../components/WishlistOrderView.js";
 
-const INPUT_CLASS = "rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-primary)]";
+type WishlistTab = "list" | "order";
 
 // Instanzweite Wunschliste fuer eine Sammelbestellung: jeder sieht, wer was hinzugefuegt hat, und kann den
 // Status setzen; Titel/Notiz/Menge aendern oder loeschen darf nur, wer den Eintrag hinzugefuegt hat, oder ein Admin.
+// Die Bestellliste ist dieselbe Liste, nach Hersteller gruppiert, mit Auswahl (inOrder) fuer die tatsaechliche Bestellung.
 export function WishlistPage(): React.JSX.Element {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const [items, setItems] = useState<WishlistItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [note, setNote] = useState("");
-  const [quantity, setQuantity] = useState("1");
-  const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [manufacturerId, setManufacturerId] = useState("");
-  const [materialId, setMaterialId] = useState("");
-  const [color, setColor] = useState<WishlistColor | null>(null);
   const [editing, setEditing] = useState<WishlistItem | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [tab, setTab] = useState<WishlistTab>("list");
+  const [filter, setFilter] = useState<WishlistFilter>(EMPTY_WISHLIST_FILTER);
 
   async function load(): Promise<void> {
     try {
@@ -38,117 +33,82 @@ export function WishlistPage(): React.JSX.Element {
 
   useEffect(() => {
     void load();
-    // Fuer die "wie bei Neue Spule"-Dropdowns, die den Titel vorbefuellen; Fehler dabei sind nicht kritisch.
-    apiRequest<Manufacturer[]>("/manufacturers").then(setManufacturers).catch(() => setManufacturers([]));
-    apiRequest<Material[]>("/materials").then(setMaterials).catch(() => setMaterials([]));
   }, []);
-
-  const availableMaterials = manufacturerId
-    ? materials.filter((material) => material.manufacturerId === manufacturerId || material.manufacturerId === null)
-    : materials;
-
-  const manufacturerName = manufacturers.find((manufacturer) => manufacturer.id === manufacturerId)?.name ?? null;
-  const materialName = materials.find((material) => material.id === materialId)?.name ?? null;
-
-  // Auswahl aus den Dropdowns setzt/ergaenzt den Titel - der bleibt trotzdem frei editierbar (z.B. fuer Menge-Details).
-  // Die Farbliste haengt von Hersteller+Material ab: passt die gewaehlte Farbe nicht mehr dazu, wird sie zurueckgesetzt.
-  function applyCatalogPick(nextManufacturerId: string, nextMaterialId: string, nextColor: WishlistColor | null): void {
-    const nextManufacturerName = manufacturers.find((manufacturer) => manufacturer.id === nextManufacturerId)?.name ?? null;
-    const nextMaterialName = materials.find((material) => material.id === nextMaterialId)?.name ?? null;
-    const colorStillValid = nextColor && colorOptionsFor(nextManufacturerName, nextMaterialName, null, i18n.language).some((option) => option.name === nextColor.name);
-    const keptColor = colorStillValid ? nextColor : null;
-    setManufacturerId(nextManufacturerId);
-    setMaterialId(nextMaterialId);
-    setColor(keptColor);
-    const combined = [nextManufacturerName, nextMaterialName, keptColor?.name].filter(Boolean).join(" ");
-    if (combined) {
-      setTitle(combined);
-    }
-  }
-
-  function resetForm(): void {
-    setTitle("");
-    setNote("");
-    setQuantity("1");
-    setManufacturerId("");
-    setMaterialId("");
-    setColor(null);
-    setEditing(null);
-  }
 
   function canEditContent(item: WishlistItem): boolean {
     return user?.role === "ADMIN" || user?.id === item.addedByUserId;
   }
 
-  async function handleAdd(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    if (!title.trim()) {
-      setError(t("wishlist.titleRequired"));
-      return;
-    }
-    setSubmitting(true);
+  // Fehler bei Aktionen anzeigen statt sie zu verschlucken
+  async function guarded(action: () => Promise<void>): Promise<void> {
     setError(null);
     try {
-      const input: CreateWishlistItemInput = {
-        title: title.trim(),
-        note: note.trim() ? note.trim() : null,
-        quantity: Number(quantity) || 1,
-        manufacturerId: manufacturerId || null,
-        materialId: materialId || null,
-        colorName: color?.name ?? null,
-        colorHex: color?.hex ?? null
-      };
-      if (editing) {
-        await apiRequest(`/wishlist/${editing.id}`, { method: "PATCH", body: JSON.stringify(input) });
-      } else {
-        await apiRequest("/wishlist", { method: "POST", body: JSON.stringify(input) });
-      }
-      resetForm();
-      await load();
+      await action();
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : t("wishlist.saveFailed"));
-    } finally {
-      setSubmitting(false);
     }
+  }
+
+  function replaceItem(updated: WishlistItem): void {
+    setItems((current) => current?.map((entry) => (entry.id === updated.id ? updated : entry)) ?? null);
+  }
+
+  async function patchItem(item: WishlistItem, patch: { status?: WishlistStatus; inOrder?: boolean }): Promise<void> {
+    await guarded(async () => {
+      replaceItem(await apiRequest<WishlistItem>(`/wishlist/${item.id}`, { method: "PATCH", body: JSON.stringify(patch) }));
+    });
+  }
+
+  async function bulk(ids: string[], patch: BulkPatch): Promise<void> {
+    await guarded(async () => {
+      await apiRequest("/wishlist/bulk", { method: "PATCH", body: JSON.stringify({ ids, ...patch }) });
+      await load();
+    });
   }
 
   function startEdit(item: WishlistItem): void {
     setEditing(item);
-    setTitle(item.title);
-    setNote(item.note ?? "");
-    setQuantity(String(item.quantity));
-    setManufacturerId(item.manufacturerId ?? "");
-    setMaterialId(item.materialId ?? "");
-    setColor(item.colorName && item.colorHex ? { name: item.colorName, hex: item.colorHex } : null);
-  }
-
-  async function setStatus(item: WishlistItem, status: WishlistStatus): Promise<void> {
-    try {
-      const updated = await apiRequest<WishlistItem>(`/wishlist/${item.id}`, { method: "PATCH", body: JSON.stringify({ status }) });
-      setItems((current) => current?.map((entry) => (entry.id === updated.id ? updated : entry)) ?? null);
-    } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : t("wishlist.saveFailed"));
-    }
+    setTab("list");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function remove(item: WishlistItem): Promise<void> {
     if (!window.confirm(t("wishlist.confirmDelete", { title: item.title }))) {
       return;
     }
-    await apiRequest(`/wishlist/${item.id}`, { method: "DELETE" });
-    await load();
+    await guarded(async () => {
+      await apiRequest(`/wishlist/${item.id}`, { method: "DELETE" });
+      await load();
+    });
   }
 
   async function clearDone(): Promise<void> {
     if (!window.confirm(t("wishlist.confirmClearDone"))) {
       return;
     }
-    await apiRequest("/wishlist/done", { method: "DELETE" });
-    await load();
+    await guarded(async () => {
+      await apiRequest("/wishlist/done", { method: "DELETE" });
+      await load();
+    });
   }
 
-  const sorted = items ? [...items].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)) : [];
+  const visible = items ? filterWishlistItems(items, filter) : [];
+  const sorted = [...visible].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
   const doneCount = items ? items.filter((item) => item.status === "DONE").length : 0;
+  const orderCount = items ? items.filter((item) => item.inOrder).length : 0;
+
+  const tabButton = (value: WishlistTab, label: string): React.JSX.Element => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={tab === value}
+      onClick={() => setTab(value)}
+      className={`rounded-lg px-4 py-1.5 text-sm font-medium ${tab === value ? "text-white" : "text-[var(--color-text-secondary)]"}`}
+      style={tab === value ? { backgroundColor: "var(--accent)" } : undefined}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -157,140 +117,52 @@ export function WishlistPage(): React.JSX.Element {
         <p className="text-sm text-[var(--color-text-secondary)]">{t("wishlist.hint")}</p>
       </div>
 
-      <form
-        onSubmit={(event) => void handleAdd(event)}
-        className="grid grid-cols-2 gap-2 rounded-xl border border-[var(--color-border)] bg-white p-4 sm:flex sm:flex-wrap sm:items-end"
-      >
-        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
-          {t("spools.manufacturer")}
-          <select
-            value={manufacturerId}
-            onChange={(event) => applyCatalogPick(event.target.value, materialId, color)}
-            className={INPUT_CLASS}
-          >
-            <option value="">{t("wishlist.anyManufacturer")}</option>
-            {sortAlphabetically(manufacturers, (manufacturer) => manufacturer.name, i18n.language).map((manufacturer) => (
-              <option key={manufacturer.id} value={manufacturer.id}>
-                {manufacturer.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
-          {t("spools.material")}
-          <select
-            value={materialId}
-            onChange={(event) => applyCatalogPick(manufacturerId, event.target.value, color)}
-            className={INPUT_CLASS}
-          >
-            <option value="">{t("wishlist.anyMaterial")}</option>
-            {sortAlphabetically(availableMaterials, (material) => material.name, i18n.language).map((material) => (
-              <option key={material.id} value={material.id}>
-                {material.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <WishlistColorSelect
-          value={color}
-          onChange={(next) => applyCatalogPick(manufacturerId, materialId, next)}
-          manufacturerName={manufacturerName}
-          materialName={materialName}
-          className={INPUT_CLASS}
-        />
-        <label className="col-span-2 flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
-          {t("wishlist.itemTitle")}
-          <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} className={INPUT_CLASS} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:w-20">
-          {t("wishlist.quantity")}
-          <input type="number" min={1} value={quantity} onChange={(event) => setQuantity(event.target.value)} className={INPUT_CLASS} />
-        </label>
-        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)] sm:flex-1">
-          {t("wishlist.note")}
-          <input type="text" value={note} onChange={(event) => setNote(event.target.value)} className={INPUT_CLASS} />
-        </label>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="col-span-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 sm:col-auto"
-          style={{ backgroundColor: "var(--accent)" }}
-        >
-          {editing ? t("common.save") : t("wishlist.add")}
-        </button>
-        {editing && (
-          <button
-            type="button"
-            onClick={resetForm}
-            className="col-span-2 rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium sm:col-auto"
-          >
-            {t("common.cancel")}
-          </button>
-        )}
-      </form>
+      <div role="tablist" className="flex gap-1 self-start rounded-xl border border-[var(--color-border)] bg-white p-1">
+        {tabButton("list", t("wishlist.tabs.list"))}
+        {tabButton("order", t("wishlist.tabs.order", { count: orderCount }))}
+      </div>
+
+      {tab === "list" && <WishlistForm editing={editing} onSaved={async () => { setEditing(null); await load(); }} onCancelEdit={() => setEditing(null)} />}
+
+      {items && items.length > 0 && <WishlistFilterBar items={items} filter={filter} onChange={setFilter} />}
 
       {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
       {!items && !error && <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>}
       {items && items.length === 0 && <p className="text-sm text-[var(--color-text-secondary)]">{t("wishlist.empty")}</p>}
+      {items && items.length > 0 && visible.length === 0 && <p className="text-sm text-[var(--color-text-secondary)]">{t("wishlist.filter.noMatch")}</p>}
 
-      {doneCount > 0 && (
+      {tab === "list" && doneCount > 0 && (
         <button type="button" onClick={() => void clearDone()} className="self-start text-sm font-medium" style={{ color: "var(--accent)" }}>
           {t("wishlist.clearDone", { count: doneCount })}
         </button>
       )}
 
-      {sorted.length > 0 && (
+      {tab === "list" && sorted.length > 0 && (
         <ul className="flex flex-col gap-2">
           {sorted.map((item) => (
-            <li key={item.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">
-                    {item.quantity > 1 ? `${item.quantity}x ` : ""}
-                    {item.title}
-                  </span>
-                  <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: STATUS_STYLE[item.status].bg, color: STATUS_STYLE[item.status].fg }}>
-                    {t(`wishlist.status.${item.status}`)}
-                  </span>
-                </div>
-                {(item.manufacturerName || item.materialName || item.colorName) && (
-                  <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
-                    {item.colorHex && <ColorDot hex={item.colorHex} size="h-3 w-3" />}
-                    {[item.manufacturerName, item.materialName, item.colorName].filter(Boolean).join(" · ")}
-                  </div>
-                )}
-                {item.note && <div className="text-sm text-[var(--color-text-secondary)]">{item.note}</div>}
-                <div className="text-xs text-[var(--color-text-muted)]">
-                  {t("wishlist.addedBy", { name: item.addedByName, date: new Date(item.createdAt).toLocaleDateString(i18n.language) })}
-                  {item.updatedByName && item.updatedByName !== item.addedByName
-                    ? ` · ${t("wishlist.updatedBy", { name: item.updatedByName })}`
-                    : ""}
-                </div>
-              </div>
-              <select
-                value={item.status}
-                onChange={(event) => void setStatus(item, event.target.value as WishlistStatus)}
-                className={INPUT_CLASS}
-              >
-                {STATUS_ORDER.map((status) => (
-                  <option key={status} value={status}>
-                    {t(`wishlist.status.${status}`)}
-                  </option>
-                ))}
-              </select>
-              {canEditContent(item) && (
-                <div className="flex gap-2 text-xs font-medium">
-                  <button type="button" onClick={() => startEdit(item)} style={{ color: "var(--accent)" }}>
-                    {t("common.edit")}
-                  </button>
-                  <button type="button" onClick={() => void remove(item)} className="text-[var(--color-danger)]">
-                    {t("common.delete")}
-                  </button>
-                </div>
-              )}
-            </li>
+            <WishlistItemRow
+              key={item.id}
+              item={item}
+              canEdit={canEditContent(item)}
+              showInOrderBadge
+              onStatus={(entry, status) => void patchItem(entry, { status })}
+              onEdit={startEdit}
+              onRemove={(entry) => void remove(entry)}
+            />
           ))}
         </ul>
+      )}
+
+      {tab === "order" && visible.length > 0 && (
+        <WishlistOrderView
+          items={visible}
+          canEdit={canEditContent}
+          onToggle={(item, inOrder) => void patchItem(item, { inOrder })}
+          onBulk={(ids, patch) => void bulk(ids, patch)}
+          onStatus={(item, status) => void patchItem(item, { status })}
+          onEdit={startEdit}
+          onRemove={(item) => void remove(item)}
+        />
       )}
     </div>
   );

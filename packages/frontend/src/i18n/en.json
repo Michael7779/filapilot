@@ -30,7 +30,32 @@
     "confirmClearDone": "Really remove all done entries?",
     "addedBy": "Added by {{name}} on {{date}}",
     "updatedBy": "last changed by {{name}}",
-    "status": { "OPEN": "Open", "ORDERED": "Ordered", "DONE": "Done" }
+    "status": { "OPEN": "Open", "ORDERED": "Ordered", "DONE": "Done" },
+    "statusLabel": "Status",
+    "inOrder": "In the order list",
+    "tabs": { "list": "Wishlist", "order": "Order list ({{count}})" },
+    "filter": {
+      "search": "Search the wishlist",
+      "searchPlaceholder": "Search by title, manufacturer, color, note, person …",
+      "all": "All",
+      "addedBy": "Added by",
+      "noManufacturer": "No manufacturer",
+      "reset": "Reset",
+      "noMatch": "No entries match the search and filters."
+    },
+    "order": {
+      "summary": "Selected: {{positions}} items, {{spools}} spools",
+      "hint": "Everyone's wishes, sorted by manufacturer. Tick what is really being ordered. The status also applies in the wishlist.",
+      "onlySelected": "Show selected only",
+      "noneSelected": "Nothing selected for the order yet.",
+      "noManufacturer": "No manufacturer",
+      "groupSummary": "{{selected}} of {{total}} selected · {{spools}} spools",
+      "selectAll": "Select all",
+      "selectNone": "Clear selection",
+      "markOrdered": "Mark selection ordered",
+      "markDone": "Mark selection done",
+      "select": "Select \"{{title}}\" for the order"
+    }
   },
   "dashboard": {
     "perInventory": "Inventories compared",

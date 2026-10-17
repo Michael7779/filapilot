@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { CONTENT_FIELDS, createWishlistItemInputSchema, updateWishlistItemInputSchema, type WishlistItem } from "@filapilot/shared";
+import {
+  CONTENT_FIELDS,
+  bulkUpdateWishlistInputSchema,
+  createWishlistItemInputSchema,
+  updateWishlistItemInputSchema,
+  type WishlistItem
+} from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { sendData, AppError } from "../lib/apiResult.js";
@@ -20,6 +26,7 @@ interface WishlistRow {
   note: string | null;
   quantity: number;
   status: string;
+  inOrder: boolean;
   manufacturerId: string | null;
   manufacturer: { name: string } | null;
   materialId: string | null;
@@ -40,6 +47,7 @@ function toPublic(row: WishlistRow): WishlistItem {
     note: row.note,
     quantity: row.quantity,
     status: row.status as WishlistItem["status"],
+    inOrder: row.inOrder,
     manufacturerId: row.manufacturerId,
     manufacturerName: row.manufacturer?.name ?? null,
     materialId: row.materialId,
@@ -64,6 +72,7 @@ function contentSnapshot(row: WishlistRow): Record<string, unknown> {
     note: row.note,
     quantity: row.quantity,
     status: row.status,
+    inOrder: row.inOrder,
     manufacturerName: row.manufacturer?.name ?? null,
     materialName: row.material?.name ?? null,
     colorName: row.colorName
@@ -163,7 +172,42 @@ wishlistRouter.post(
   })
 );
 
-// SCOPE: self (Inhalt) bzw. user (Status)
+// Bestellliste: Auswahl (inOrder) und/oder Status fuer mehrere Wuensche auf einmal setzen. Threat-Model: anonym -> 401;
+// eingeloggte Nutzer duerfen Auswahl und Status wie bei der Einzel-Route auch bei fremden Wuenschen setzen (gemeinsame
+// Sammelbestellung), aber NIE Inhalt - das Schema ist strict(), Titel/Menge/... werden mit 400 abgelehnt, und die IDs sind
+// auf 500 begrenzt. Negativ-Tests: tests/security/wishlist.test.ts (401, 400 bei Inhaltsfeldern/leerer/zu langer Liste).
+// Muss vor "/:id" stehen, sonst wuerde "bulk" als ID gelesen.
+// SCOPE: user
+wishlistRouter.patch(
+  "/bulk",
+  ...requireActiveUser,
+  asyncHandler(async (req, res) => {
+    const input = bulkUpdateWishlistInputSchema.parse(req.body);
+    const user = getAuthenticatedUser(req);
+    const result = await prisma.wishlistItem.updateMany({
+      where: { id: { in: input.ids } },
+      data: omitUndefined({ status: input.status, inOrder: input.inOrder, updatedByUserId: user.id, updatedByName: user.username })
+    });
+    if (result.count > 0) {
+      const changes: string[] = [];
+      if (input.status) {
+        changes.push(`Status ${input.status}`);
+      }
+      if (input.inOrder !== undefined) {
+        changes.push(input.inOrder ? "in die Bestellliste" : "aus der Bestellliste");
+      }
+      await recordAudit({
+        actor: actorFromRequest(req),
+        action: "EVENT",
+        area: "WISHLIST",
+        description: `${result.count} Eintraege geaendert (${changes.join(", ")})`
+      });
+    }
+    sendData(res, { updated: result.count });
+  })
+);
+
+// SCOPE: self (Inhalt) bzw. user (Status und Bestellliste-Auswahl)
 wishlistRouter.patch(
   "/:id",
   ...requireActiveUser,

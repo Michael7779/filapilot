@@ -87,6 +87,9 @@ model WishlistItem {
   note            String?
   quantity        Int            @default(1)
   status          WishlistStatus @default(OPEN)
+  // Gehoert zur tatsaechlichen Bestellliste der Sammelbestellung (instanzweit, wie der Status von jedem aktiven
+  // Nutzer setzbar). Die Bestellliste ist keine eigene Tabelle, sondern die Auswahl aus der Wunschliste.
+  inOrder         Boolean        @default(false)
   // Optionaler Verweis auf einen Stammdaten-Eintrag (aus den Dropdowns im Formular) - der Titel bleibt aber
   // die massgebliche, frei editierbare Anzeige; loeschen von Hersteller/Material entfernt nur den Verweis.
   manufacturerId  String?

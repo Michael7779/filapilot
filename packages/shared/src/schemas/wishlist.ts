@@ -12,6 +12,8 @@ export const wishlistItemSchema = z.object({
   note: z.string().max(500).nullable(),
   quantity: z.number().int().min(1).max(999),
   status: wishlistStatusSchema,
+  // Teil der Bestellliste (aus der Wunschliste ausgewaehlt); der Status gilt fuer beide Ansichten gemeinsam.
+  inOrder: z.boolean(),
   // Optionaler Verweis auf einen Stammdaten-Eintrag (aus den Dropdowns im Formular); der Titel bleibt die
   // massgebliche, frei editierbare Anzeige. Name als Momentaufnahme, damit er auch nach Loeschen lesbar bleibt.
   manufacturerId: z.string().uuid().nullable(),
@@ -49,6 +51,7 @@ export const updateWishlistItemInputSchema = z
     note: z.string().trim().max(500).nullable(),
     quantity: z.number().int().min(1).max(999),
     status: wishlistStatusSchema,
+    inOrder: z.boolean(),
     manufacturerId: z.string().uuid().nullable(),
     materialId: z.string().uuid().nullable(),
     colorName: colorNameSchema.nullable(),
@@ -56,5 +59,18 @@ export const updateWishlistItemInputSchema = z
   })
   .partial();
 export type UpdateWishlistItemInput = z.infer<typeof updateWishlistItemInputSchema>;
+
+// Sammel-Aenderung fuer die Bestellliste: nur Status und Auswahl (beides darf jeder aktive Nutzer), bewusst KEIN Inhalt -
+// strict() lehnt Titel/Menge/... ab, sonst liesse sich die Ersteller-Pruefung der Einzel-Route umgehen.
+export const BULK_WISHLIST_MAX_IDS = 500;
+export const bulkUpdateWishlistInputSchema = z
+  .object({
+    ids: z.array(z.string().uuid()).min(1).max(BULK_WISHLIST_MAX_IDS),
+    status: wishlistStatusSchema.optional(),
+    inOrder: z.boolean().optional()
+  })
+  .strict()
+  .refine((input) => input.status !== undefined || input.inOrder !== undefined, { message: "status oder inOrder erforderlich" });
+export type BulkUpdateWishlistInput = z.infer<typeof bulkUpdateWishlistInputSchema>;
 
 export const CONTENT_FIELDS = ["title", "note", "quantity", "manufacturerId", "materialId", "colorName", "colorHex"] as const;

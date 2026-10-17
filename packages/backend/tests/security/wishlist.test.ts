@@ -151,4 +151,71 @@ describe("Wunschliste (instanzweit) - Negativ-Tests", () => {
     assert.equal(cleared.body.data.colorName, null);
     assert.equal(cleared.body.data.colorHex, null);
   });
+
+  it("Bestellliste: neuer Wunsch ist nicht ausgewaehlt, jeder aktive Nutzer darf die Auswahl setzen, Typfehler 400", async () => {
+    const created = await call("post", "/api/wishlist", alice, { title: "Auswahl-Test" });
+    assert.equal(created.body.data.inOrder, false);
+    const id = created.body.data.id;
+
+    // Bob ist nicht Ersteller, darf aber (wie beim Status) die Sammelbestellung mitgestalten - Inhalt bleibt unberuehrt
+    const bobSelects = await call("patch", `/api/wishlist/${id}`, bob, { inOrder: true });
+    assert.equal(bobSelects.status, 200);
+    assert.equal(bobSelects.body.data.inOrder, true);
+    assert.equal(bobSelects.body.data.title, "Auswahl-Test");
+
+    // Die Auswahl schleust keinen Inhalt durch: Bob darf mit inOrder zusammen keinen Titel aendern
+    const smuggled = await call("patch", `/api/wishlist/${id}`, bob, { inOrder: false, title: "Uebernommen" });
+    assert.equal(smuggled.status, 403);
+    assert.equal((await prisma.wishlistItem.findUniqueOrThrow({ where: { id } })).inOrder, true);
+
+    assert.equal((await call("patch", `/api/wishlist/${id}`, alice, { inOrder: "ja" })).status, 400);
+    assert.equal((await call("patch", `/api/wishlist/${id}`, null, { inOrder: false })).status, 401);
+  });
+
+  it("Sammel-Route: setzt Auswahl und Status fuer mehrere Wuensche auf einmal, jeder aktive Nutzer, anonym 401", async () => {
+    const first = await call("post", "/api/wishlist", alice, { title: "Sammel 1" });
+    const second = await call("post", "/api/wishlist", alice, { title: "Sammel 2" });
+    const untouched = await call("post", "/api/wishlist", alice, { title: "Sammel unberuehrt" });
+    const ids = [first.body.data.id, second.body.data.id];
+
+    assert.equal((await call("patch", "/api/wishlist/bulk", null, { ids, inOrder: true })).status, 401);
+
+    const select = await call("patch", "/api/wishlist/bulk", bob, { ids, inOrder: true });
+    assert.equal(select.status, 200);
+    assert.deepEqual(select.body.data, { updated: 2 });
+
+    const ordered = await call("patch", "/api/wishlist/bulk", bob, { ids, status: "ORDERED" });
+    assert.equal(ordered.status, 200);
+    const rows = await prisma.wishlistItem.findMany({ where: { id: { in: ids } } });
+    assert.ok(rows.every((row) => row.inOrder && row.status === "ORDERED" && row.updatedByName === "wishbob"));
+    const other = await prisma.wishlistItem.findUniqueOrThrow({ where: { id: untouched.body.data.id } });
+    assert.equal(other.inOrder, false);
+    assert.equal(other.status, "OPEN");
+
+    const deselect = await call("patch", "/api/wishlist/bulk", alice, { ids, inOrder: false });
+    assert.deepEqual(deselect.body.data, { updated: 2 });
+  });
+
+  it("Sammel-Route: weist ungueltige Eingaben ab (400) und aendert keinen Inhalt fremder Wuensche", async () => {
+    const created = await call("post", "/api/wishlist", alice, { title: "Bleibt wie es ist", quantity: 2 });
+    const id = created.body.data.id;
+    const valid = "00000000-0000-4000-8000-000000000000";
+
+    assert.equal((await call("patch", "/api/wishlist/bulk", bob, { ids: [], inOrder: true })).status, 400);
+    assert.equal((await call("patch", "/api/wishlist/bulk", bob, { ids: ["keine-uuid"], inOrder: true })).status, 400);
+    assert.equal((await call("patch", "/api/wishlist/bulk", bob, { ids: [valid] })).status, 400);
+    assert.equal((await call("patch", "/api/wishlist/bulk", bob, { ids: [valid], status: "UNBEKANNT" })).status, 400);
+    assert.equal((await call("patch", "/api/wishlist/bulk", bob, { ids: Array(501).fill(valid), inOrder: true })).status, 400);
+
+    // Inhaltsfelder sind in der Sammel-Route nicht erlaubt - sonst koennte man Titel/Menge fremder Wuensche umgehen
+    assert.equal((await call("patch", "/api/wishlist/bulk", bob, { ids: [id], title: "Uebernommen" })).status, 400);
+    assert.equal((await call("patch", "/api/wishlist/bulk", bob, { ids: [id], quantity: 99 })).status, 400);
+    const row = await prisma.wishlistItem.findUniqueOrThrow({ where: { id } });
+    assert.equal(row.title, "Bleibt wie es ist");
+    assert.equal(row.quantity, 2);
+
+    // Unbekannte IDs werden einfach nicht mitgezaehlt
+    const unknown = await call("patch", "/api/wishlist/bulk", bob, { ids: [valid], inOrder: true });
+    assert.deepEqual(unknown.body.data, { updated: 0 });
+  });
 });

@@ -8,6 +8,20 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.30.0] - 2026-10-17
+
+### Hinzugefuegt
+- Wunschliste: Neue Ansicht "Bestellliste" für die Sammelbestellung. Sie zeigt die Wünsche von allen, nach Hersteller sortiert. Mit dem Haken wählst du aus, was wirklich bestellt wird, und kannst es jederzeit wieder abwählen. Pro Hersteller gibt es "Alle wählen" und "Auswahl aufheben" sowie die Summe der ausgewählten Spulen. "Nur Ausgewählte zeigen" blendet den Rest aus.
+- Wunschliste: Pro Hersteller lässt sich die Auswahl mit einem Klick als "bestellt" oder "erledigt" markieren. Der Status gilt in der Bestellliste und in der Wunschliste gleichzeitig. Wünsche, die in der Bestellliste stehen, sind in der Wunschliste gekennzeichnet.
+- Wunschliste: Suche und Filter nach Status, Hersteller, Material und Person, die den Wunsch hinzugefügt hat. Sie wirken in der Wunschliste und in der Bestellliste.
+
+### Geändert
+- Wunschliste: Die Menge wird jetzt immer angezeigt, auch bei einer einzelnen Spule ("1x").
+- Wunschliste: Auf dem Handy bricht der Status unter den Titel um, statt den Titel zusammenzuquetschen.
+
+### Hinweis zum Update
+- Rein technisch: Neue Spalte `inOrder` an der Wunschliste (Standard "nicht ausgewählt", bestehende Einträge bleiben unverändert); das Update-Skript legt sie per Schema-Abgleich an. Neue Route `PATCH /api/wishlist/bulk`.
+
 ## [0.29.2] - 2026-10-10
 
 ### Geändert

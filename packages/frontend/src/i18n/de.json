@@ -30,7 +30,32 @@
     "confirmClearDone": "Alle erledigten Einträge wirklich entfernen?",
     "addedBy": "Hinzugefügt von {{name}} am {{date}}",
     "updatedBy": "zuletzt geändert von {{name}}",
-    "status": { "OPEN": "Offen", "ORDERED": "Bestellt", "DONE": "Erledigt" }
+    "status": { "OPEN": "Offen", "ORDERED": "Bestellt", "DONE": "Erledigt" },
+    "statusLabel": "Status",
+    "inOrder": "In der Bestellliste",
+    "tabs": { "list": "Wunschliste", "order": "Bestellliste ({{count}})" },
+    "filter": {
+      "search": "Wunschliste durchsuchen",
+      "searchPlaceholder": "Suchen nach Titel, Hersteller, Farbe, Notiz, Person …",
+      "all": "Alle",
+      "addedBy": "Hinzugefügt von",
+      "noManufacturer": "Ohne Hersteller",
+      "reset": "Zurücksetzen",
+      "noMatch": "Keine Einträge passen zu Suche und Filter."
+    },
+    "order": {
+      "summary": "Ausgewählt: {{positions}} Positionen, {{spools}} Spulen",
+      "hint": "Alle Wünsche aller Nutzer, nach Hersteller sortiert. Mit dem Haken legst du fest, was wirklich bestellt wird. Der Status gilt auch in der Wunschliste.",
+      "onlySelected": "Nur Ausgewählte zeigen",
+      "noneSelected": "Noch nichts für die Bestellung ausgewählt.",
+      "noManufacturer": "Ohne Hersteller",
+      "groupSummary": "{{selected}} von {{total}} ausgewählt · {{spools}} Spulen",
+      "selectAll": "Alle wählen",
+      "selectNone": "Auswahl aufheben",
+      "markOrdered": "Auswahl als bestellt",
+      "markDone": "Auswahl als erledigt",
+      "select": "„{{title}}“ für die Bestellung auswählen"
+    }
   },
   "dashboard": {
     "perInventory": "Lager im Vergleich",
