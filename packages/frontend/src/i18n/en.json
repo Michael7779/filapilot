@@ -316,8 +316,8 @@
     }
   },
   "update": {
-    "available": "A new version is ready. Please update to use the latest version.",
-    "refresh": "Update"
+    "available": "A new version is ready. Please refresh to use the current version.",
+    "refresh": "Refresh"
   },
   "changelog": {
     "title": "Change history",

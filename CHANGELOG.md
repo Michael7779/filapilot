@@ -11,10 +11,14 @@ erscheint nicht in der App.
 ## [0.32.0] - 2026-10-20
 
 ### Hinzugefuegt
-- Spulen: Ungeöffnete Spulen zeigen jetzt als eigenes Symbol, ob es sich um "Filament mit Spule" (Spule mit Flansch und Nabe) oder um eine "Nachfüllung" (Filamentrolle ohne Spule in einem Pfeilkreis) handelt. Ein Mouseover zeigt den Text, auf dem Handy blendet ein Tippen auf das Symbol den Namen ein. In der Liste gibt es dafür eine neue Spalte "Lieferform" zwischen Hersteller und Restgewicht, in den Kacheln sitzt das Symbol unten links auf der Farbfläche, in Standard und Kompakt neben der Gewichtsangabe bzw. der Pille.
+- Spulen: Ungeöffnete Spulen zeigen jetzt als eigenes Symbol, ob es sich um "Filament mit Spule" (Spule mit Flansch und Nabe) oder um eine "Nachfüllung" (Filamentrolle ohne Spule in einem Pfeilkreis) handelt. Die Spule ist dezent grün, die Nachfüllung dezent rot. Ein Mouseover zeigt den Text, auf dem Handy blendet ein Tippen auf das Symbol den Namen ein. In der Liste gibt es dafür eine neue Spalte "Lieferform" zwischen Hersteller und Restgewicht, in den Kacheln sitzt das Symbol unten links auf der Farbfläche, in Standard und Kompakt neben der Gewichtsangabe bzw. der Pille.
 
 ### Geändert
 - Spulen: Die Pille bei ungeöffneten Spulen zeigt nur noch "Ungeöffnet". Die Lieferform steht jetzt im Symbol daneben.
+- Update-Hinweis: Wenn eine neue Version bereitsteht, erscheint jetzt eine blaue Leiste oben über die ganze Breite (auch auf der Anmeldeseite) mit dem Knopf "Aktualisieren". Die App prüft jetzt zuverlässiger auf neue Versionen: beim Öffnen und Neuladen, wenn du in den Tab zurückkehrst und nach einer Neuverbindung zum Server. Der Knopf lädt die neue Version zuverlässig, auch in Safari. Die englischen Texte lauten jetzt "A new version is ready. Please refresh to use the current version." und "Refresh".
+
+### Hinweis zum Update
+- Rein technisch: Die nginx-Konfiguration des Frontends liefert `workbox-*.js` jetzt ebenfalls mit `Cache-Control: no-cache` und `/assets/` dauerhaft gecacht aus, und der Service Worker übernimmt offene Seiten (`clientsClaim`) und lässt `/api/`, `/uploads/`, `/socket.io/` und PDFs aus seinem Fallback aus. Das Update-Skript baut dafür den Frontend-Container neu (`docker compose build`); danach ist nichts weiter zu tun.
 
 ## [0.31.0] - 2026-10-17
 

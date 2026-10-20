@@ -27,6 +27,14 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "prompt",
+      workbox: {
+        // Ohne die Ausnahmen faengt der Service Worker auch Navigationen zu /api/ (Downloads, Fotos), /uploads/ und /socket.io/
+        // ab und liefert die App-Huelle statt der Antwort des Servers. "clientsClaim": ein per SKIP_WAITING aktivierter neuer
+        // Service Worker uebernimmt sonst NIE die bereits geoeffnete Seite - das "controllerchange" fuer den Reload bliebe aus.
+        // Aendert nichts am bewusst fehlenden automatischen Reload.
+        clientsClaim: true,
+        navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/socket\.io\//, /\.pdf$/]
+      },
       manifest: {
         name: "FilaPilot",
         short_name: "FilaPilot",

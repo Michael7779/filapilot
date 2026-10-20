@@ -216,7 +216,7 @@
   (`colorAfterCatalogChange`); sonst blieb z.B. "Grau" bei PLA Matte stehen. Von Hand getippte oder im Farbwert angepasste Farben
   bleiben erhalten. Test: `tests/unit/colorCatalog.test.ts`; Oberflaeche manuell im Browser geprueft.
 - **R36**: Ab 0.32.0: Die Lieferform ungeoeffneter Spulen ("Filament mit Spule" / "Nachfuellung") erscheint als eigenes Symbol (`PackagingIcon`,
-  Spule von der Seite bzw. Doppelpfeil mit Filamentrolle ohne Spule; Pfeile aus Lucide `refresh-cw`, ISC) und nicht mehr im Text der
+  Spule von der Seite in dezentem Gruen bzw. Doppelpfeil mit Filamentrolle ohne Spule in dezentem Rot; Pfeile aus Lucide `refresh-cw`, ISC) und nicht mehr im Text der
   Pille ("Ungeoeffnet"). `spoolPackaging()` liefert die Lieferform nur fuer nicht angefangene und nicht archivierte Spulen, sonst nichts.
   Platz: Standard unten rechts in der Gewichtszeile (28 px), Kompakt rechts neben der Pille (24 px), Liste eigene Spalte "Lieferform"
   zwischen Hersteller/Material und Restgewicht (26 px, bei angefangenen Spulen "-"), Farbkacheln im weissen Chip unten links auf der

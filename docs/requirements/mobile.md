@@ -47,3 +47,19 @@
   Hinzufuegen der App), (b) die Kopfzeile um einen Zusatzabstand aus `safe-area-inset-top` plus Reserve nach unten
   schieben. Beobachtung dazu: `TopBar` hat feste Hoehe `h-14` plus `pt-[env(safe-area-inset-top)]` - auf dem iPhone
   bleibt dadurch kaum Platz fuer den Inhalt der Kopfzeile (Kandidat fuer (b)).
+
+- **R5**: Ab 0.32.0: Update-Hinweis fuer ALLE Nutzer (`components/UpdateBanner.tsx`, wie im Schwesterprojekt AutoLogbuch). Blaue Leiste
+  fest oben ueber die volle Breite (mit Safe-Area-Abstand), auch auf Login-/Einrichtungsseiten (ausserhalb aller Routen in `App.tsx`),
+  Text links, Button "Aktualisieren" rechts. Bewusst KEIN automatischer Reload (offene Formulare). Registrierung ueber
+  `registerSW({ immediate: true })` mit `registerType: "prompt"` und `clientsClaim: true`; `navigateFallbackDenylist` nimmt `/api/`,
+  `/uploads/`, `/socket.io/` und PDFs aus. Aktive Nachfrage nach einer neuen `sw.js` sofort bei der Registrierung (F5), bei
+  Rueckkehr in den Vordergrund, nach einer Socket.IO-Wiederverbindung (nur angemeldet) und alle 15 Minuten; alle Listener werden
+  abgemeldet. Klick: `updateSW(true)`, dazu ein Sicherheits-Timer von 5000 ms mit `location.reload()` und ein bedingungsloser
+  Reload bei `controllerchange` (das `isUpdate`-Flag von workbox-window ist unzuverlaessig, v.a. in Safari). Die Reload-Logik liegt in
+  `lib/pwaUpdateReload.ts` (ohne `virtual:pwa-register`, daher unter `node:test` pruefbar). nginx liefert `index.html`, `sw.js`,
+  `registerSW.js`, `manifest.webmanifest` und `workbox-*.js` mit `Cache-Control: no-cache`, `/assets/` dauerhaft gecacht. Test:
+  `packages/frontend/tests/unit/pwaUpdateReload.test.ts`. Im Produktions-Build mit `vite preview` und Playwright (Chromium,
+  Firefox, WebKit) geprueft: Hinweis auf der Login-Seite nach Tab-Wechsel und nach F5, Klick laedt ueber `controllerchange` neu.
+  Nicht geprueft: echtes Safari (macOS/iOS) und der 5-Sekunden-Timer im echten Browser (nur Unit-Test).
+- OP-MO3: Ein Hinweis auf ein auf dem Server bereitliegendes, aber noch nicht eingespieltes Update (gelber Admin-Hinweis wie in
+  AutoLogbuch) existiert in FilaPilot nicht; die Updates laufen ueber `scripts/update-synology.sh`. Nur auf Wunsch zu bauen.

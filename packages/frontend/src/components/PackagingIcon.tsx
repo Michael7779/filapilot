@@ -37,6 +37,12 @@ function RefillShape(): React.JSX.Element {
   );
 }
 
+// Dezente Farben: Spule gruen, Nachfuellung rot (Theme-Farben, abgeschwaecht, damit die Symbole nicht schreien)
+const COLOR: Record<SpoolPackaging, string> = {
+  WITH_SPOOL: "color-mix(in srgb, var(--color-success) 80%, transparent)",
+  REFILL: "color-mix(in srgb, var(--color-danger) 70%, transparent)"
+};
+
 const LABEL_KEY: Record<SpoolPackaging, string> = { REFILL: "spools.packaging.refill", WITH_SPOOL: "spools.packaging.withSpool" };
 const SHORT_KEY: Record<SpoolPackaging, string> = { REFILL: "spools.packaging.refill", WITH_SPOOL: "spools.packaging.withSpoolShort" };
 
@@ -61,7 +67,8 @@ export function PackagingIcon({ spool, size = 24, className = "" }: PackagingIco
         setOpen((current) => !current);
       }}
       onBlur={() => setOpen(false)}
-      className={`inline-flex shrink-0 items-center gap-1 text-[var(--accent)] ${className}`}
+      style={{ color: COLOR[packaging] }}
+      className={`inline-flex shrink-0 items-center gap-1 ${className}`}
     >
       <svg
         viewBox="0 0 24 24"
