@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { remainingPercent, type SpoolSortColumn, type SpoolWithRelations } from "@filapilot/shared";
+import { remainingPercent, spoolPackaging, type SpoolSortColumn, type SpoolWithRelations } from "@filapilot/shared";
+import { PackagingIcon } from "./PackagingIcon.js";
 import { SpoolActions } from "./SpoolActions.js";
 import { SpoolListDetail } from "./SpoolListDetail.js";
 import { ColorDot, WeightBar, type SpoolViewProps } from "./SpoolViews.js";
@@ -66,7 +67,7 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
   const compact = density === "compact";
   const cellClass = `px-3 align-middle ${compact ? "py-1" : "py-2.5"}`;
   const allOpen = spools.length > 0 && spools.every((spool) => expanded.has(spool.id));
-  const columnCount = isAll ? 8 : 7;
+  const columnCount = isAll ? 9 : 8;
 
   function toggle(id: string): void {
     setExpanded((current) => {
@@ -122,6 +123,7 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
               <span className="mx-1 font-normal">·</span>
               {sortButton("material", t("spools.material"))}
             </th>
+            <th className={headClass}>{t("spools.packaging.listLabel")}</th>
             {isAll && sortHead("inventory", t("spools.inventory"))}
             {sortHead("weight", t("spools.list.weight"))}
             {sortHead("location", t("spools.filter.location"))}
@@ -167,6 +169,9 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
                     </td>
                     <td {...toggleCell}>
                       {spool.manufacturerName} · {spool.materialName}
+                    </td>
+                    <td {...toggleCell}>
+                      {spoolPackaging(spool) ? <PackagingIcon spool={spool} size={26} /> : <span className="text-[var(--color-text-muted)]">–</span>}
                     </td>
                     {isAll && <td {...toggleCell}>{spool.inventoryName ?? "–"}</td>}
                     <td {...toggleCell}>

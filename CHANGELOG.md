@@ -8,6 +8,14 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.32.0] - 2026-10-20
+
+### Hinzugefuegt
+- Spulen: Ungeöffnete Spulen zeigen jetzt als eigenes Symbol, ob es sich um "Filament mit Spule" (Spule mit Flansch und Nabe) oder um eine "Nachfüllung" (Filamentrolle ohne Spule in einem Pfeilkreis) handelt. Ein Mouseover zeigt den Text, auf dem Handy blendet ein Tippen auf das Symbol den Namen ein. In der Liste gibt es dafür eine neue Spalte "Lieferform" zwischen Hersteller und Restgewicht, in den Kacheln sitzt das Symbol unten links auf der Farbfläche, in Standard und Kompakt neben der Gewichtsangabe bzw. der Pille.
+
+### Geändert
+- Spulen: Die Pille bei ungeöffneten Spulen zeigt nur noch "Ungeöffnet". Die Lieferform steht jetzt im Symbol daneben.
+
 ## [0.31.0] - 2026-10-17
 
 ### Hinzugefuegt

@@ -2,12 +2,14 @@ import { useTranslation } from "react-i18next";
 import {
   LOW_STOCK_THRESHOLD_RATIO,
   remainingPercent,
+  spoolPackaging,
   type CustomFieldDefinition,
   type Material,
   type SpoolColumnSort,
   type SpoolSortColumn,
   type SpoolWithRelations
 } from "@filapilot/shared";
+import { PackagingIcon } from "./PackagingIcon.js";
 import { SpoolActions, type SpoolHandlers } from "./SpoolActions.js";
 import { formatBedTemp } from "../lib/formatTemps.js";
 import type { SpoolDensity } from "../hooks/useSpoolDensity.js";
@@ -66,7 +68,7 @@ function StatusBadge({ spool }: { spool: SpoolWithRelations }): React.JSX.Elemen
   if (!spool.openedAt) {
     return (
       <span className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}>
-        {t("spools.unopened")} · {spool.isRefill ? t("spools.packaging.refill") : t("spools.packaging.withSpoolShort")}
+        {t("spools.unopened")}
       </span>
     );
   }
@@ -111,8 +113,11 @@ export function StandardView({ spools, materials, isAll, ...handlers }: SpoolVie
             <div className="mb-1">
               <WeightBar spool={spool} />
             </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {spool.remainingWeightG} g / {spool.initialWeightG} g ({percent} %)
+            <div className="flex items-center justify-between gap-2 text-xs text-[var(--color-text-secondary)]">
+              <span>
+                {spool.remainingWeightG} g / {spool.initialWeightG} g ({percent} %)
+              </span>
+              <PackagingIcon spool={spool} size={28} />
             </div>
           </div>
         );
@@ -141,7 +146,10 @@ export function CompactView({ spools, isAll, ...handlers }: SpoolViewProps): Rea
             <span>
               {spool.remainingWeightG} g ({Math.round(remainingPercent(spool))} %)
             </span>
-            <StatusBadge spool={spool} />
+            <span className="flex items-center gap-1">
+              <StatusBadge spool={spool} />
+              <PackagingIcon spool={spool} size={24} />
+            </span>
           </div>
         </div>
       ))}
@@ -159,6 +167,11 @@ export function SwatchView({ spools, ...handlers }: SpoolViewProps): React.JSX.E
             <div className="absolute right-1 top-1 rounded-md bg-white/85">
               <SpoolActions spool={spool} {...handlers} />
             </div>
+            {spoolPackaging(spool) && (
+              <div className="absolute bottom-1.5 left-1.5 rounded-full bg-white/90 p-1">
+                <PackagingIcon spool={spool} size={28} />
+              </div>
+            )}
           </div>
           <div className="p-2.5">
             <div className="truncate text-sm font-semibold">{spool.colorName}</div>
