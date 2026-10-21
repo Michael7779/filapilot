@@ -11,7 +11,7 @@ erscheint nicht in der App.
 ## [0.32.0] - 2026-10-20
 
 ### Hinzugefuegt
-- Spulen: Ungeöffnete Spulen zeigen jetzt als eigenes Symbol, ob es sich um "Filament mit Spule" (Spule mit Flansch und Nabe) oder um eine "Nachfüllung" (Filamentrolle ohne Spule in einem Pfeilkreis) handelt. Die Spule ist dezent grün, die Nachfüllung dezent rot. Ein Mouseover zeigt den Text, auf dem Handy blendet ein Tippen auf das Symbol den Namen ein. In der Liste gibt es dafür eine neue Spalte "Lieferform" zwischen Hersteller und Restgewicht, in den Kacheln sitzt das Symbol unten links auf der Farbfläche, in Standard und Kompakt neben der Gewichtsangabe bzw. der Pille.
+- Spulen: Ungeöffnete Spulen zeigen jetzt als eigenes Symbol, ob es sich um "Filament mit Spule" (Spule mit Flansch und Nabe) oder um eine "Nachfüllung" (Filamentrolle ohne Spule in einem Pfeilkreis) handelt. Die Spule ist dezent grün, die Nachfüllung dezent rot. Ein Mouseover zeigt den Text, auf dem Handy zeigt ein Tippen auf das Symbol den Namen in einer kleinen Sprechblase über dem Symbol, die nach ein paar Sekunden oder beim Tippen daneben wieder verschwindet. In der Liste gibt es dafür eine neue Spalte "Lieferform" zwischen Hersteller und Restgewicht, in den Kacheln sitzt das Symbol unten links auf der Farbfläche, in Standard und Kompakt neben der Gewichtsangabe bzw. der Pille.
 
 ### Geändert
 - Spulen: Die Pille bei ungeöffneten Spulen zeigt nur noch "Ungeöffnet". Die Lieferform steht jetzt im Symbol daneben.

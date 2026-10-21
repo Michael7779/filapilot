@@ -220,6 +220,6 @@
   Pille ("Ungeoeffnet"). `spoolPackaging()` liefert die Lieferform nur fuer nicht angefangene und nicht archivierte Spulen, sonst nichts.
   Platz: Standard unten rechts in der Gewichtszeile (28 px), Kompakt rechts neben der Pille (24 px), Liste eigene Spalte "Lieferform"
   zwischen Hersteller/Material und Restgewicht (26 px, bei angefangenen Spulen "-"), Farbkacheln im weissen Chip unten links auf der
-  Farbflaeche (28 px). Mouseover zeigt den Namen (`title`), ein Tippen blendet den Kurznamen daneben ein (Touch); `aria-label` fuer
+  Farbflaeche (28 px). Mouseover zeigt den Namen (`title`), ein Tippen zeigt auf Touch-Geraeten eine Sprechblase ueber dem Symbol (`position: fixed`, im Bildschirm geklemmt per `placeTooltip`, schliesst bei Tippen daneben, Scrollen und nach 4 s - nicht ueber `blur`, weil Safari Buttons beim Tippen nicht fokussiert); `aria-label` fuer
   Screenreader. Reine Darstellung, keine Route, kein Schema. Test: `tests/unit/spoolPackaging.test.ts`; Oberflaeche manuell im
   Browser geprueft (alle vier Ansichten).

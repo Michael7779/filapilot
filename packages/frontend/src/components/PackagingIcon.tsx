@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { spoolPackaging, type SpoolPackaging, type SpoolWithRelations } from "@filapilot/shared";
+import { placeTooltip, type TooltipPlacement } from "../lib/tooltipPlacement.js";
 
 interface PackagingIconProps {
   spool: Pick<SpoolWithRelations, "openedAt" | "archivedAt" | "isRefill">;
@@ -44,13 +45,40 @@ const COLOR: Record<SpoolPackaging, string> = {
 };
 
 const LABEL_KEY: Record<SpoolPackaging, string> = { REFILL: "spools.packaging.refill", WITH_SPOOL: "spools.packaging.withSpool" };
-const SHORT_KEY: Record<SpoolPackaging, string> = { REFILL: "spools.packaging.refill", WITH_SPOOL: "spools.packaging.withSpoolShort" };
+const BUBBLE_VISIBLE_MS = 4000;
 
-// Lieferform einer ungeoeffneten Spule als eigenes Symbol: Mouseover zeigt den Text; ein Tippen blendet ihn daneben ein
-// (fuer Touch-Geraete ohne Mouseover). Bei angefangenen/archivierten Spulen erscheint nichts.
+// Lieferform einer ungeoeffneten Spule als eigenes Symbol: Mouseover zeigt den Text (title); ein Tippen blendet fuer Touch-Geraete
+// ohne Mouseover eine Sprechblase ueber dem Symbol ein. Die Blase haengt per "fixed" am Bildschirm statt in der Zeile (sonst
+// schiebt oder schneidet sie schmale Kacheln ab) und schliesst sich beim Tippen daneben, Scrollen oder nach ein paar Sekunden -
+// nicht ueber "blur": Safari fokussiert Buttons beim Tippen nicht. Bei angefangenen/archivierten Spulen erscheint nichts.
 export function PackagingIcon({ spool, size = 24, className = "" }: PackagingIconProps): React.JSX.Element | null {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const [bubble, setBubble] = useState<TooltipPlacement | null>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const open = bubble !== null;
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const close = (): void => setBubble(null);
+    const closeOnOutsideTap = (event: PointerEvent): void => {
+      if (!(event.target instanceof Node) || !button.current?.contains(event.target)) {
+        close();
+      }
+    };
+    const timer = setTimeout(close, BUBBLE_VISIBLE_MS);
+    document.addEventListener("pointerdown", closeOnOutsideTap);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("pointerdown", closeOnOutsideTap);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
   const packaging = spoolPackaging(spool);
   if (!packaging) {
     return null;
@@ -58,15 +86,15 @@ export function PackagingIcon({ spool, size = 24, className = "" }: PackagingIco
   const label = t(LABEL_KEY[packaging]);
   return (
     <button
+      ref={button}
       type="button"
       title={label}
       aria-label={label}
       aria-expanded={open}
       onClick={(event) => {
         event.stopPropagation();
-        setOpen((current) => !current);
+        setBubble(open ? null : placeTooltip(event.currentTarget.getBoundingClientRect(), window.innerWidth));
       }}
-      onBlur={() => setOpen(false)}
       style={{ color: COLOR[packaging] }}
       className={`inline-flex shrink-0 items-center gap-1 ${className}`}
     >
@@ -83,7 +111,15 @@ export function PackagingIcon({ spool, size = 24, className = "" }: PackagingIco
       >
         {packaging === "REFILL" ? <RefillShape /> : <SpoolShape />}
       </svg>
-      {open && <span className="pr-1 text-xs font-medium">{t(SHORT_KEY[packaging])}</span>}
+      {bubble && (
+        <span
+          role="tooltip"
+          className="pointer-events-none fixed z-[70] whitespace-nowrap rounded-md bg-[var(--color-text-primary)] px-2.5 py-1.5 text-xs font-medium text-white shadow-lg"
+          style={{ left: bubble.left, top: bubble.top, transform: bubble.placement === "above" ? "translate(-50%, -100%)" : "translate(-50%, 0)" }}
+        >
+          {label}
+        </span>
+      )}
     </button>
   );
 }
