@@ -74,3 +74,6 @@ wirklich verschickt wurde).
 - **R14**: Ab 0.21.2: `Settings.sessionExpiryDays` (nur Admin aenderbar, feste Werte 7/14/30/60/90, sonst 400)
   bestimmt sowohl die Gueltigkeit des Sitzungs-Eintrags als auch das `Max-Age` des Anmelde-Cookies - beide
   bleiben synchron. Tests: `tests/security/settings.test.ts`, `tests/security/sessionCookieHeader.test.ts`
+- **R15**: Ab 0.33.0: Freigaben je Benutzer (`canUseFilament`, `canUseSizzle`) und Super-Admin (`isSuperAdmin`): siehe
+  `sizzle.md` (Z1-Z9). Kurz: nur Super-Admins setzen sie, Super-Admin-Konten fasst nur ein Super-Admin an, es bleibt
+  immer mindestens einer. Tests: `tests/security/userAccess.test.ts`, `tests/integration/superAdmin.test.ts`

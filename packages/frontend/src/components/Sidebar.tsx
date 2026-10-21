@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
-import { NAV_ITEMS, isNavActive } from "../lib/navItems.js";
+import { isNavActive, visibleNavItems } from "../lib/navItems.js";
+import { useAccess } from "../hooks/useAccess.js";
 import { useLogout } from "../hooks/useLogout.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
 import { InventorySwitcher } from "./InventorySwitcher.js";
@@ -14,6 +15,7 @@ export function Sidebar(): React.JSX.Element {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const logout = useLogout();
+  const access = useAccess();
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col md:flex border-r border-[var(--color-border)] bg-[var(--color-sidebar)] p-4">
@@ -21,11 +23,13 @@ export function Sidebar(): React.JSX.Element {
         <img src="/icons/icon.svg" alt="" className="h-7 w-7" aria-hidden="true" />
         <span className="text-base font-semibold tracking-tight">{t("app.name")}</span>
       </div>
-      <div className="mb-4">
-        <InventorySwitcher variant="sidebar" />
-      </div>
+      {access.filament && (
+        <div className="mb-4">
+          <InventorySwitcher variant="sidebar" />
+        </div>
+      )}
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
+        {visibleNavItems(access).map((item) => {
           const isActive = isNavActive(location.pathname, item.href);
           if (!item.enabled) {
             return (

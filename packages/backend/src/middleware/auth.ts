@@ -15,6 +15,11 @@ declare module "express-serve-static-core" {
 }
 
 export async function requireAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  // Schon angemeldet (z.B. durch requireFilamentAccess vor dem Router): nicht noch einmal in der Datenbank nachschlagen.
+  if (req.user) {
+    next();
+    return;
+  }
   try {
     const rawToken: unknown = req.cookies?.[SESSION_COOKIE_NAME];
     if (typeof rawToken !== "string" || rawToken.length === 0) {

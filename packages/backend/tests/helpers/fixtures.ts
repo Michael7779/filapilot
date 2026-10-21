@@ -14,13 +14,25 @@ export interface TestUser {
 }
 
 // Legt einen Benutzer an und meldet ihn an. Kein Pflicht-Passwortwechsel, damit die Routen erreichbar sind.
-export async function createLoggedInUser(app: Express, username: string, role: "ADMIN" | "USER" = "USER"): Promise<TestUser> {
+export interface TestUserAccess {
+  isSuperAdmin?: boolean;
+  canUseFilament?: boolean;
+  canUseSizzle?: boolean;
+}
+
+export async function createLoggedInUser(
+  app: Express,
+  username: string,
+  role: "ADMIN" | "USER" = "USER",
+  access: TestUserAccess = {}
+): Promise<TestUser> {
   const user = await prisma.user.create({
     data: {
       username,
       email: `${username}@example.test`,
       passwordHash: await hashPassword(TEST_PASSWORD),
       role,
+      ...access,
       mustChangePassword: false
     }
   });
@@ -31,6 +43,7 @@ export async function createLoggedInUser(app: Express, username: string, role: "
 // Alle Tabellen leeren, die die Lager-Tests anfassen (Reihenfolge wegen der Fremdschluessel).
 export async function resetInventoryData(): Promise<void> {
   await prisma.auditLog.deleteMany();
+  await prisma.sizzleWish.deleteMany();
   await prisma.wishlistItem.deleteMany();
   await prisma.wishlistOrderCost.deleteMany();
   await prisma.printJob.deleteMany();

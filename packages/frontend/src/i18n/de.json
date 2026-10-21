@@ -8,6 +8,7 @@
     "printers": "Drucker",
     "stats": "Statistik",
     "wunschliste": "Wunschliste",
+    "sizzle": "SizzleBrothers",
     "settings": "Einstellungen"
   },
   "wishlist": {
@@ -90,6 +91,68 @@
       "markOrdered": "Auswahl als bestellt",
       "markDone": "Auswahl als erledigt",
       "select": "„{{title}}“ für die Bestellung auswählen"
+    }
+  },
+  "sizzle": {
+    "title": "SizzleBrothers-Wunschliste",
+    "hint": "Gemeinsame Sammelbestellung für Produkte aus dem SizzleBrothers-Shop – jeder sieht, wer was möchte.",
+    "pick": "Produkte aus dem Shop wählen",
+    "loadFailed": "Die Wunschliste konnte nicht geladen werden.",
+    "empty": "Die Wunschliste ist noch leer. Wähle Produkte aus dem Shop.",
+    "tabs": { "list": "Wunschliste", "order": "Bestellliste ({{count}})", "settlement": "Abrechnung" },
+    "inOrder": "In der Bestellliste",
+    "notInShop": "Nicht mehr im Shop",
+    "priceLine": "{{unit}} je Stück · {{total}}",
+    "shopPrice": "Shop-Preis {{price}}",
+    "orderCheckbox": "In die Bestellliste",
+    "quantity": "Menge",
+    "quantityInvalid": "Bitte eine Menge zwischen 1 und 999 angeben.",
+    "editWish": "Wunsch ändern",
+    "confirmDelete": "„{{title}}“ wirklich von der Wunschliste entfernen?",
+    "allToOrder": "{{count}} offene in die Bestellliste",
+    "filter": {
+      "search": "Suchen …",
+      "anyStatus": "Jeder Status",
+      "person": "Hinzugefügt von",
+      "anyPerson": "Alle Personen"
+    },
+    "catalog": {
+      "title": "Produkte aus dem Shop",
+      "search": "Produkt suchen …",
+      "type": "Produktart",
+      "allTypes": "Alle Produktarten",
+      "noType": "Ohne Produktart",
+      "refresh": "Preise aktualisieren",
+      "refreshing": "Aktualisiere …",
+      "syncedAt": "Preise und Sortiment vom {{date}}",
+      "neverSynced": "Noch nicht vom Shop geladen.",
+      "done": "Fertig",
+      "empty": "Der Katalog ist noch leer. Mit „Preise aktualisieren“ wird er vom Shop geladen.",
+      "noMatch": "Keine Produkte gefunden.",
+      "loadFailed": "Die Produkte konnten nicht geladen werden.",
+      "openInShop": "Im Shop ansehen",
+      "variant": "Variante",
+      "soldOut": "Ausverkauft",
+      "less": "Weniger",
+      "more": "Mehr",
+      "add": "Zur Wunschliste",
+      "mine": "{{count}}x liegt schon auf deiner Wunschliste"
+    },
+    "order": {
+      "price": "Preis je Stück",
+      "lineTotal": "{{quantity}}x = {{total}}",
+      "useShopPrice": "Shop-Preis {{price}} übernehmen",
+      "remove": "Aus der Bestellliste",
+      "empty": "Noch nichts in der Bestellliste. Hake auf der Wunschliste Produkte an.",
+      "summary": "{{pieces}} Stück, zusammen {{total}}",
+      "hint": "Der Preis hier ist maßgeblich für die Abrechnung. Er startet mit dem Shop-Preis und lässt sich ändern, zum Beispiel wegen eines Rabatts."
+    },
+    "settlement": {
+      "item": "Produkt",
+      "empty": "Noch nichts in der Bestellliste.",
+      "summary": "Gesamt {{total}} für {{persons}} Personen ({{pieces}} Stück)",
+      "hint": "Berechnet aus allen Einträgen der Bestellliste mit dem dort eingetragenen Preis.",
+      "csvFilename": "abrechnung-sizzlebrothers.csv"
     }
   },
   "dashboard": {
@@ -262,7 +325,8 @@
       "BACKUP": "Sicherung",
       "INVENTORY": "Lager",
       "WISHLIST": "Wunschliste",
-      "CUSTOM_FIELD": "Zusatzfeld"
+      "CUSTOM_FIELD": "Zusatzfeld",
+      "SIZZLE": "SizzleBrothers"
     },
     "values": {
       "ADMIN": "Admin",
@@ -610,6 +674,16 @@
     "role": "Rolle",
     "roleAdmin": "Admin",
     "roleUser": "Benutzer",
+    "access": "Freigaben",
+    "accessHint": "Super-Admins sehen immer alles. Alle anderen sehen nur, was hier freigegeben ist.",
+    "superAdmin": "Super-Admin",
+    "superAdminHint": "Verwaltet die Freigaben und sieht immer alles. Es gibt immer mindestens einen.",
+    "superAdminNeedsAdmin": "Nur für die Rolle Admin möglich.",
+    "accessFilament": "Filamentverwaltung",
+    "accessSizzle": "SizzleBrothers-Wunschliste",
+    "accessFilamentShort": "Filament",
+    "accessSizzleShort": "Sizzle",
+    "accessNone": "Nur eigenes Konto",
     "general": "Allgemein",
     "photoUploadEnabled": "Foto-Upload für Spulen erlauben",
     "syncInterval": "Standard-Sync-Intervall (Sekunden)",

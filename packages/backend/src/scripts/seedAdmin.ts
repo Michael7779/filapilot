@@ -23,6 +23,7 @@ async function seedAdmin(): Promise<void> {
       email,
       passwordHash,
       role: "ADMIN",
+      isSuperAdmin: true,
       mustChangePassword: true
     }
   });

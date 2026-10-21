@@ -1,6 +1,6 @@
 import type { Server as HttpServer } from "node:http";
 import { Server as SocketIoServer, type Socket } from "socket.io";
-import type { PrinterLiveStatus } from "@filapilot/shared";
+import { userAccess, type PrinterLiveStatus } from "@filapilot/shared";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
 import { SESSION_COOKIE_NAME } from "./middleware/auth.js";
@@ -87,6 +87,11 @@ export async function applyInventoryRooms(
   }
 }
 
+// Ohne Freigabe der Filamentverwaltung gibt es keinen Live-Druckerstatus (docs/requirements/sizzle.md, Z7).
+export async function socketInventoryIds(user: Parameters<typeof accessibleInventoryIds>[0] & Parameters<typeof userAccess>[0]): Promise<string[]> {
+  return userAccess(user).filament ? accessibleInventoryIds(user) : [];
+}
+
 async function syncSocket(socket: Socket): Promise<void> {
   const token: unknown = socket.data.sessionToken;
   const user = typeof token === "string" ? await findUserBySessionToken(token) : null;
@@ -94,7 +99,7 @@ async function syncSocket(socket: Socket): Promise<void> {
     socket.disconnect(true);
     return;
   }
-  await applyInventoryRooms(socket, await accessibleInventoryIds(user));
+  await applyInventoryRooms(socket, await socketInventoryIds(user));
 }
 
 // Prueft alle Verbindungen erneut (Sitzung noch gueltig?) und gleicht ihre Lager-Raeume ab. Wird jede Minute und

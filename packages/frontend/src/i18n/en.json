@@ -8,6 +8,7 @@
     "printers": "Printers",
     "stats": "Statistics",
     "wunschliste": "Wishlist",
+    "sizzle": "SizzleBrothers",
     "settings": "Settings"
   },
   "wishlist": {
@@ -90,6 +91,68 @@
       "markOrdered": "Mark selection ordered",
       "markDone": "Mark selection done",
       "select": "Select \"{{title}}\" for the order"
+    }
+  },
+  "sizzle": {
+    "title": "SizzleBrothers wishlist",
+    "hint": "Shared group order for products from the SizzleBrothers shop – everyone sees who wants what.",
+    "pick": "Choose products from the shop",
+    "loadFailed": "The wishlist could not be loaded.",
+    "empty": "The wishlist is still empty. Choose products from the shop.",
+    "tabs": { "list": "Wishlist", "order": "Order list ({{count}})", "settlement": "Settlement" },
+    "inOrder": "In the order list",
+    "notInShop": "No longer in the shop",
+    "priceLine": "{{unit}} each · {{total}}",
+    "shopPrice": "Shop price {{price}}",
+    "orderCheckbox": "In the order list",
+    "quantity": "Quantity",
+    "quantityInvalid": "Please enter a quantity between 1 and 999.",
+    "editWish": "Edit wish",
+    "confirmDelete": "Really remove “{{title}}” from the wishlist?",
+    "allToOrder": "{{count}} open ones to the order list",
+    "filter": {
+      "search": "Search …",
+      "anyStatus": "Any status",
+      "person": "Added by",
+      "anyPerson": "All people"
+    },
+    "catalog": {
+      "title": "Products from the shop",
+      "search": "Search products …",
+      "type": "Product type",
+      "allTypes": "All product types",
+      "noType": "No product type",
+      "refresh": "Refresh prices",
+      "refreshing": "Refreshing …",
+      "syncedAt": "Prices and range as of {{date}}",
+      "neverSynced": "Not loaded from the shop yet.",
+      "done": "Done",
+      "empty": "The catalog is still empty. “Refresh prices” loads it from the shop.",
+      "noMatch": "No products found.",
+      "loadFailed": "The products could not be loaded.",
+      "openInShop": "View in shop",
+      "variant": "Variant",
+      "soldOut": "Sold out",
+      "less": "Less",
+      "more": "More",
+      "add": "Add to wishlist",
+      "mine": "{{count}}x already on your wishlist"
+    },
+    "order": {
+      "price": "Price each",
+      "lineTotal": "{{quantity}}x = {{total}}",
+      "useShopPrice": "Use shop price {{price}}",
+      "remove": "Remove from order list",
+      "empty": "Nothing in the order list yet. Tick products on the wishlist.",
+      "summary": "{{pieces}} items, {{total}} in total",
+      "hint": "The price here is what counts for the settlement. It starts with the shop price and can be changed, for example because of a discount."
+    },
+    "settlement": {
+      "item": "Product",
+      "empty": "Nothing in the order list yet.",
+      "summary": "{{total}} in total for {{persons}} people ({{pieces}} items)",
+      "hint": "Calculated from all entries in the order list using the price entered there.",
+      "csvFilename": "settlement-sizzlebrothers.csv"
     }
   },
   "dashboard": {
@@ -262,7 +325,8 @@
       "BACKUP": "Backup",
       "INVENTORY": "Inventory",
       "WISHLIST": "Wishlist",
-      "CUSTOM_FIELD": "Custom field"
+      "CUSTOM_FIELD": "Custom field",
+      "SIZZLE": "SizzleBrothers"
     },
     "values": {
       "ADMIN": "Admin",
@@ -610,6 +674,16 @@
     "role": "Role",
     "roleAdmin": "Admin",
     "roleUser": "User",
+    "access": "Access",
+    "accessHint": "Super admins always see everything. Everyone else only sees what is enabled here.",
+    "superAdmin": "Super admin",
+    "superAdminHint": "Manages the access settings and always sees everything. There is always at least one.",
+    "superAdminNeedsAdmin": "Only possible for the Admin role.",
+    "accessFilament": "Filament management",
+    "accessSizzle": "SizzleBrothers wishlist",
+    "accessFilamentShort": "Filament",
+    "accessSizzleShort": "Sizzle",
+    "accessNone": "Own account only",
     "general": "General",
     "photoUploadEnabled": "Allow spool photo uploads",
     "syncInterval": "Default sync interval (seconds)",

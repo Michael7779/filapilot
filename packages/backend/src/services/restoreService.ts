@@ -1,5 +1,6 @@
 import { env } from "../env.js";
 import { ensureDefaultInventory } from "./inventoryService.js";
+import { ensureSuperAdmin } from "./superAdminService.js";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import fs from "node:fs/promises";
@@ -70,6 +71,8 @@ async function defaultDependencies(): Promise<RestoreDependencies> {
       disconnectAllPrinters();
       // Eine Sicherung aus einer Version vor den Lagern hat keine Lager: das Hauptlager wird neu angelegt.
       await ensureDefaultInventory();
+      // Eine aeltere Sicherung kennt keine Super-Admins: es muss danach trotzdem einen geben.
+      await ensureSuperAdmin();
       await connectAllPrinters();
     },
     syncSchema: true

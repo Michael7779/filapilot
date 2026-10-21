@@ -8,6 +8,22 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.33.0] - 2026-10-21
+
+### Hinzugefuegt
+- SizzleBrothers-Wunschliste: Neuer Bereich "SizzleBrothers" für eine gemeinsame Sammelbestellung aus dem Shop sizzlebrothers.de. Über "Produkte aus dem Shop wählen" lassen sich alle Produkte des Shops auswählen, mit kleinem Bild, Varianten (zum Beispiel 250 ml oder 500 ml), Preis und Menge; eine Suche und ein Filter nach Produktart helfen beim Finden. Auf der Wunschliste erscheinen die Produkte mit Bild, und jeder sieht, wer was möchte.
+- SizzleBrothers-Bestellliste: Auf der Wunschliste lassen sich Produkte in die Bestellliste haken. Dort sind gleiche Produkte mehrerer Personen zusammengefasst. Der Preis kommt zunächst aus dem Shop und lässt sich ändern, zum Beispiel wegen eines Rabatts; dieser Preis ist dann für die Abrechnung maßgeblich, auch wenn sich der Preis im Shop später ändert.
+- SizzleBrothers-Abrechnung: Zeigt, was jede Person zahlen muss, und lässt sich als CSV-Datei speichern (für Excel) oder als Text kopieren, zum Beispiel für den Messenger.
+- Aktuelle Preise und Produkte: Die Produkte und Preise des Shops werden automatisch mehrmals am Tag mit dem Shop abgeglichen. Mit "Preise aktualisieren" im Auswahldialog geht das auch sofort; neue Produkte erscheinen dann gleich, nicht mehr angebotene Produkte verschwinden aus der Auswahl, bestehende Wünsche bleiben erhalten.
+- Freigaben pro Benutzer: In den Einstellungen unter "Benutzer" lässt sich für jedes Konto festlegen, ob es die Filamentverwaltung und/oder die SizzleBrothers-Wunschliste sehen darf. Ohne Freigabe fehlen die Menüpunkte, und der Zugriff ist auch direkt nicht möglich. Das eigene Konto und die Einstellungen sind immer erreichbar.
+- Super-Admin: Ein Super-Admin sieht immer beides und ist der Einzige, der Freigaben ändern und Super-Admins ernennen darf. Andere Admins können Konten von Super-Admins weder ändern noch löschen noch deren Passwort zurücksetzen. Es gibt immer mindestens einen Super-Admin.
+
+### Geändert
+- Neue Benutzer erhalten standardmäßig die Filamentverwaltung, aber nicht die SizzleBrothers-Wunschliste. Bestehende Konten behalten die Filamentverwaltung.
+
+### Hinweis zum Update
+- Neue Tabellen `sizzle_products` und `sizzle_wishes` sowie neue Felder am Benutzer (`isSuperAdmin`, `canUseFilament`, `canUseSizzle`); das Update-Skript gleicht das Schema ab. Gibt es danach noch keinen Super-Admin, wird beim Start der älteste Admin dazu ernannt (auf einer bestehenden Instanz also das zuerst eingerichtete Konto) und kann unter Einstellungen → Benutzer weitere Super-Admins ernennen und die Sizzle-Freigabe vergeben. Der Server braucht für den Katalog ausgehenden Internetzugriff auf sizzlebrothers.de (HTTPS); fehlt er, bleibt der Katalog leer bzw. auf dem letzten Stand und die Auswahl zeigt eine Fehlermeldung.
+
 ## [0.32.0] - 2026-10-20
 
 ### Hinzugefuegt

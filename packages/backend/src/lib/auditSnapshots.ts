@@ -68,7 +68,14 @@ export function printerSnapshot(printer: PrismaPrinter): Snapshot {
 }
 
 export function userSnapshot(user: PrismaUser): Snapshot {
-  return { username: user.username, email: user.email, role: user.role };
+  return {
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    isSuperAdmin: user.isSuperAdmin,
+    canUseFilament: user.canUseFilament,
+    canUseSizzle: user.canUseSizzle
+  };
 }
 
 export function settingsSnapshot(settings: Settings): Snapshot {

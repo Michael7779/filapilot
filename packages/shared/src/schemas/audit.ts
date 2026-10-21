@@ -13,7 +13,8 @@ export const auditAreaSchema = z.enum([
   "BACKUP",
   "INVENTORY",
   "WISHLIST",
-  "CUSTOM_FIELD"
+  "CUSTOM_FIELD",
+  "SIZZLE"
 ]);
 export type AuditArea = z.infer<typeof auditAreaSchema>;
 

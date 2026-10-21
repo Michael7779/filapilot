@@ -188,7 +188,7 @@ export interface SettlementLabels {
 
 // Zellen mit Nutzertext (Namen, Titel): beginnt eine Zelle mit = + - @ (Tab/Zeilenumbruch), wuerde Excel sie als Formel
 // ausfuehren - ein vorangestelltes ' verhindert das. Felder mit ; " oder Zeilenumbruch werden in Anfuehrungszeichen gesetzt.
-function csvText(value: string): string {
+export function csvText(value: string): string {
   const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
   return /[;"\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
 }

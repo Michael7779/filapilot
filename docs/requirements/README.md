@@ -17,6 +17,7 @@ Status-Legende: ⬜ nicht begonnen · 🔶 in Arbeit · ✅ fertig + getestet
 | Aenderungsverlauf in der App | `changelog.md` | 🔶 |
 | Installation (Synology) | `install.md` | 🔶 |
 | Mehrere Lager | `lager.md` | ✅ |
+| SizzleBrothers-Wunschliste, Freigaben, Super-Admin | `sizzle.md` | ✅ |
 | Import aus der Bambu-Cloud | `bambu-import.md` | 🔶 |
 
 Neue Funktion → erst hier eine ID eintragen + mit einem Test verknuepfen, dann committen

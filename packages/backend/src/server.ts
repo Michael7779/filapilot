@@ -6,6 +6,8 @@ import { startBambuAutoSync } from "./services/bambuAutoSync.js";
 import { connectAllPrinters } from "./services/printerRuntime.js";
 import { ensureDefaultInventory } from "./services/inventoryService.js";
 import { ensureOpenedAtBackfilled } from "./services/openedAtBackfill.js";
+import { ensureSuperAdmin } from "./services/superAdminService.js";
+import { startSizzleCatalogScheduler } from "./services/sizzleCatalogScheduler.js";
 import { runWithStartupRetry } from "./lib/startupRetry.js";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
@@ -18,6 +20,8 @@ const httpServer = createServer(app);
 attachSocketServer(httpServer);
 startDailyBackupScheduler();
 startBambuAutoSync();
+// Produkte des SizzleBrothers-Shops regelmaessig abgleichen (beim Start und danach alle paar Stunden)
+startSizzleCatalogScheduler();
 
 // Erst das Hauptlager sicherstellen (Spulen/Drucker ohne Lager zuordnen), dann die Drucker verbinden. Direkt nach einem Update
 // fehlen der Datenbank evtl. noch Tabellen (das Update-Skript gleicht sie erst nach dem Start ab) - dann wird es wiederholt.
@@ -25,6 +29,7 @@ runWithStartupRetry(
   async () => {
     await ensureDefaultInventory();
     await ensureOpenedAtBackfilled();
+    await ensureSuperAdmin();
     await connectAllPrinters();
   },
   {

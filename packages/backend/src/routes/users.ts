@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
+import type { Prisma, User } from "@prisma/client";
 import {
+  SUPER_ADMIN_ONLY_USER_FIELDS,
   createUserInputSchema,
   updateOwnPreferencesInputSchema,
   updateOwnThemeInputSchema,
@@ -21,8 +23,44 @@ import { omitUndefined } from "../lib/omitUndefined.js";
 import { userSnapshot } from "../lib/auditSnapshots.js";
 import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 import { toPublicUser } from "../lib/mappers.js";
+import { refreshSocketAccess } from "../socket.js";
 
 export const usersRouter = Router();
+
+// Freigaben und Super-Admin-Status setzt nur ein Super-Admin - ein normaler Admin koennte sich sonst selbst alles freigeben.
+function assertMaySetAccess(actor: User, input: Partial<Record<(typeof SUPER_ADMIN_ONLY_USER_FIELDS)[number], unknown>>): void {
+  if (!actor.isSuperAdmin && SUPER_ADMIN_ONLY_USER_FIELDS.some((field) => input[field] !== undefined)) {
+    throw new AppError("FORBIDDEN", "Freigaben und Super-Admin-Status kann nur ein Super-Admin aendern.");
+  }
+}
+
+// Ein Super-Admin-Konto (aendern, loeschen, Passwort zuruecksetzen) darf nur ein Super-Admin anfassen - sonst liesse es sich
+// ueber "Passwort zuruecksetzen" uebernehmen.
+function assertMayManage(actor: User, target: User): void {
+  if (target.isSuperAdmin && !actor.isSuperAdmin) {
+    throw new AppError("FORBIDDEN", "Ein Super-Admin-Konto kann nur ein Super-Admin verwalten.");
+  }
+}
+
+// Es muss immer mindestens ein Super-Admin bleiben; in der Transaktion, in der es entfernt wird, aufgerufen.
+async function assertAnotherSuperAdminExists(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  const others = await tx.user.count({ where: { isSuperAdmin: true, NOT: { id: userId } } });
+  if (others === 0) {
+    throw new AppError("CONFLICT", "Es muss mindestens ein Super-Admin bestehen bleiben.");
+  }
+}
+
+// Fuehrt eine Aktion aus, die einen Super-Admin entfernt oder herabstuft, atomar mit der Pruefung "es bleibt einer" -
+// Serializable, damit zwei Super-Admins sich nicht gleichzeitig gegenseitig entfernen.
+async function removingSuperAdmin<T>(userId: string, action: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  return prisma.$transaction(
+    async (tx) => {
+      await assertAnotherSuperAdminExists(tx, userId);
+      return action(tx);
+    },
+    { isolationLevel: "Serializable" }
+  );
+}
 
 // SCOPE: self
 usersRouter.get("/me", requireAuth, (req, res) => {
@@ -92,6 +130,10 @@ usersRouter.post(
   async (req, res, next) => {
     try {
       const input = createUserInputSchema.parse(req.body);
+      assertMaySetAccess(getAuthenticatedUser(req), input);
+      if (input.isSuperAdmin && input.role !== "ADMIN") {
+        throw new AppError("VALIDATION_ERROR", "Ein Super-Admin muss die Rolle Admin haben.");
+      }
       const duplicate = await prisma.user.findFirst({
         where: {
           OR: [
@@ -114,6 +156,9 @@ usersRouter.post(
           username: input.username,
           email: input.email,
           role: input.role,
+          isSuperAdmin: input.isSuperAdmin ?? false,
+          canUseFilament: input.canUseFilament ?? true,
+          canUseSizzle: input.canUseSizzle ?? false,
           mustChangePassword: input.forcePasswordChange,
           passwordHash
         }
@@ -182,12 +227,22 @@ async function assertAnotherAdminExists(userId: string): Promise<void> {
 // der letzte Admin kann weder geloescht noch herabgestuft werden; das eigene Konto kann nicht geloescht
 // werden und das Passwort nicht ueber "zuruecksetzen" (dafuer gibt es "Passwort aendern").
 // Negativ-Tests: kein Cookie -> 401, USER -> 403, letzter Admin -> 409, Duplikat -> 409.
+// Freigaben/Super-Admin (docs/requirements/sizzle.md, Z2-Z5): setzen nur Super-Admins (403), ein Super-Admin-Konto fasst nur ein
+// Super-Admin an (403), der letzte Super-Admin bleibt (409), ein Super-Admin ist immer Admin (400).
+// Negativ-Tests: tests/security/userAccess.test.ts.
 // SCOPE: global
 usersRouter.patch("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
   const id = idParamSchema.parse(req.params.id);
   const input = updateUserInputSchema.parse(req.body);
+  const actor = getAuthenticatedUser(req);
+  assertMaySetAccess(actor, input);
   const target = await findUserOrThrow(id);
+  assertMayManage(actor, target);
 
+  const finalSuperAdmin = input.isSuperAdmin ?? target.isSuperAdmin;
+  if (finalSuperAdmin && (input.role ?? target.role) !== "ADMIN") {
+    throw new AppError("VALIDATION_ERROR", "Ein Super-Admin muss die Rolle Admin haben.");
+  }
   if (input.role === "USER" && target.role === "ADMIN") {
     await assertAnotherAdminExists(id);
   }
@@ -210,7 +265,11 @@ usersRouter.patch("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
       throw new AppError("CONFLICT", "Benutzername oder E-Mail-Adresse ist bereits vergeben.");
     }
   }
-  const updated = await prisma.user.update({ where: { id }, data: omitUndefined(input) });
+  const data = omitUndefined(input);
+  const updated =
+    target.isSuperAdmin && !finalSuperAdmin
+      ? await removingSuperAdmin(id, (tx) => tx.user.update({ where: { id }, data }))
+      : await prisma.user.update({ where: { id }, data });
   await recordUpdate({
     actor: actorFromRequest(req),
     area: "USER",
@@ -219,6 +278,8 @@ usersRouter.patch("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
     before: userSnapshot(target),
     after: userSnapshot(updated)
   });
+  // Eine entzogene Filament-Freigabe gilt sofort auch fuer den Live-Druckerstatus
+  void refreshSocketAccess();
   sendData(res, toPublicUser(updated));
 }));
 
@@ -229,10 +290,15 @@ usersRouter.delete("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
     throw new AppError("CONFLICT", "Das eigene Konto kann nicht geloescht werden.");
   }
   const target = await findUserOrThrow(id);
+  assertMayManage(getAuthenticatedUser(req), target);
   if (target.role === "ADMIN") {
     await assertAnotherAdminExists(id);
   }
-  await prisma.user.delete({ where: { id } });
+  if (target.isSuperAdmin) {
+    await removingSuperAdmin(id, (tx) => tx.user.delete({ where: { id } }));
+  } else {
+    await prisma.user.delete({ where: { id } });
+  }
   await recordAudit({
     actor: actorFromRequest(req),
     action: "DELETE",
@@ -251,6 +317,7 @@ usersRouter.post("/:id/reset-password", ...requireAdmin, asyncHandler(async (req
     throw new AppError("CONFLICT", "Das eigene Passwort bitte ueber \"Passwort aendern\" setzen.");
   }
   const target = await findUserOrThrow(id);
+  assertMayManage(getAuthenticatedUser(req), target);
   const temporaryPassword = generateRandomPassword();
   await prisma.$transaction([
     prisma.user.update({

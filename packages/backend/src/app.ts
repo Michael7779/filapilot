@@ -28,6 +28,9 @@ import { printersRouter } from "./routes/printers.js";
 import { printJobsRouter } from "./routes/printJobs.js";
 import { customFieldDefinitionsRouter } from "./routes/customFieldDefinitions.js";
 import { wishlistRouter } from "./routes/wishlist.js";
+import { sizzleProductsRouter } from "./routes/sizzleProducts.js";
+import { sizzleWishesRouter } from "./routes/sizzleWishes.js";
+import { requireFilamentAccess } from "./middleware/access.js";
 import { sendData } from "./lib/apiResult.js";
 
 export function createApp() {
@@ -52,23 +55,28 @@ export function createApp() {
   app.use("/api/audit-log", auditRouter);
   app.use("/api/settings/backups", backupsRouter);
   app.use("/api/settings", settingsRouter);
-  app.use("/api/materials", materialsRouter);
-  app.use("/api/manufacturers", manufacturersRouter);
-  app.use("/api/inventories/:id/bambu-import", bambuConnectionRouter);
-  app.use("/api/inventories/:id/bambu-import", bambuImportRouter);
-  app.use("/api/inventories/:id/spoolman-import", spoolmanImportRouter);
-  app.use("/api/inventories/:id/audit-log", inventoryAuditRouter);
-  app.use("/api/inventories", inventoriesRouter);
-  app.use("/api/stats", statsRouter);
-  app.use("/api/spools", spoolPhotosRouter);
-  app.use("/api/spools", spoolDryingRouter);
-  app.use("/api/spools", spoolWeighRouter);
-  app.use("/api/spools", spoolsBulkRouter);
-  app.use("/api/spools", spoolsRouter);
-  app.use("/api/printers", printersRouter);
-  app.use("/api/print-jobs", printJobsRouter);
-  app.use("/api/custom-field-definitions", customFieldDefinitionsRouter);
-  app.use("/api/wishlist", wishlistRouter);
+  // Filamentverwaltung: nur mit Freigabe (Super-Admins immer), siehe middleware/access.ts
+  const filament = requireFilamentAccess;
+  app.use("/api/materials", ...filament, materialsRouter);
+  app.use("/api/manufacturers", ...filament, manufacturersRouter);
+  app.use("/api/inventories/:id/bambu-import", ...filament, bambuConnectionRouter);
+  app.use("/api/inventories/:id/bambu-import", ...filament, bambuImportRouter);
+  app.use("/api/inventories/:id/spoolman-import", ...filament, spoolmanImportRouter);
+  app.use("/api/inventories/:id/audit-log", ...filament, inventoryAuditRouter);
+  app.use("/api/inventories", ...filament, inventoriesRouter);
+  app.use("/api/stats", ...filament, statsRouter);
+  app.use("/api/spools", ...filament, spoolPhotosRouter);
+  app.use("/api/spools", ...filament, spoolDryingRouter);
+  app.use("/api/spools", ...filament, spoolWeighRouter);
+  app.use("/api/spools", ...filament, spoolsBulkRouter);
+  app.use("/api/spools", ...filament, spoolsRouter);
+  app.use("/api/printers", ...filament, printersRouter);
+  app.use("/api/print-jobs", ...filament, printJobsRouter);
+  app.use("/api/custom-field-definitions", ...filament, customFieldDefinitionsRouter);
+  app.use("/api/wishlist", ...filament, wishlistRouter);
+  // SizzleBrothers-Wunschliste: eigene Freigabe, die die Routen selbst verlangen (requireSizzleAccess)
+  app.use("/api/sizzle/products", sizzleProductsRouter);
+  app.use("/api/sizzle/wishes", sizzleWishesRouter);
 
   app.use(errorHandler);
 

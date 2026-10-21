@@ -27,6 +27,9 @@ import { SettingsPage } from "./pages/SettingsPage.js";
 import { PrintersPage } from "./pages/PrintersPage.js";
 import { StatsPage } from "./pages/StatsPage.js";
 import { WishlistPage } from "./pages/WishlistPage.js";
+import { SizzlePage } from "./pages/SizzlePage.js";
+import { useAccess } from "./hooks/useAccess.js";
+import { homePath } from "./lib/navItems.js";
 import { apiRequest } from "./lib/api.js";
 import { useAuthStore } from "./stores/useAuthStore.js";
 import { useThemeStore } from "./stores/useThemeStore.js";
@@ -38,21 +41,25 @@ const TITLE_BY_PATH: Record<string, string> = {
   "/printers": "nav.printers",
   "/stats": "nav.stats",
   "/wunschliste": "nav.wunschliste",
+  "/sizzle": "nav.sizzle",
   "/settings": "nav.settings"
 };
 
 function TopBar(): React.JSX.Element {
   const { t } = useTranslation();
   const location: Location = useLocation();
+  const access = useAccess();
   const path = location.pathname.startsWith("/settings") ? "/settings" : location.pathname;
   const titleKey = TITLE_BY_PATH[path] ?? "nav.dashboard";
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] px-4 pt-[env(safe-area-inset-top)] md:h-[68px] md:px-7">
       <div className="flex min-w-0 items-center gap-3">
         <h1 className="text-[17px] font-bold md:text-[19px]">{t(titleKey)}</h1>
-        <div className="min-w-0 md:hidden">
-          <InventorySwitcher variant="header" />
-        </div>
+        {access.filament && (
+          <div className="min-w-0 md:hidden">
+            <InventorySwitcher variant="header" />
+          </div>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <span className="hidden text-xs text-[var(--color-text-muted)] md:inline">v{__APP_VERSION__}</span>
@@ -67,32 +74,40 @@ function AppContent(): React.JSX.Element {
   const location: Location = useLocation();
   const loaded = useInventoryStore((state) => state.loaded);
   const hasInventories = useInventoryStore((state) => state.inventories.length > 0);
+  const access = useAccess();
 
-  if (!loaded) {
+  // Die Lager gibt es nur mit Freigabe der Filamentverwaltung; ohne sie wird nichts geladen und nicht darauf gewartet.
+  if (access.filament && !loaded) {
     return <div>{t("common.loading")}</div>;
   }
-  // Ohne Lager gibt es nichts zu zeigen - ausser den Einstellungen (dort laesst sich eines anlegen).
-  if (!hasInventories && !location.pathname.startsWith("/settings")) {
+  // Ohne Lager gibt es nichts zu zeigen - ausser den Einstellungen (dort laesst sich eines anlegen) und der Sizzle-Wunschliste.
+  if (access.filament && !hasInventories && !location.pathname.startsWith("/settings") && !location.pathname.startsWith("/sizzle")) {
     return <NoInventory />;
   }
+  // Nicht freigegebene Bereiche gibt es hier gar nicht (der Server verweigert sie ohnehin) - wer dort landet, kommt auf die Startseite.
   return (
     <Routes>
-      <Route path="/" element={<DashboardPage />} />
-      <Route path="/spools" element={<SpoolsPage />} />
-      <Route path="/printers" element={<PrintersPage />} />
-      <Route path="/stats" element={<StatsPage />} />
-      <Route path="/wunschliste" element={<WishlistPage />} />
+      {access.filament && <Route path="/" element={<DashboardPage />} />}
+      {access.filament && <Route path="/spools" element={<SpoolsPage />} />}
+      {access.filament && <Route path="/printers" element={<PrintersPage />} />}
+      {access.filament && <Route path="/stats" element={<StatsPage />} />}
+      {access.filament && <Route path="/wunschliste" element={<WishlistPage />} />}
+      {access.sizzle && <Route path="/sizzle" element={<SizzlePage />} />}
       <Route path="/settings/:tab?" element={<SettingsPage />} />
+      <Route path="*" element={<Navigate to={homePath(access)} replace />} />
     </Routes>
   );
 }
 
 function AppShell(): React.JSX.Element {
   const load = useInventoryStore((state) => state.load);
+  const filamentAccess = useAccess().filament;
 
   useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+    if (filamentAccess) {
+      load().catch(() => undefined);
+    }
+  }, [load, filamentAccess]);
 
   return (
     <div className="flex h-dvh bg-[var(--color-bg)] text-[var(--color-text-primary)]">

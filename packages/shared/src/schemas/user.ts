@@ -25,6 +25,10 @@ export const userPublicSchema = z.object({
   role: userRoleSchema,
   mustChangePassword: z.boolean(),
   themeAccentColor: hexColorSchema.nullable(),
+  // Freigaben (siehe userAccess.ts): Super-Admins sehen immer alles, alle anderen nur, was freigegeben ist.
+  isSuperAdmin: z.boolean(),
+  canUseFilament: z.boolean(),
+  canUseSizzle: z.boolean(),
   spoolView: spoolViewSchema.nullable(),
   spoolPageSize: spoolPageSizeSchema.nullable(),
   // Neueste Version des Aenderungsverlaufs, die dieser Nutzer schon gesehen hat (pro Konto, nicht pro Browser).
@@ -43,7 +47,11 @@ export const createUserInputSchema = z.object({
   username: z.string().min(3).max(32),
   email: z.string().email(),
   role: userRoleSchema,
-  forcePasswordChange: z.boolean().default(true)
+  forcePasswordChange: z.boolean().default(true),
+  // Freigaben darf nur ein Super-Admin mitgeben (Route prueft das); ohne Angabe: Filamentverwaltung ja, Sizzle nein.
+  isSuperAdmin: z.boolean().optional(),
+  canUseFilament: z.boolean().optional(),
+  canUseSizzle: z.boolean().optional()
 });
 export type CreateUserInput = z.infer<typeof createUserInputSchema>;
 
@@ -51,9 +59,14 @@ export const updateUserInputSchema = z
   .object({
     username: z.string().min(3).max(32),
     email: z.string().email(),
-    role: userRoleSchema
+    role: userRoleSchema,
+    isSuperAdmin: z.boolean(),
+    canUseFilament: z.boolean(),
+    canUseSizzle: z.boolean()
   })
   .partial();
+// Die Felder, die nur ein Super-Admin setzen darf (siehe docs/requirements/sizzle.md, Z2)
+export const SUPER_ADMIN_ONLY_USER_FIELDS = ["isSuperAdmin", "canUseFilament", "canUseSizzle"] as const;
 export type UpdateUserInput = z.infer<typeof updateUserInputSchema>;
 
 export const setupInputSchema = z.object({

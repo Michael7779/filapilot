@@ -59,6 +59,12 @@ model User {
   role                UserRole  @default(USER)
   mustChangePassword  Boolean   @default(true)
   themeAccentColor    String?
+  // Freigaben: Super-Admins sehen immer alles (und verwalten die Freigaben); alle anderen sehen die Filamentverwaltung
+  // bzw. die SizzleBrothers-Wunschliste nur, wenn ein Super-Admin sie freigegeben hat. Bestehende Konten behalten
+  // die Filamentverwaltung (Standard true). Ein Super-Admin ist immer auch Admin; es gibt immer mindestens einen.
+  isSuperAdmin        Boolean   @default(false)
+  canUseFilament      Boolean   @default(true)
+  canUseSizzle        Boolean   @default(false)
   // Bevorzugte Ansicht und Seitengroesse der Spulenliste (leer = Standard)
   spoolView           String?
   spoolPageSize       Int?
@@ -74,6 +80,8 @@ model User {
   inventoryMemberships InventoryMember[]
   wishlistItemsAdded   WishlistItem[] @relation("WishlistAddedBy")
   wishlistItemsUpdated WishlistItem[] @relation("WishlistUpdatedBy")
+  sizzleWishesAdded    SizzleWish[]   @relation("SizzleWishAddedBy")
+  sizzleWishesUpdated  SizzleWish[]   @relation("SizzleWishUpdatedBy")
 
   @@map("users")
 }
@@ -130,6 +138,57 @@ model WishlistOrderCost {
   @@map("wishlist_order_costs")
 }
 
+// Produktkatalog des SizzleBrothers-Shops (https://sizzlebrothers.de/collections/all), eine Zeile je Variante (z.B.
+// "500 ml"). Ein reiner Zwischenspeicher der oeffentlichen Shop-Daten (Titel, Bild, Preis), der regelmaessig
+// abgeglichen wird; er gehoert ueber SizzleWish zum Benutzer, der etwas daraus auf die Wunschliste setzt. Zeilen werden
+// nie geloescht, sondern bei Wegfall im Shop auf active=false gesetzt, damit bestehende Wuensche lesbar bleiben.
+model SizzleProduct {
+  id               String       @id @default(uuid())
+  shopifyVariantId String       @unique
+  shopifyProductId String
+  handle           String
+  title            String
+  // Variantenname ("500 ml"); null bei Produkten ohne Varianten
+  variantTitle     String?
+  productType      String?
+  // Bild (https) des Shops; die Oberflaeche fordert es in klein an
+  imageUrl         String?
+  priceCents       Int
+  available        Boolean      @default(true)
+  active           Boolean      @default(true)
+  syncedAt         DateTime
+  createdAt        DateTime     @default(now())
+  wishes           SizzleWish[]
+
+  @@index([shopifyProductId])
+  @@map("sizzle_products")
+}
+
+// Wunsch einer Person aus der SizzleBrothers-Sammelbestellung. Die Bestellliste ist (wie bei WishlistItem) die Auswahl
+// inOrder; dort wird der Preis massgeblich: unitPriceCents wird beim Aufnehmen in die Bestellliste mit dem Shop-Preis
+// eingefroren und ist dann aenderbar (z.B. Rabatt). null = noch nicht in der Bestellliste, es gilt der Shop-Preis.
+model SizzleWish {
+  id              String         @id @default(uuid())
+  productId       String
+  product         SizzleProduct  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity        Int            @default(1)
+  note            String?
+  status          WishlistStatus @default(OPEN)
+  inOrder         Boolean        @default(false)
+  unitPriceCents  Int?
+  addedByUserId   String?
+  addedByUser     User?          @relation("SizzleWishAddedBy", fields: [addedByUserId], references: [id], onDelete: SetNull)
+  addedByName     String
+  createdAt       DateTime       @default(now())
+  updatedByUserId String?
+  updatedByUser   User?          @relation("SizzleWishUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  updatedByName   String?
+  updatedAt       DateTime       @updatedAt
+
+  @@index([productId])
+  @@map("sizzle_wishes")
+}
+
 // Vom Admin definierte Zusatzfelder (Name + Typ), deren Werte Spulen dynamisch befuellen (Spool.customFields).
 model CustomFieldDefinition {
   id        String          @id @default(uuid())
@@ -161,6 +220,7 @@ enum AuditArea {
   INVENTORY
   WISHLIST
   CUSTOM_FIELD
+  SIZZLE
 }
 
 // Aenderungsprotokoll: wer hat wann was angelegt/geaendert/geloescht. userId ist bewusst KEINE Relation und

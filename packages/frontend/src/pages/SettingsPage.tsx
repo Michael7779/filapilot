@@ -10,7 +10,9 @@ import { BackupManager } from "../components/BackupManager.js";
 import { AuditLogView } from "../components/AuditLogView.js";
 import { InventorySettings } from "../components/InventorySettings.js";
 import { useLogout } from "../hooks/useLogout.js";
-import { BAMBU_AUTO_SYNC_OPTIONS, SESSION_EXPIRY_DAY_OPTIONS } from "@filapilot/shared";
+import { useAccess } from "../hooks/useAccess.js";
+import { UserAccessFields, type AccessValues } from "../components/UserAccessFields.js";
+import { BAMBU_AUTO_SYNC_OPTIONS, SESSION_EXPIRY_DAY_OPTIONS, userAccess } from "@filapilot/shared";
 import type {
   CreateUserInput,
   CreateUserResult,
@@ -458,6 +460,9 @@ function NewUserModal({
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"USER" | "ADMIN">("USER");
   const [forcePasswordChange, setForcePasswordChange] = useState(true);
+  const [access, setAccess] = useState<AccessValues>({ isSuperAdmin: false, canUseFilament: true, canUseSizzle: false });
+  // Freigaben setzt nur ein Super-Admin (der Server erzwingt das); alle anderen legen mit den Standardwerten an
+  const canEditAccess = useAuthStore((state) => state.user?.isSuperAdmin === true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -484,7 +489,8 @@ function NewUserModal({
         username: username.trim(),
         email: email.trim(),
         role,
-        forcePasswordChange
+        forcePasswordChange,
+        ...(canEditAccess ? { ...access, isSuperAdmin: access.isSuperAdmin && role === "ADMIN" } : {})
       };
       const created = await apiRequest<CreateUserResult>("/users", {
         method: "POST",
@@ -519,7 +525,13 @@ function NewUserModal({
         <Field label={t("settings.role")}>
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value as "USER" | "ADMIN")}
+            onChange={(e) => {
+              const nextRole = e.target.value as "USER" | "ADMIN";
+              setRole(nextRole);
+              if (nextRole !== "ADMIN") {
+                setAccess((current) => ({ ...current, isSuperAdmin: false }));
+              }
+            }}
             className={inputClass}
           >
             {sortAlphabetically(
@@ -544,6 +556,7 @@ function NewUserModal({
           />
           {t("settings.forcePasswordChange")}
         </label>
+        {canEditAccess && <UserAccessFields role={role} values={access} onChange={setAccess} />}
         {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
         <div className="mt-2 flex justify-end gap-2">
           <button
@@ -563,6 +576,29 @@ function NewUserModal({
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+// Kleine Marken, wer was sehen darf (Super-Admins sehen immer alles)
+function AccessBadges({ user }: { user: UserPublic }): React.JSX.Element {
+  const { t } = useTranslation();
+  const access = userAccess(user);
+  const badge = (label: string, strong = false): React.JSX.Element => (
+    <span
+      key={label}
+      className="rounded-full px-2 py-0.5 text-xs font-medium"
+      style={strong ? { backgroundColor: "var(--color-accent-bg)", color: "var(--accent)" } : { backgroundColor: "var(--color-bg)", color: "var(--color-text-secondary)" }}
+    >
+      {label}
+    </span>
+  );
+  return (
+    <div className="flex flex-wrap gap-1">
+      {user.isSuperAdmin && badge(t("settings.superAdmin"), true)}
+      {access.filament && badge(t("settings.accessFilamentShort"))}
+      {access.sizzle && badge(t("settings.accessSizzleShort"))}
+      {!access.filament && !access.sizzle && <span className="text-xs text-[var(--color-text-muted)]">{t("settings.accessNone")}</span>}
     </div>
   );
 }
@@ -655,12 +691,13 @@ function UserManagementSection(): React.JSX.Element {
         <p className="text-sm text-[var(--color-text-secondary)]">{t("common.loading")}</p>
       ) : (
         <div className="overflow-x-auto">
-<table className="w-full min-w-[960px] text-left text-sm">
+<table className="w-full min-w-[1080px] text-left text-sm">
           <thead>
             <tr className="text-xs text-[var(--color-text-muted)]">
               <th className="pb-2 font-medium">{t("auth.username")}</th>
               <th className="pb-2 font-medium">{t("settings.email")}</th>
               <th className="pb-2 font-medium">{t("settings.role")}</th>
+              <th className="pb-2 font-medium">{t("settings.access")}</th>
               <th className="pb-2 font-medium">{t("settings.createdAt")}</th>
               <th className="pb-2 font-medium">{t("settings.lastLogin")}</th>
               <th className="pb-2 font-medium">{t("settings.lastActive")}</th>
@@ -679,6 +716,9 @@ function UserManagementSection(): React.JSX.Element {
                       {t("settings.pendingPasswordChange")}
                     </span>
                   )}
+                </td>
+                <td className="py-2">
+                  <AccessBadges user={u} />
                 </td>
                 <td className="py-2 text-[var(--color-text-secondary)]">
                   {new Date(u.createdAt).toLocaleDateString(i18n.language)}
@@ -701,10 +741,12 @@ function UserManagementSection(): React.JSX.Element {
                 </td>
                 <td className="py-2">
                   <div className="flex justify-end gap-3 text-xs font-medium">
-                    <button type="button" onClick={() => setEditing(u)} style={{ color: "var(--accent)" }}>
-                      {t("common.edit")}
-                    </button>
-                    {u.id !== currentUser?.id && (
+                    {(!u.isSuperAdmin || currentUser?.isSuperAdmin) && (
+                      <button type="button" onClick={() => setEditing(u)} style={{ color: "var(--accent)" }}>
+                        {t("common.edit")}
+                      </button>
+                    )}
+                    {u.id !== currentUser?.id && (!u.isSuperAdmin || currentUser?.isSuperAdmin) && (
                       <>
                         <button
                           type="button"
@@ -754,13 +796,14 @@ function UserManagementSection(): React.JSX.Element {
 
 type SettingsTab = "konto" | "lager" | "benutzer" | "filamente" | "system" | "protokoll";
 
-const TABS: { key: SettingsTab; labelKey: string; adminOnly: boolean }[] = [
-  { key: "konto", labelKey: "settings.tabAccount", adminOnly: false },
-  { key: "lager", labelKey: "settings.tabInventories", adminOnly: false },
-  { key: "benutzer", labelKey: "settings.tabUsers", adminOnly: true },
-  { key: "filamente", labelKey: "settings.tabFilaments", adminOnly: true },
-  { key: "system", labelKey: "settings.tabSystem", adminOnly: true },
-  { key: "protokoll", labelKey: "settings.tabAudit", adminOnly: true }
+// area: Lager und Filament-Stammdaten gibt es nur mit Freigabe der Filamentverwaltung
+const TABS: { key: SettingsTab; labelKey: string; adminOnly: boolean; area: "filament" | null }[] = [
+  { key: "konto", labelKey: "settings.tabAccount", adminOnly: false, area: null },
+  { key: "lager", labelKey: "settings.tabInventories", adminOnly: false, area: "filament" },
+  { key: "benutzer", labelKey: "settings.tabUsers", adminOnly: true, area: null },
+  { key: "filamente", labelKey: "settings.tabFilaments", adminOnly: true, area: "filament" },
+  { key: "system", labelKey: "settings.tabSystem", adminOnly: true, area: null },
+  { key: "protokoll", labelKey: "settings.tabAudit", adminOnly: true, area: null }
 ];
 
 export function SettingsPage(): React.JSX.Element {
@@ -770,6 +813,7 @@ export function SettingsPage(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const isAdmin = user?.role === "ADMIN";
+  const access = useAccess();
 
   useEffect(() => {
     if (!isAdmin) {
@@ -782,7 +826,7 @@ export function SettingsPage(): React.JSX.Element {
       });
   }, [isAdmin, t]);
 
-  const visibleTabs = TABS.filter((entry) => isAdmin || !entry.adminOnly);
+  const visibleTabs = TABS.filter((entry) => (isAdmin || !entry.adminOnly) && (entry.area === null || access[entry.area]));
   const active = visibleTabs.find((entry) => entry.key === tab);
   if (!active) {
     return <Navigate to="/settings/konto" replace />;

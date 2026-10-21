@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
-import { NAV_ITEMS, isNavActive } from "../lib/navItems.js";
+import { isNavActive, visibleNavItems } from "../lib/navItems.js";
+import { useAccess } from "../hooks/useAccess.js";
 import { NavIcon } from "./NavIcons.js";
 
 // Nur auf dem Smartphone sichtbar (die Seitenleiste ist dort ausgeblendet); Sicherheitsabstand
@@ -8,12 +9,13 @@ import { NavIcon } from "./NavIcons.js";
 export function BottomNav(): React.JSX.Element {
   const { t } = useTranslation();
   const location = useLocation();
+  const access = useAccess();
   return (
     <nav
       aria-label={t("app.name")}
       className="fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--color-border)] bg-[var(--color-sidebar)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      {NAV_ITEMS.map((item) => {
+      {visibleNavItems(access).map((item) => {
         const active = isNavActive(location.pathname, item.href);
         return (
           <Link

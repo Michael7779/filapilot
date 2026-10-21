@@ -37,6 +37,8 @@ setupRouter.post("/", asyncHandler(async (req, res) => {
           email: input.email,
           passwordHash,
           role: "ADMIN",
+          // Der erste Benutzer einer Instanz ist Super-Admin (verwaltet die Freigaben)
+          isSuperAdmin: true,
           mustChangePassword: false
         }
       });

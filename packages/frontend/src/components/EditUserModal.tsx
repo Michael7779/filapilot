@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { UpdateUserInput, UserPublic } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
+import { useAuthStore } from "../stores/useAuthStore.js";
+import { UserAccessFields, type AccessValues } from "./UserAccessFields.js";
 
 const INPUT_CLASS =
   "rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]";
@@ -21,6 +23,9 @@ export function EditUserModal({
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
   const [role, setRole] = useState<UserPublic["role"]>(user.role);
+  const [access, setAccess] = useState<AccessValues>({ isSuperAdmin: user.isSuperAdmin, canUseFilament: user.canUseFilament, canUseSizzle: user.canUseSizzle });
+  // Freigaben sieht und aendert nur ein Super-Admin (der Server erzwingt das)
+  const canEditAccess = useAuthStore((state) => state.user?.isSuperAdmin === true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -43,7 +48,12 @@ export function EditUserModal({
     setSubmitting(true);
     setError(null);
     try {
-      const input: UpdateUserInput = { username: username.trim(), email: email.trim(), role };
+      const input: UpdateUserInput = {
+        username: username.trim(),
+        email: email.trim(),
+        role,
+        ...(canEditAccess ? { ...access, isSuperAdmin: access.isSuperAdmin && role === "ADMIN" } : {})
+      };
       await apiRequest(`/users/${user.id}`, { method: "PATCH", body: JSON.stringify(input) });
       onSaved();
     } catch (err) {
@@ -71,7 +81,14 @@ export function EditUserModal({
           {t("settings.role")}
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value as UserPublic["role"])}
+            onChange={(e) => {
+              const nextRole = e.target.value as UserPublic["role"];
+              setRole(nextRole);
+              // Ein Super-Admin muss Admin sein
+              if (nextRole !== "ADMIN") {
+                setAccess((current) => ({ ...current, isSuperAdmin: false }));
+              }
+            }}
             className={INPUT_CLASS}
           >
             {sortAlphabetically(
@@ -88,6 +105,7 @@ export function EditUserModal({
             ))}
           </select>
         </label>
+        {canEditAccess && <UserAccessFields role={role} values={access} onChange={setAccess} />}
         {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
         <div className="mt-2 flex justify-end gap-2">
           <button

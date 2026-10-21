@@ -11,7 +11,7 @@ import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { AuditEntryDetailModal } from "./AuditEntryDetail.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 
-const AREAS: AuditArea[] = ["SPOOL", "MATERIAL", "MANUFACTURER", "PRINTER", "USER", "SETTINGS", "BACKUP", "INVENTORY", "WISHLIST", "CUSTOM_FIELD"];
+const AREAS: AuditArea[] = ["SPOOL", "MATERIAL", "MANUFACTURER", "PRINTER", "USER", "SETTINGS", "BACKUP", "INVENTORY", "WISHLIST", "CUSTOM_FIELD", "SIZZLE"];
 const ACTIONS: AuditAction[] = ["CREATE", "UPDATE", "DELETE", "EVENT"];
 const FIELD_CLASS =
   "rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text-primary)]";
