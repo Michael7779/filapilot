@@ -173,7 +173,7 @@ export function SizzlePage(): React.JSX.Element {
       role="tab"
       aria-selected={tab === value}
       onClick={() => setTab(value)}
-      className={`rounded-lg px-4 py-1.5 text-sm font-medium ${tab === value ? "text-white" : "text-[var(--color-text-secondary)]"}`}
+      className={`rounded-lg px-2 py-1.5 text-sm font-medium sm:px-4 ${tab === value ? "text-white" : "text-[var(--color-text-secondary)]"}`}
       style={tab === value ? { backgroundColor: "var(--accent)" } : undefined}
     >
       {label}

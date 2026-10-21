@@ -9,7 +9,16 @@
     "stats": "Statistik",
     "wunschliste": "Wunschliste",
     "sizzle": "SizzleBrothers",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "short": {
+      "dashboard": "Start",
+      "spools": "Spulen",
+      "printers": "Drucker",
+      "stats": "Statistik",
+      "wunschliste": "Wünsche",
+      "sizzle": "Sizzle",
+      "settings": "Optionen"
+    }
   },
   "wishlist": {
     "title": "Wunschliste",

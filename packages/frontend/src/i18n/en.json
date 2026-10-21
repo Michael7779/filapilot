@@ -9,7 +9,16 @@
     "stats": "Statistics",
     "wunschliste": "Wishlist",
     "sizzle": "SizzleBrothers",
-    "settings": "Settings"
+    "settings": "Settings",
+    "short": {
+      "dashboard": "Dashboard",
+      "spools": "Spools",
+      "printers": "Printers",
+      "stats": "Stats",
+      "wunschliste": "Wishlist",
+      "sizzle": "Sizzle",
+      "settings": "Settings"
+    }
   },
   "wishlist": {
     "title": "Wishlist",

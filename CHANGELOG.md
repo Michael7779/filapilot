@@ -8,6 +8,12 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.33.1] - 2026-10-21
+
+### Behoben
+- Handy: Die untere Menüleiste ist mit allen Bereichen übersichtlich geblieben. Die Beschriftungen sind kürzer ("Start", "Wünsche", "Sizzle", "Optionen") und laufen nicht mehr ineinander, auch auf schmalen Handys.
+- SizzleBrothers: Auf der Sizzle-Seite erscheint oben am Handy nicht mehr die Lager-Auswahl, weil sie dort nichts bewirkt. Die Reiter "Wunschliste", "Bestellliste" und "Abrechnung" passen jetzt auch auf sehr schmale Bildschirme.
+
 ## [0.33.0] - 2026-10-21
 
 ### Hinzugefuegt

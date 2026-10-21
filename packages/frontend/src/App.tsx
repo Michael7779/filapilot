@@ -55,7 +55,7 @@ function TopBar(): React.JSX.Element {
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] px-4 pt-[env(safe-area-inset-top)] md:h-[68px] md:px-7">
       <div className="flex min-w-0 items-center gap-3">
         <h1 className="text-[17px] font-bold md:text-[19px]">{t(titleKey)}</h1>
-        {access.filament && (
+        {access.filament && path !== "/sizzle" && (
           <div className="min-w-0 md:hidden">
             <InventorySwitcher variant="header" />
           </div>
