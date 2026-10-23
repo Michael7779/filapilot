@@ -30,6 +30,7 @@ import { customFieldDefinitionsRouter } from "./routes/customFieldDefinitions.js
 import { wishlistRouter } from "./routes/wishlist.js";
 import { sizzleProductsRouter } from "./routes/sizzleProducts.js";
 import { sizzleWishesRouter } from "./routes/sizzleWishes.js";
+import { sizzleCostsRouter } from "./routes/sizzleCosts.js";
 import { requireFilamentAccess } from "./middleware/access.js";
 import { sendData } from "./lib/apiResult.js";
 
@@ -77,6 +78,7 @@ export function createApp() {
   // SizzleBrothers-Wunschliste: eigene Freigabe, die die Routen selbst verlangen (requireSizzleAccess)
   app.use("/api/sizzle/products", sizzleProductsRouter);
   app.use("/api/sizzle/wishes", sizzleWishesRouter);
+  app.use("/api/sizzle/costs", sizzleCostsRouter);
 
   app.use(errorHandler);
 

@@ -8,6 +8,15 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.34.0] - 2026-10-21
+
+### Hinzugefuegt
+- SizzleBrothers-Bestellliste: Neue Felder "Versand" und "Rabatt" für die ganze Bestellung. Beide Beträge werden in der Abrechnung nach Warenwert auf die Personen verteilt, bis auf den Cent genau. In der Abrechnung steht pro Person der Anteil an Versand und Rabatt, dazu eine Übersicht mit Ware, Versand, Rabatt und Summe. CSV-Datei und Text zum Kopieren enthalten den Anteil ebenfalls. Wer einen prozentualen Rabatt hat, trägt ihn weiterhin über den Preis je Position ein.
+- SizzleBrothers: Mit "Erledigte entfernen" werden Versand und Rabatt zurückgesetzt, sobald nichts mehr in der Bestellliste steht, damit sie nicht in die nächste Bestellung rutschen.
+
+### Hinweis zum Update
+- Neue Tabelle `sizzle_order_costs`; das Update-Skript gleicht das Schema ab.
+
 ## [0.33.1] - 2026-10-21
 
 ### Behoben

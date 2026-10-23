@@ -1,22 +1,23 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { buildSizzleSettlementCsv, buildSizzleSettlementText, computeSizzleSettlement, type SizzleSettlementLabels, type SizzleWish } from "@filapilot/shared";
+import { buildSizzleSettlementCsv, buildSizzleSettlementText, computeSizzleSettlement, type SizzleOrderCost, type SizzleSettlementLabels, type SizzleWish } from "@filapilot/shared";
 import { copyToClipboard } from "../lib/clipboard.js";
 import { saveTextFile } from "../lib/download.js";
 import { decimalSeparator, formatEuro } from "../lib/formatEuro.js";
 
 interface SizzleSettlementViewProps {
   wishes: readonly SizzleWish[];
+  cost: SizzleOrderCost;
 }
 
 type CopyState = "idle" | "copied" | "failed";
 
 // Abrechnung: was schuldet jede Person (Menge mal Preis der Bestellliste), dazu Export als CSV/Text.
-export function SizzleSettlementView({ wishes }: SizzleSettlementViewProps): React.JSX.Element {
+export function SizzleSettlementView({ wishes, cost }: SizzleSettlementViewProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const locale = i18n.language;
-  const settlement = computeSizzleSettlement(wishes, locale);
+  const settlement = computeSizzleSettlement(wishes, locale, cost);
   const euro = (cents: number): string => formatEuro(cents, locale);
   const labels: SizzleSettlementLabels = {
     person: t("wishlist.settlement.labels.person"),
@@ -24,6 +25,7 @@ export function SizzleSettlementView({ wishes }: SizzleSettlementViewProps): Rea
     quantity: t("sizzle.quantity"),
     unitPrice: t("sizzle.order.price"),
     amount: t("wishlist.settlement.labels.amount"),
+    extras: t("sizzle.settlement.extras"),
     total: t("wishlist.settlement.total")
   };
 
@@ -61,6 +63,9 @@ export function SizzleSettlementView({ wishes }: SizzleSettlementViewProps): Rea
           {copyState === "copied" ? t("wishlist.settlement.copied") : t("wishlist.settlement.copyFailed")}
         </p>
       )}
+      <p className="rounded-xl border border-[var(--color-border)] bg-white p-3 text-sm tabular-nums text-[var(--color-text-secondary)]">
+        {t("sizzle.settlement.breakdown", { goods: euro(settlement.goodsCents), shipping: euro(settlement.shippingCents), discount: euro(settlement.discountCents), total: euro(settlement.totalCents) })}
+      </p>
       <section className="flex flex-col gap-3" aria-label={t("wishlist.settlement.byPerson")}>
         {settlement.persons.map((person) => (
           <article key={person.name} className="flex flex-col gap-2 rounded-xl border border-[var(--color-border)] bg-white p-3">
@@ -79,6 +84,12 @@ export function SizzleSettlementView({ wishes }: SizzleSettlementViewProps): Rea
                   </span>
                 </li>
               ))}
+              {person.extrasCents !== 0 && (
+                <li className="flex flex-wrap items-baseline justify-between gap-x-4 text-[var(--color-text-secondary)]">
+                  <span>{t("sizzle.settlement.extras")}</span>
+                  <span className="tabular-nums">{euro(person.extrasCents)}</span>
+                </li>
+              )}
             </ul>
           </article>
         ))}

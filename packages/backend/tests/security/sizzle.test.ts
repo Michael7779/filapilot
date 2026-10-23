@@ -51,7 +51,7 @@ describe("SizzleBrothers-Wunschliste - Negativ-Tests", () => {
     await prisma.$disconnect();
   });
 
-  const call = (method: "get" | "post" | "patch" | "delete", url: string, user: TestUser | null, body: object = {}) => {
+  const call = (method: "get" | "post" | "patch" | "put" | "delete", url: string, user: TestUser | null, body: object = {}) => {
     const req = request(app)[method](url);
     return (user ? req.set("Cookie", user.cookie) : req).send(body);
   };
@@ -60,7 +60,9 @@ describe("SizzleBrothers-Wunschliste - Negativ-Tests", () => {
     assert.ok(res.status === 200 || res.status === 201, `Wunsch anlegen: ${res.status} ${JSON.stringify(res.body)}`);
     return res.body.data as { id: string; quantity: number; unitPriceCents: number | null; status: string; inOrder: boolean };
   };
-  const ENDPOINTS: [("get" | "post" | "patch" | "delete"), string][] = [
+  const ENDPOINTS: [("get" | "post" | "patch" | "put" | "delete"), string][] = [
+    ["get", "/api/sizzle/costs"],
+    ["put", "/api/sizzle/costs"],
     ["get", "/api/sizzle/products"],
     ["post", "/api/sizzle/products/refresh"],
     ["get", "/api/sizzle/wishes"],
@@ -357,6 +359,59 @@ describe("SizzleBrothers-Wunschliste - Negativ-Tests", () => {
       const wish = await createWish(alice, sauceId);
       const res = await call("patch", "/api/sizzle/wishes/bulk", alice, { ids: [wish.id, UNKNOWN_ID], status: "OPEN" });
       assert.equal(res.body.data.updated, 1);
+    });
+  });
+
+  describe("Versand und Rabatt (S10)", () => {
+    const getCosts = async (user: TestUser) => (await call("get", "/api/sizzle/costs", user)).body.data;
+
+    it("liefert ohne Eintrag 0/0; jeder Freigegebene setzt Versand und Rabatt, ein zweites Setzen ueberschreibt", async () => {
+      await prisma.sizzleOrderCost.deleteMany();
+      assert.deepEqual(await getCosts(alice), { shippingCents: 0, discountCents: 0 });
+
+      const saved = await call("put", "/api/sizzle/costs", bob, { shippingCents: 590, discountCents: 200 });
+      assert.equal(saved.status, 200);
+      assert.deepEqual(saved.body.data, { shippingCents: 590, discountCents: 200 });
+      assert.deepEqual(await getCosts(alice), { shippingCents: 590, discountCents: 200 });
+
+      await call("put", "/api/sizzle/costs", alice, { shippingCents: 0, discountCents: 0 });
+      assert.deepEqual(await getCosts(bob), { shippingCents: 0, discountCents: 0 });
+      assert.equal(await prisma.sizzleOrderCost.count(), 1, "immer nur eine Zeile");
+      assert.equal((await prisma.sizzleOrderCost.findUniqueOrThrow({ where: { id: 1 } })).updatedByName, "sizalice");
+    });
+
+    it("lehnt krumme Betraege, fehlende und fremde Schluessel ab (400)", async () => {
+      const bad: object[] = [
+        { shippingCents: -1, discountCents: 0 },
+        { shippingCents: 5.5, discountCents: 0 },
+        { shippingCents: "5", discountCents: 0 },
+        { shippingCents: 1_000_001, discountCents: 0 },
+        { shippingCents: 100 },
+        { discountCents: 100 },
+        {},
+        { shippingCents: 100, discountCents: 0, updatedByName: "admin" },
+        { shippingCents: 100, discountCents: 0, id: 2 }
+      ];
+      for (const body of bad) {
+        assert.equal((await call("put", "/api/sizzle/costs", alice, body)).status, 400, JSON.stringify(body));
+      }
+      assert.equal(await prisma.sizzleOrderCost.count({ where: { id: { not: 1 } } }), 0);
+    });
+
+    it("Aufraeumen setzt sie zurueck, sobald nichts mehr in der Bestellliste steht - nicht vorher", async () => {
+      await prisma.sizzleWish.deleteMany();
+      const ordered = await createWish(alice, sauceId);
+      const stays = await createWish(bob, pepperId);
+      await call("patch", `/api/sizzle/wishes/${ordered.id}`, alice, { inOrder: true, status: "DONE" });
+      await call("patch", `/api/sizzle/wishes/${stays.id}`, bob, { inOrder: true });
+      await call("put", "/api/sizzle/costs", alice, { shippingCents: 590, discountCents: 100 });
+
+      await call("delete", "/api/sizzle/wishes/done", alice);
+      assert.deepEqual(await getCosts(alice), { shippingCents: 590, discountCents: 100 }, "ein Wunsch steht noch in der Bestellliste");
+
+      await call("patch", `/api/sizzle/wishes/${stays.id}`, bob, { status: "DONE" });
+      await call("delete", "/api/sizzle/wishes/done", alice);
+      assert.deepEqual(await getCosts(alice), { shippingCents: 0, discountCents: 0 });
     });
   });
 

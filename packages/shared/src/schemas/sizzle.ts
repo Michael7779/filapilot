@@ -70,6 +70,14 @@ export type UpdateSizzleWishInput = z.infer<typeof updateSizzleWishInputSchema>;
 
 export const SIZZLE_CONTENT_FIELDS = ["productId", "quantity", "note"] as const;
 
+// Versand und Rabatt der SizzleBrothers-Bestellung als Gesamtbetrag (ganze Cent). Sie werden in der Abrechnung nach Warenwert
+// auf die Personen verteilt (Versand minus Rabatt). strict() lehnt fremde Schluessel ab.
+export const sizzleOrderCostSchema = z.object({ shippingCents: priceCentsSchema, discountCents: priceCentsSchema });
+export type SizzleOrderCost = z.infer<typeof sizzleOrderCostSchema>;
+
+export const setSizzleOrderCostInputSchema = sizzleOrderCostSchema.strict();
+export type SetSizzleOrderCostInput = z.infer<typeof setSizzleOrderCostInputSchema>;
+
 // Sammel-Aenderung fuer die Bestellliste: nur Status, Auswahl und Preis, bewusst KEIN Inhalt - strict() lehnt Produkt/Menge/
 // Notiz ab, sonst liesse sich die Ersteller-Pruefung der Einzel-Route umgehen.
 export const BULK_SIZZLE_MAX_IDS = 500;

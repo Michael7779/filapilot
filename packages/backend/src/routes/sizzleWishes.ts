@@ -134,6 +134,11 @@ sizzleWishesRouter.delete(
   asyncHandler(async (req, res) => {
     const result = await prisma.sizzleWish.deleteMany({ where: { status: "DONE" } });
     if (result.count > 0) {
+      // Versand und Rabatt gehoeren zur laufenden Bestellung: steht nichts mehr in der Bestellliste, werden sie zurueckgesetzt,
+      // damit sie nicht in die naechste Bestellung rutschen.
+      if ((await prisma.sizzleWish.count({ where: { inOrder: true } })) === 0) {
+        await prisma.sizzleOrderCost.deleteMany();
+      }
       await recordAudit({ actor: actorFromRequest(req), action: "EVENT", area: "SIZZLE", description: `${result.count} erledigte Wuensche entfernt` });
     }
     sendData(res, { deleted: result.count });

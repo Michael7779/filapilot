@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { sizzleProductLabel, type SizzleCatalog, type SizzleWish, type WishlistStatus } from "@filapilot/shared";
+import { sizzleProductLabel, type SizzleCatalog, type SizzleOrderCost, type SizzleWish, type WishlistStatus } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { STATUS_ORDER } from "../lib/wishlistStatus.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
@@ -40,6 +40,7 @@ export function SizzlePage(): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const [wishes, setWishes] = useState<SizzleWish[] | null>(null);
+  const [cost, setCost] = useState<SizzleOrderCost>({ shippingCents: 0, discountCents: 0 });
   const [catalog, setCatalog] = useState<SizzleCatalog | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +52,9 @@ export function SizzlePage(): React.JSX.Element {
 
   const loadWishes = useCallback(async (): Promise<void> => {
     try {
-      setWishes(await apiRequest<SizzleWish[]>("/sizzle/wishes"));
+      const [loadedWishes, loadedCost] = await Promise.all([apiRequest<SizzleWish[]>("/sizzle/wishes"), apiRequest<SizzleOrderCost>("/sizzle/costs")]);
+      setWishes(loadedWishes);
+      setCost(loadedCost);
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : t("sizzle.loadFailed"));
     }
@@ -121,6 +124,12 @@ export function SizzlePage(): React.JSX.Element {
     await guarded(async () => {
       await apiRequest("/sizzle/wishes/bulk", { method: "PATCH", body: JSON.stringify({ ids, ...patch }) });
       await loadWishes();
+    });
+  }
+
+  async function saveCost(next: SizzleOrderCost): Promise<void> {
+    await guarded(async () => {
+      setCost(await apiRequest<SizzleOrderCost>("/sizzle/costs", { method: "PUT", body: JSON.stringify(next) }));
     });
   }
 
@@ -266,8 +275,8 @@ export function SizzlePage(): React.JSX.Element {
         </>
       )}
 
-      {tab === "order" && wishes && <SizzleOrderView wishes={wishes} onBulk={(ids, patch) => void bulk(ids, patch)} />}
-      {tab === "settlement" && wishes && <SizzleSettlementView wishes={wishes} />}
+      {tab === "order" && wishes && <SizzleOrderView wishes={wishes} cost={cost} onBulk={(ids, patch) => void bulk(ids, patch)} onCost={(next) => void saveCost(next)} />}
+      {tab === "settlement" && wishes && <SizzleSettlementView wishes={wishes} cost={cost} />}
 
       {pickerOpen && (
         <SizzleCatalogModal

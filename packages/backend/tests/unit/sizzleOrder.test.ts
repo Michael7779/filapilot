@@ -34,7 +34,7 @@ function wish(over: Partial<Wish> & { productTitle?: string; productId?: string;
   };
 }
 
-const LABELS: SizzleSettlementLabels = { person: "Person", item: "Produkt", quantity: "Menge", unitPrice: "Preis", amount: "Betrag", total: "Summe" };
+const LABELS: SizzleSettlementLabels = { person: "Person", item: "Produkt", quantity: "Menge", unitPrice: "Preis", amount: "Betrag", extras: "Versand/Rabatt", total: "Summe" };
 
 describe("sizzleProductLabel / sizzleWishPriceCents", () => {
   it("haengt die Variante an den Titel, ausser es gibt keine", () => {
@@ -101,6 +101,86 @@ describe("computeSizzleSettlement", () => {
       settlement.persons[0]?.lines.map((line) => line.title),
       ["A (500 ml)", "Z (500 ml)"]
     );
+  });
+});
+
+describe("computeSizzleSettlement mit Versand und Rabatt", () => {
+  // anna 1400 ct, ben 2100 ct = 3500 ct Ware
+  const goods = (): Wish[] => [wish({ addedByName: "anna", quantity: 2, unitPriceCents: 700 }), wish({ addedByName: "ben", quantity: 3, unitPriceCents: 700 })];
+  const extras = (settlement: ReturnType<typeof computeSizzleSettlement>): [string, number][] => settlement.persons.map((person) => [person.name, person.extrasCents]);
+
+  it("verteilt den Versand nach Warenwert auf die Personen", () => {
+    const settlement = computeSizzleSettlement(goods(), "de", { shippingCents: 590, discountCents: 0 });
+    assert.deepEqual(extras(settlement), [
+      ["anna", 236],
+      ["ben", 354]
+    ]);
+    assert.deepEqual(
+      settlement.persons.map((person) => person.totalCents),
+      [1400 + 236, 2100 + 354]
+    );
+    assert.equal(settlement.goodsCents, 3500);
+    assert.equal(settlement.shippingCents, 590);
+    assert.equal(settlement.extrasCents, 590);
+    assert.equal(settlement.totalCents, 3500 + 590);
+  });
+
+  it("zieht einen Rabatt nach Warenwert von den Personen ab", () => {
+    const settlement = computeSizzleSettlement(goods(), "de", { shippingCents: 0, discountCents: 500 });
+    assert.deepEqual(extras(settlement), [
+      ["anna", -200],
+      ["ben", -300]
+    ]);
+    assert.equal(settlement.discountCents, 500);
+    assert.equal(settlement.extrasCents, -500);
+    assert.equal(settlement.totalCents, 3000);
+  });
+
+  it("rechnet Versand minus Rabatt zusammen", () => {
+    const settlement = computeSizzleSettlement(goods(), "de", { shippingCents: 590, discountCents: 350 });
+    assert.equal(settlement.extrasCents, 240);
+    assert.equal(settlement.totalCents, 3500 + 240);
+  });
+
+  it("verliert beim Verteilen nie einen Cent (Rundung)", () => {
+    const equal = [wish({ addedByName: "a", unitPriceCents: 100 }), wish({ addedByName: "b", unitPriceCents: 100 }), wish({ addedByName: "c", unitPriceCents: 100 })];
+    const settlement = computeSizzleSettlement(equal, "de", { shippingCents: 100, discountCents: 0 });
+    assert.equal(settlement.persons.reduce((sum, person) => sum + person.extrasCents, 0), 100);
+    assert.deepEqual(extras(settlement).map(([, cents]) => cents).sort(), [33, 33, 34]);
+    assert.equal(settlement.totalCents, 400);
+  });
+
+  it("teilt gleichmaessig, wenn alle Waren 0 kosten", () => {
+    const free = [wish({ addedByName: "a", unitPriceCents: 0 }), wish({ addedByName: "b", unitPriceCents: 0 })];
+    const settlement = computeSizzleSettlement(free, "de", { shippingCents: 500, discountCents: 0 });
+    assert.deepEqual(extras(settlement), [
+      ["a", 250],
+      ["b", 250]
+    ]);
+  });
+
+  it("ohne Angabe gibt es keine Nebenkosten (wie bisher)", () => {
+    const settlement = computeSizzleSettlement(goods(), "de");
+    assert.equal(settlement.extrasCents, 0);
+    assert.equal(settlement.totalCents, 3500);
+    assert.ok(settlement.persons.every((person) => person.extrasCents === 0 && person.totalCents === person.goodsCents));
+  });
+
+  it("Nebenkosten ohne Bestellung belasten niemanden", () => {
+    const settlement = computeSizzleSettlement([wish({ inOrder: false })], "de", { shippingCents: 590, discountCents: 0 });
+    assert.equal(settlement.totalCents, 0);
+    assert.equal(settlement.extrasCents, 0);
+  });
+
+  it("Export enthaelt Versand/Rabatt je Person", () => {
+    const settlement = computeSizzleSettlement(goods(), "de", { shippingCents: 590, discountCents: 0 });
+    const rows = buildSizzleSettlementCsv(settlement, LABELS).split("\r\n");
+    assert.ok(rows.includes("anna;Versand/Rabatt;;;2,36"));
+    assert.ok(rows.includes("anna;Summe;;;16,36"));
+    assert.equal(rows.at(-1), ";Summe;;;40,90");
+    const text = buildSizzleSettlementText(settlement, LABELS, ",");
+    assert.ok(text.includes("  Versand/Rabatt: 2,36 €"));
+    assert.ok(text.includes("anna: 16,36 €"));
   });
 });
 

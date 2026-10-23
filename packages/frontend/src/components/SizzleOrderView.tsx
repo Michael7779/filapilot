@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { groupSizzleOrderLines, sizzleProductLabel, type SizzleOrderLine, type SizzleWish, type WishlistStatus } from "@filapilot/shared";
+import { computeSizzleSettlement, groupSizzleOrderLines, sizzleProductLabel, type SizzleOrderCost, type SizzleOrderLine, type SizzleWish, type WishlistStatus } from "@filapilot/shared";
 import { formatEuro } from "../lib/formatEuro.js";
 import { STATUS_ORDER, STATUS_STYLE } from "../lib/wishlistStatus.js";
 import { EuroField } from "./EuroField.js";
@@ -14,7 +14,10 @@ export interface SizzleBulkPatch {
 
 interface SizzleOrderViewProps {
   wishes: readonly SizzleWish[];
+  // Versand und Rabatt der ganzen Bestellung
+  cost: SizzleOrderCost;
   onBulk: (ids: string[], patch: SizzleBulkPatch) => void;
+  onCost: (cost: SizzleOrderCost) => void;
 }
 
 function toStatus(value: string): WishlistStatus | null {
@@ -93,19 +96,26 @@ function OrderLine({ line, onBulk }: { line: SizzleOrderLine<SizzleWish>; onBulk
 
 // Die Bestellliste: die gewaehlten Wuensche aller Personen, je Produktvariante zusammengefasst. Der Preis hier (zunaechst der
 // Shop-Preis, z.B. wegen eines Rabatts aenderbar) ist fuer die Abrechnung massgeblich.
-export function SizzleOrderView({ wishes, onBulk }: SizzleOrderViewProps): React.JSX.Element {
+export function SizzleOrderView({ wishes, cost, onBulk, onCost }: SizzleOrderViewProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const lines = groupSizzleOrderLines(wishes, i18n.language);
   if (lines.length === 0) {
     return <p className="text-sm text-[var(--color-text-secondary)]">{t("sizzle.order.empty")}</p>;
   }
-  const total = lines.reduce((sum, line) => sum + line.wishes.reduce((lineSum, wish) => lineSum + wish.quantity * (wish.unitPriceCents ?? wish.product.priceCents), 0), 0);
-  const pieces = lines.reduce((sum, line) => sum + line.totalQuantity, 0);
+  const settlement = computeSizzleSettlement(wishes, i18n.language, cost);
+  const euro = (cents: number): string => formatEuro(cents, i18n.language);
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <p className="text-sm font-medium">{t("sizzle.order.summary", { pieces, total: formatEuro(total, i18n.language) })}</p>
+        <p className="text-sm font-medium">
+          {t("sizzle.order.summary", { pieces: settlement.itemCount, goods: euro(settlement.goodsCents), shipping: euro(settlement.shippingCents), discount: euro(settlement.discountCents), total: euro(settlement.totalCents) })}
+        </p>
         <p className="text-xs text-[var(--color-text-muted)]">{t("sizzle.order.hint")}</p>
+      </div>
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
+        <EuroField label={t("sizzle.order.shipping")} cents={cost.shippingCents} onCommit={(cents) => onCost({ ...cost, shippingCents: cents ?? 0 })} />
+        <EuroField label={t("sizzle.order.discount")} cents={cost.discountCents} onCommit={(cents) => onCost({ ...cost, discountCents: cents ?? 0 })} />
+        <p className="min-w-48 flex-1 pb-1.5 text-xs text-[var(--color-text-muted)]">{t("sizzle.order.costsHint")}</p>
       </div>
       <ul className="flex flex-col gap-2">
         {lines.map((line) => (

@@ -153,14 +153,19 @@
       "useShopPrice": "Shop-Preis {{price}} übernehmen",
       "remove": "Aus der Bestellliste",
       "empty": "Noch nichts in der Bestellliste. Hake auf der Wunschliste Produkte an.",
-      "summary": "{{pieces}} Stück, zusammen {{total}}",
+      "shipping": "Versand",
+      "discount": "Rabatt",
+      "costsHint": "Versand und Rabatt gelten für die ganze Bestellung und werden nach Warenwert auf die Personen verteilt.",
+      "summary": "{{pieces}} Stück: Ware {{goods}} · Versand {{shipping}} · Rabatt {{discount}} = {{total}}",
       "hint": "Der Preis hier ist maßgeblich für die Abrechnung. Er startet mit dem Shop-Preis und lässt sich ändern, zum Beispiel wegen eines Rabatts."
     },
     "settlement": {
       "item": "Produkt",
+      "extras": "Versand/Rabatt (anteilig)",
+      "breakdown": "Ware {{goods}} · Versand {{shipping}} · Rabatt {{discount}} = {{total}}",
       "empty": "Noch nichts in der Bestellliste.",
       "summary": "Gesamt {{total}} für {{persons}} Personen ({{pieces}} Stück)",
-      "hint": "Berechnet aus allen Einträgen der Bestellliste mit dem dort eingetragenen Preis.",
+      "hint": "Berechnet aus allen Einträgen der Bestellliste mit dem dort eingetragenen Preis. Versand und Rabatt werden nach Warenwert auf die Personen verteilt.",
       "csvFilename": "abrechnung-sizzlebrothers.csv"
     }
   },

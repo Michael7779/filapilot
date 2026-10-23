@@ -44,6 +44,7 @@ export async function createLoggedInUser(
 export async function resetInventoryData(): Promise<void> {
   await prisma.auditLog.deleteMany();
   await prisma.sizzleWish.deleteMany();
+  await prisma.sizzleOrderCost.deleteMany();
   await prisma.wishlistItem.deleteMany();
   await prisma.wishlistOrderCost.deleteMany();
   await prisma.printJob.deleteMany();

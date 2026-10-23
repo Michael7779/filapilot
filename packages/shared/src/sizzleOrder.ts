@@ -1,6 +1,9 @@
 import type { WishlistStatus } from "./schemas/wishlist.js";
 import type { SizzleProduct, SizzleWish } from "./schemas/sizzle.js";
-import { csvText, formatCentsPlain } from "./wishlistSettlement.js";
+import type { SizzleOrderCost } from "./schemas/sizzle.js";
+import { csvText, distributeCents, formatCentsPlain } from "./wishlistSettlement.js";
+
+const NO_COST: SizzleOrderCost = { shippingCents: 0, discountCents: 0 };
 
 type LabelledProduct = Pick<SizzleProduct, "title" | "variantTitle">;
 
@@ -96,35 +99,57 @@ export interface SizzleSettlementLine {
 export interface SizzlePersonSettlement {
   name: string;
   lines: SizzleSettlementLine[];
+  // Ware (Menge mal Preis)
+  goodsCents: number;
+  // Anteil an Versand minus Rabatt (kann negativ sein)
+  extrasCents: number;
   totalCents: number;
 }
 
 export interface SizzleSettlement {
   persons: SizzlePersonSettlement[];
+  goodsCents: number;
+  shippingCents: number;
+  discountCents: number;
+  // Versand minus Rabatt, soweit er auf Personen verteilt wurde (0, wenn nichts bestellt ist)
+  extrasCents: number;
   totalCents: number;
   // Stueckzahl der gesamten Bestellliste
   itemCount: number;
 }
 
 // Abrechnung der Sammelbestellung aus den Wuenschen der Bestellliste: je Person Menge mal Preis (der Preis der
-// Bestellliste, nicht der aktuelle Shop-Preis). Person = Name, der beim Hinzufuegen gespeichert wurde.
-export function computeSizzleSettlement(wishes: readonly SizzleOrderWish[], locale: string): SizzleSettlement {
+// Bestellliste, nicht der aktuelle Shop-Preis). Versand minus Rabatt wird nach Warenwert auf die Personen verteilt, bis auf den
+// Cent genau (sind alle Waren 0, gleichmaessig). Person = Name, der beim Hinzufuegen gespeichert wurde.
+export function computeSizzleSettlement(wishes: readonly SizzleOrderWish[], locale: string, cost: SizzleOrderCost = NO_COST): SizzleSettlement {
   const persons = new Map<string, SizzlePersonSettlement>();
   let itemCount = 0;
   for (const wish of wishes.filter((entry) => entry.inOrder)) {
     const unitPriceCents = sizzleWishPriceCents(wish);
     const lineCents = wish.quantity * unitPriceCents;
-    const person = persons.get(wish.addedByName) ?? { name: wish.addedByName, lines: [], totalCents: 0 };
+    const person = persons.get(wish.addedByName) ?? { name: wish.addedByName, lines: [], goodsCents: 0, extrasCents: 0, totalCents: 0 };
     person.lines.push({ wishId: wish.id, title: sizzleProductLabel(wish.product), quantity: wish.quantity, unitPriceCents, lineCents });
-    person.totalCents += lineCents;
+    person.goodsCents += lineCents;
     persons.set(wish.addedByName, person);
     itemCount += wish.quantity;
   }
   const personList = [...persons.values()].sort((a, b) => compareText(a.name, b.name, locale));
-  for (const person of personList) {
+  const shares = distributeCents(cost.shippingCents - cost.discountCents, personList.map((person) => person.goodsCents));
+  personList.forEach((person, index) => {
     person.lines.sort((a, b) => compareText(a.title, b.title, locale));
-  }
-  return { persons: personList, totalCents: personList.reduce((sum, person) => sum + person.totalCents, 0), itemCount };
+    person.extrasCents = shares[index] ?? 0;
+    person.totalCents = person.goodsCents + person.extrasCents;
+  });
+  const sum = (pick: (person: SizzlePersonSettlement) => number): number => personList.reduce((total, person) => total + pick(person), 0);
+  return {
+    persons: personList,
+    goodsCents: sum((person) => person.goodsCents),
+    shippingCents: personList.length > 0 ? cost.shippingCents : 0,
+    discountCents: personList.length > 0 ? cost.discountCents : 0,
+    extrasCents: sum((person) => person.extrasCents),
+    totalCents: sum((person) => person.totalCents),
+    itemCount
+  };
 }
 
 // Beschriftungen fuer Export und Text kommen aus den Uebersetzungen der Oberflaeche.
@@ -134,6 +159,8 @@ export interface SizzleSettlementLabels {
   quantity: string;
   unitPrice: string;
   amount: string;
+  // "Versand/Rabatt": die Zeile mit dem Anteil der Person
+  extras: string;
   total: string;
 }
 
@@ -146,6 +173,9 @@ export function buildSizzleSettlementCsv(settlement: SizzleSettlement, labels: S
     for (const line of person.lines) {
       rows.push([name, csvText(line.title), String(line.quantity), money(line.unitPriceCents), money(line.lineCents)].join(";"));
     }
+    if (person.extrasCents !== 0) {
+      rows.push([name, labels.extras, "", "", money(person.extrasCents)].join(";"));
+    }
     rows.push([name, labels.total, "", "", money(person.totalCents)].join(";"));
   }
   rows.push(["", labels.total, "", "", money(settlement.totalCents)].join(";"));
@@ -157,7 +187,8 @@ export function buildSizzleSettlementText(settlement: SizzleSettlement, labels: 
   const money = (cents: number): string => `${formatCentsPlain(cents, decimalSeparator)} €`;
   const blocks = settlement.persons.map((person) => {
     const lines = person.lines.map((line) => `  ${line.quantity}x ${line.title} à ${money(line.unitPriceCents)} = ${money(line.lineCents)}`);
-    return [`${person.name}: ${money(person.totalCents)}`, ...lines].join("\n");
+    const extras = person.extrasCents === 0 ? [] : [`  ${labels.extras}: ${money(person.extrasCents)}`];
+    return [`${person.name}: ${money(person.totalCents)}`, ...lines, ...extras].join("\n");
   });
   return [...blocks, `${labels.total}: ${money(settlement.totalCents)}`].join("\n\n");
 }

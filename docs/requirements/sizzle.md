@@ -8,7 +8,7 @@ aber mit den Produkten des Shops (Bild, Titel, Variante, Preis) statt freiem Tex
 
 Modelle: `User` (+ `isSuperAdmin`, `canUseFilament`, `canUseSizzle`), `SizzleProduct` (Katalog-Zwischenspeicher, gehoert
 ueber `SizzleWish` zum Benutzer), `SizzleWish` (Wunsch einer Person; `inOrder` = Bestellliste).
-Backend: `routes/sizzleProducts.ts`, `routes/sizzleWishes.ts`, `services/sizzleCatalogService.ts`,
+Backend: `routes/sizzleProducts.ts`, `routes/sizzleWishes.ts`, `routes/sizzleCosts.ts`, `services/sizzleCatalogService.ts`,
 `services/sizzleCatalogScheduler.ts`, `services/superAdminService.ts`, `middleware/access.ts`.
 Oberflaeche: `pages/SizzlePage.tsx` ("SizzleBrothers" in der Navigation), Freigaben im Benutzer-Dialog der Einstellungen.
 
@@ -72,6 +72,7 @@ Oberflaeche: `pages/SizzlePage.tsx` ("SizzleBrothers" in der Navigation), Freiga
   `tests/security/sizzle.test.ts`
 
 ### Wunsch-, Bestell- und Abrechnungsliste
+(S10 Versand/Rabatt steht am Ende dieses Abschnitts)
 - **S5**: `GET/POST /api/sizzle/wishes`: jeder Freigegebene sieht alle Wuensche (wer, wann) und legt eigene an; ein zweiter
   Wunsch derselben Person fuer dasselbe Produkt (offen, nicht in der Bestellliste) erhoeht die Menge. Unbekanntes oder
   nicht mehr aktives Produkt 400. Test: `tests/security/sizzle.test.ts`
@@ -91,7 +92,17 @@ Oberflaeche: `pages/SizzlePage.tsx` ("SizzleBrothers" in der Navigation), Freiga
   Abrechnung je Person. Test: `tests/unit/sizzleCatalogGroups.test.ts` (Gruppieren, Suche, Produktart-Filter); Oberflaeche manuell
   im Browser geprueft (Desktop und Handy-Breite, echter Shop).
 
+- **S10**: Ab 0.34.0: Versand und Rabatt der Bestellung (`SizzleOrderCost`, genau eine Zeile id 1, gehoert ueber `updatedByUserId` zum
+  Benutzer): `GET /api/sizzle/costs` (ohne Eintrag 0/0) und `PUT /api/sizzle/costs` (`{ shippingCents, discountCents }`, ganze Cent
+  0 bis 1.000.000, strict, sonst 400; SCOPE user: jeder Freigegebene, anonym 401, ohne Freigabe 403; Eintrag im Aenderungsprotokoll).
+  `computeSizzleSettlement` verteilt Versand minus Rabatt nach Warenwert auf die Personen der Bestellliste (groesster Rest, Summe
+  exakt, bei Ware 0 gleichmaessig; ohne Bestellung belasten sie niemanden). CSV und Text enthalten den Anteil je Person.
+  `DELETE /api/sizzle/wishes/done` setzt Versand und Rabatt zurueck, sobald nichts mehr in der Bestellliste steht. Tests:
+  `tests/security/sizzle.test.ts` (Rechte, Betraege, Zuruecksetzen), `tests/unit/sizzleOrder.test.ts` (Verteilung, Rundung, Export);
+  Oberflaeche manuell im Browser geprueft.
+
 ## 4. Bewusste Grenzen
-- Versand und Rabatte des Shops als Gesamtbetrag gibt es (noch) nicht, nur der Preis je Position ist aenderbar.
+- Versand und Rabatt sind je ein Gesamtbetrag fuer die ganze Bestellung (siehe S10); einen prozentualen Rabatt gibt es nicht, der
+  laesst sich ueber den Preis je Position abbilden.
 - Die Listen laden bis zu 500 Eintraege auf einmal (Filter im Browser), wie die Filament-Wunschliste.
 - Bilder werden direkt vom Shop (Shopify-CDN) geladen, nicht lokal zwischengespeichert.

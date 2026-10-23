@@ -153,14 +153,19 @@
       "useShopPrice": "Use shop price {{price}}",
       "remove": "Remove from order list",
       "empty": "Nothing in the order list yet. Tick products on the wishlist.",
-      "summary": "{{pieces}} items, {{total}} in total",
+      "shipping": "Shipping",
+      "discount": "Discount",
+      "costsHint": "Shipping and discount apply to the whole order and are split between people by goods value.",
+      "summary": "{{pieces}} items: goods {{goods}} · shipping {{shipping}} · discount {{discount}} = {{total}}",
       "hint": "The price here is what counts for the settlement. It starts with the shop price and can be changed, for example because of a discount."
     },
     "settlement": {
       "item": "Product",
+      "extras": "Shipping/discount (share)",
+      "breakdown": "Goods {{goods}} · shipping {{shipping}} · discount {{discount}} = {{total}}",
       "empty": "Nothing in the order list yet.",
       "summary": "{{total}} in total for {{persons}} people ({{pieces}} items)",
-      "hint": "Calculated from all entries in the order list using the price entered there.",
+      "hint": "Calculated from all entries in the order list using the price entered there. Shipping and discount are split between people by goods value.",
       "csvFilename": "settlement-sizzlebrothers.csv"
     }
   },
