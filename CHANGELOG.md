@@ -8,6 +8,22 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.36.0] - 2026-10-23
+
+### Hinzugefuegt
+- SizzleBrothers: Beim Öffnen der Wunschliste werden Produkte und Preise automatisch aktualisiert, höchstens alle 5 Minuten. Die Liste erscheint sofort, die neuen Preise ziehen nach, sobald die Aktualisierung fertig ist.
+- SizzleBrothers: Neuer Knopf "Preise aktualisieren" direkt oben auf der Seite. Er aktualisiert immer, auch innerhalb der 5 Minuten. Der Knopf im Dialog "Produkte aus dem Shop wählen" ist dafür entfallen.
+- SizzleBrothers: Die Aktualisierung zeigt ihren Fortschritt. Am Computer erscheint eine Karte mit den drei Schritten (Shop abfragen, Produkte auswerten, Preise speichern) und den vergangenen Sekunden, am Handy eine kleine Marke neben dem Knopf; ein Tipp darauf zeigt die Einzelheiten. Dauert es länger als 8 Sekunden, steht dort ein Hinweis auf eine langsame Verbindung, und die Liste bleibt in der Zwischenzeit mit dem alten Stand benutzbar.
+- SizzleBrothers: Eine laufende Aktualisierung lässt sich mit "Abbrechen" beenden, zum Beispiel bei schlechter Internetverbindung. Dabei bleibt alles unverändert; danach gibt es "Erneut versuchen". Kann der Shop nicht erreicht werden, steht das mit dem letzten bekannten Stand dabei.
+
+## [0.35.0] - 2026-10-23
+
+### Hinzugefuegt
+- SizzleBrothers-Bestellliste: Neues Feld "Rabatt in %" für die ganze Bestellung, zusätzlich zu "Rabatt in €". Der Prozent-Rabatt wird von der Ware abgezogen (auf ganze Cent gerundet) und zusammen mit Versand und dem Rabatt in Euro nach Warenwert auf die Personen verteilt. Eingabe mit Komma oder Punkt, zum Beispiel 7,5. Die Übersicht in Bestellliste und Abrechnung zeigt Ware, Versand und alle Rabatte zusammen.
+
+### Hinweis zum Update
+- Neue Spalte `discountBp` in `sizzle_order_costs`; das Update-Skript gleicht das Schema ab, bestehende Werte bleiben unverändert (0 %).
+
 ## [0.34.0] - 2026-10-21
 
 ### Hinzugefuegt

@@ -3,6 +3,7 @@ import { computeSizzleSettlement, groupSizzleOrderLines, sizzleProductLabel, typ
 import { formatEuro } from "../lib/formatEuro.js";
 import { STATUS_ORDER, STATUS_STYLE } from "../lib/wishlistStatus.js";
 import { EuroField } from "./EuroField.js";
+import { PercentField } from "./PercentField.js";
 import { SizzleThumb } from "./SizzleThumb.js";
 import { WISHLIST_INPUT_CLASS } from "./WishlistForm.js";
 
@@ -108,12 +109,13 @@ export function SizzleOrderView({ wishes, cost, onBulk, onCost }: SizzleOrderVie
     <div className="flex flex-col gap-3">
       <div>
         <p className="text-sm font-medium">
-          {t("sizzle.order.summary", { pieces: settlement.itemCount, goods: euro(settlement.goodsCents), shipping: euro(settlement.shippingCents), discount: euro(settlement.discountCents), total: euro(settlement.totalCents) })}
+          {t("sizzle.order.summary", { pieces: settlement.itemCount, goods: euro(settlement.goodsCents), shipping: euro(settlement.shippingCents), discount: euro(settlement.discountCents + settlement.percentDiscountCents), total: euro(settlement.totalCents) })}
         </p>
         <p className="text-xs text-[var(--color-text-muted)]">{t("sizzle.order.hint")}</p>
       </div>
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
         <EuroField label={t("sizzle.order.shipping")} cents={cost.shippingCents} onCommit={(cents) => onCost({ ...cost, shippingCents: cents ?? 0 })} />
+        <PercentField label={t("sizzle.order.discountPercent")} basisPoints={cost.discountBp} onCommit={(basisPoints) => onCost({ ...cost, discountBp: basisPoints })} />
         <EuroField label={t("sizzle.order.discount")} cents={cost.discountCents} onCommit={(cents) => onCost({ ...cost, discountCents: cents ?? 0 })} />
         <p className="min-w-48 flex-1 pb-1.5 text-xs text-[var(--color-text-muted)]">{t("sizzle.order.costsHint")}</p>
       </div>

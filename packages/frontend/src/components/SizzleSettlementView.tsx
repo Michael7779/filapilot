@@ -64,7 +64,7 @@ export function SizzleSettlementView({ wishes, cost }: SizzleSettlementViewProps
         </p>
       )}
       <p className="rounded-xl border border-[var(--color-border)] bg-white p-3 text-sm tabular-nums text-[var(--color-text-secondary)]">
-        {t("sizzle.settlement.breakdown", { goods: euro(settlement.goodsCents), shipping: euro(settlement.shippingCents), discount: euro(settlement.discountCents), total: euro(settlement.totalCents) })}
+        {t("sizzle.settlement.breakdown", { goods: euro(settlement.goodsCents), shipping: euro(settlement.shippingCents), discount: euro(settlement.discountCents + settlement.percentDiscountCents), total: euro(settlement.totalCents) })}
       </p>
       <section className="flex flex-col gap-3" aria-label={t("wishlist.settlement.byPerson")}>
         {settlement.persons.map((person) => (

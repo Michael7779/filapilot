@@ -9,16 +9,14 @@ interface SizzleCatalogModalProps {
   syncedAt: Date | null;
   // Fehlermeldung, wenn der Katalog nicht geladen werden konnte
   error: string | null;
-  refreshing: boolean;
   // Menge je Variante, die die angemeldete Person schon offen auf der Wunschliste hat
   mineByVariant: ReadonlyMap<string, number>;
   onAdd: (productId: string, quantity: number) => Promise<void>;
-  onRefresh: () => void;
   onClose: () => void;
 }
 
 // Auswahl der Produkte des Shops als Dialog (bleibt offen, damit man mehrere Produkte nacheinander waehlen kann).
-export function SizzleCatalogModal({ products, syncedAt, error, refreshing, mineByVariant, onAdd, onRefresh, onClose }: SizzleCatalogModalProps): React.JSX.Element {
+export function SizzleCatalogModal({ products, syncedAt, error, mineByVariant, onAdd, onClose }: SizzleCatalogModalProps): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const [search, setSearch] = useState("");
   const [productType, setProductType] = useState("");
@@ -70,9 +68,6 @@ export function SizzleCatalogModal({ products, syncedAt, error, refreshing, mine
             ))}
             {hasUntyped && <option value={NO_PRODUCT_TYPE_FILTER}>{t("sizzle.catalog.noType")}</option>}
           </select>
-          <button type="button" disabled={refreshing} onClick={onRefresh} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-medium disabled:opacity-60">
-            {refreshing ? t("sizzle.catalog.refreshing") : t("sizzle.catalog.refresh")}
-          </button>
         </div>
 
         {error && (

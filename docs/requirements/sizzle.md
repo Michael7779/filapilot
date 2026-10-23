@@ -63,13 +63,26 @@ Oberflaeche: `pages/SizzlePage.tsx` ("SizzleBrothers" in der Navigation), Freiga
 - **S2**: `syncCatalog` gleicht Zeile fuer Zeile ab (neu, geaendert) und setzt nicht mehr gelieferte Varianten auf
   `active=false` (nie loeschen). Liefert der Shop gar nichts, bleibt der Katalog unveraendert (Fehler). Gleichzeitige
   Aufrufe teilen sich einen Lauf. Test: `tests/integration/sizzleCatalogSync.test.ts`
-- **S3**: Regelmaessige Aktualisierung: beim Start und danach alle 6 Stunden (`startSizzleCatalogScheduler`), jeweils nur wenn
+- **S3**: Regelmaessige Aktualisierung im Hintergrund (ergaenzt S11): beim Start und danach alle 6 Stunden (`startSizzleCatalogScheduler`), jeweils nur wenn
   der letzte Abgleich aelter als die Mindestpause ist; Fehler werden geloggt, der alte Katalog bleibt. Test:
   `tests/unit/sizzleCatalogScheduler.test.ts`
-- **S4**: `GET /api/sizzle/products` liefert den aktiven Katalog mit Zeitpunkt des letzten Abgleichs (SCOPE user, Freigabe
-  noetig); ist der Katalog leer, wird einmal abgerufen. `POST /api/sizzle/products/refresh` stoesst einen Abgleich an,
-  hoechstens einmal pro Minute (sonst bleibt der Katalog wie er ist); schlaegt der Shop-Abruf fehl: 502. Test:
-  `tests/security/sizzle.test.ts`
+- **S4**: `GET /api/sizzle/products` liefert den aktiven Katalog mit Zeitpunkt des letzten Abgleichs (SCOPE user, Freigabe noetig); ist der
+  Katalog noch nie abgeglichen, wird einmal abgerufen (hoechstens einmal pro Minute; Shop-Fehler -> 502). Test: `tests/security/sizzle.test.ts`
+- **S11**: Ab 0.36.0: Aktualisierung beim Oeffnen der Seite und per Knopf, mit Fortschritt und Abbruch. `POST /api/sizzle/products/refresh`
+  (`{ auto?: boolean }`, strict, sonst 400) startet den Abgleich im Hintergrund und antwortet sofort mit dem Stand; `auto: true` (Seite
+  geoeffnet) nur, wenn der letzte Abgleich oder Versuch laenger als 5 Minuten her ist, ohne `auto` (Knopf) **immer**, auch innerhalb der
+  5 Minuten; ein laufender Abgleich wird nie doppelt gestartet. `GET .../refresh` liefert den Stand (`idle/running/done/cancelled/error`, Schritt
+  `fetch/parse/save`, Start/Ende, Anzahl, verstaendlicher Fehlertext ohne Interna). `POST .../refresh/cancel` bricht einen laufenden Abgleich ab
+  (Abruf beim Shop wird beendet, es wird nichts gespeichert, der Katalog bleibt unveraendert); im Schritt "save" ist kein Abbruch mehr moeglich.
+  Jeder Freigegebene darf starten und abbrechen (anonym 401, ohne Freigabe 403); ein manueller Start steht im Aenderungsprotokoll, der
+  automatische nicht. Tests: `tests/security/sizzle.test.ts`, `tests/integration/sizzleCatalogSync.test.ts` (Fortschritt, Abbruch, Pausen, Fehler)
+- **S12**: Oberflaeche der Aktualisierung (`useSizzleRefresh`, `lib/sizzleRefresh.ts`): beim Oeffnen der Seite erscheint die Liste sofort, der
+  Abgleich laeuft im Hintergrund und die Preise ziehen nach. Desktop (ab md): `SizzleRefreshCard` mit den drei Schritten, Balken, Sekundenzaehler,
+  "Abbrechen" und dem Knopf "Preise aktualisieren" (im Ruhezustand). Handy: `SizzleRefreshChip`, eine kleine Marke neben dem Knopf (im Ruhezustand
+  selbst der Aktualisieren-Knopf; Details und "Abbrechen" im Feld, das sich bei langsamer Verbindung oder Fehler von selbst oeffnet). Ab 8 s Hinweis
+  "dauert laenger als ueblich"; fallen mehrere Abfragen des Stands aus, "Verbindung unterbrochen". Abbrechen gilt sofort in der Anzeige, auch wenn
+  der Server nicht erreichbar ist. Der Knopf im Auswahldialog entfaellt. Test: `packages/frontend/tests/unit/sizzleRefresh.test.ts` (Zustaende,
+  Schritte, Balken); Oberflaeche manuell im Browser geprueft (Desktop und Handy-Breite, mit kuenstlich verlangsamtem Shop).
 
 ### Wunsch-, Bestell- und Abrechnungsliste
 (S10 Versand/Rabatt steht am Ende dieses Abschnitts)
@@ -96,13 +109,16 @@ Oberflaeche: `pages/SizzlePage.tsx` ("SizzleBrothers" in der Navigation), Freiga
   Benutzer): `GET /api/sizzle/costs` (ohne Eintrag 0/0) und `PUT /api/sizzle/costs` (`{ shippingCents, discountCents }`, ganze Cent
   0 bis 1.000.000, strict, sonst 400; SCOPE user: jeder Freigegebene, anonym 401, ohne Freigabe 403; Eintrag im Aenderungsprotokoll).
   `computeSizzleSettlement` verteilt Versand minus Rabatt nach Warenwert auf die Personen der Bestellliste (groesster Rest, Summe
-  exakt, bei Ware 0 gleichmaessig; ohne Bestellung belasten sie niemanden). CSV und Text enthalten den Anteil je Person.
+  exakt, bei Ware 0 gleichmaessig; ohne Bestellung belasten sie niemanden). Ab 0.35.0 gibt es zusaetzlich einen Prozent-Rabatt auf die
+  Ware (`discountBp`, Hundertstel-Prozent 0..10000, auf ganze Cent gerundet), der zusammen mit Versand und Betrags-Rabatt verteilt wird;
+  fehlt `discountBp` im PUT, bleibt der gespeicherte Wert (aeltere Oberflaeche); ungueltig (negativ, ueber 100 %, Dezimal, Text) 400.
+  Eingabe in der Oberflaeche ueber `parsePercentInput` (0 bis 100, hoechstens zwei Nachkommastellen, Komma oder Punkt). CSV und Text enthalten den Anteil je Person.
   `DELETE /api/sizzle/wishes/done` setzt Versand und Rabatt zurueck, sobald nichts mehr in der Bestellliste steht. Tests:
-  `tests/security/sizzle.test.ts` (Rechte, Betraege, Zuruecksetzen), `tests/unit/sizzleOrder.test.ts` (Verteilung, Rundung, Export);
+  `tests/security/sizzle.test.ts` (Rechte, Betraege, Zuruecksetzen), `tests/unit/sizzleOrder.test.ts` (Verteilung, Rundung, Prozent-Rabatt, Export), `tests/unit/percent.test.ts` (Eingabe);
   Oberflaeche manuell im Browser geprueft.
 
 ## 4. Bewusste Grenzen
-- Versand und Rabatt sind je ein Gesamtbetrag fuer die ganze Bestellung (siehe S10); einen prozentualen Rabatt gibt es nicht, der
-  laesst sich ueber den Preis je Position abbilden.
+- Versand und Rabatte gelten fuer die ganze Bestellung (siehe S10), nicht je Produkt; ein Rabatt nur auf einzelne Produkte laesst sich
+  ueber den Preis je Position abbilden.
 - Die Listen laden bis zu 500 Eintraege auf einmal (Filter im Browser), wie die Filament-Wunschliste.
 - Bilder werden direkt vom Shop (Shopify-CDN) geladen, nicht lokal zwischengespeichert.

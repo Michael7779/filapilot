@@ -68,14 +68,21 @@ export const updateSizzleWishInputSchema = z
   .partial();
 export type UpdateSizzleWishInput = z.infer<typeof updateSizzleWishInputSchema>;
 
+// Aktualisierung anstossen: auto = beim Oeffnen der Seite (nur wenn der letzte Abgleich laenger als die Mindestpause her ist),
+// sonst per Knopf (immer). strict() lehnt fremde Schluessel ab.
+export const sizzleRefreshRequestSchema = z.object({ auto: z.boolean().optional().default(false) }).strict();
+export type SizzleRefreshRequest = z.infer<typeof sizzleRefreshRequestSchema>;
+
 export const SIZZLE_CONTENT_FIELDS = ["productId", "quantity", "note"] as const;
 
-// Versand und Rabatt der SizzleBrothers-Bestellung als Gesamtbetrag (ganze Cent). Sie werden in der Abrechnung nach Warenwert
-// auf die Personen verteilt (Versand minus Rabatt). strict() lehnt fremde Schluessel ab.
-export const sizzleOrderCostSchema = z.object({ shippingCents: priceCentsSchema, discountCents: priceCentsSchema });
+// Versand und Rabatt der SizzleBrothers-Bestellung: Versand und Rabatt als Gesamtbetrag (ganze Cent) sowie ein Prozent-Rabatt auf die
+// Ware (Hundertstel-Prozent: 10 % = 1000). Alles wird in der Abrechnung nach Warenwert auf die Personen verteilt.
+const basisPointsSchema = z.number().int().min(0).max(10_000);
+export const sizzleOrderCostSchema = z.object({ shippingCents: priceCentsSchema, discountCents: priceCentsSchema, discountBp: basisPointsSchema });
 export type SizzleOrderCost = z.infer<typeof sizzleOrderCostSchema>;
 
-export const setSizzleOrderCostInputSchema = sizzleOrderCostSchema.strict();
+// Eingabe: discountBp darf fehlen (aeltere Oberflaeche) - dann bleibt der gespeicherte Wert. strict() lehnt fremde Schluessel ab.
+export const setSizzleOrderCostInputSchema = z.object({ shippingCents: priceCentsSchema, discountCents: priceCentsSchema, discountBp: basisPointsSchema.optional() }).strict();
 export type SetSizzleOrderCostInput = z.infer<typeof setSizzleOrderCostInputSchema>;
 
 // Sammel-Aenderung fuer die Bestellliste: nur Status, Auswahl und Preis, bewusst KEIN Inhalt - strict() lehnt Produkt/Menge/

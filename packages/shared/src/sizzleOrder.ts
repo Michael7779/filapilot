@@ -3,7 +3,9 @@ import type { SizzleProduct, SizzleWish } from "./schemas/sizzle.js";
 import type { SizzleOrderCost } from "./schemas/sizzle.js";
 import { csvText, distributeCents, formatCentsPlain } from "./wishlistSettlement.js";
 
-const NO_COST: SizzleOrderCost = { shippingCents: 0, discountCents: 0 };
+// discountBp darf fehlen (= 0 %)
+export type SizzleCostInput = Omit<SizzleOrderCost, "discountBp"> & { discountBp?: number };
+const NO_COST: SizzleCostInput = { shippingCents: 0, discountCents: 0, discountBp: 0 };
 
 type LabelledProduct = Pick<SizzleProduct, "title" | "variantTitle">;
 
@@ -110,8 +112,12 @@ export interface SizzleSettlement {
   persons: SizzlePersonSettlement[];
   goodsCents: number;
   shippingCents: number;
+  // Rabatt als Betrag
   discountCents: number;
-  // Versand minus Rabatt, soweit er auf Personen verteilt wurde (0, wenn nichts bestellt ist)
+  // Prozent-Rabatt auf die Ware, in Cent umgerechnet (auf ganze Cent gerundet)
+  percentDiscountCents: number;
+  discountBp: number;
+  // Versand minus Rabatte, soweit er auf Personen verteilt wurde (0, wenn nichts bestellt ist)
   extrasCents: number;
   totalCents: number;
   // Stueckzahl der gesamten Bestellliste
@@ -121,7 +127,7 @@ export interface SizzleSettlement {
 // Abrechnung der Sammelbestellung aus den Wuenschen der Bestellliste: je Person Menge mal Preis (der Preis der
 // Bestellliste, nicht der aktuelle Shop-Preis). Versand minus Rabatt wird nach Warenwert auf die Personen verteilt, bis auf den
 // Cent genau (sind alle Waren 0, gleichmaessig). Person = Name, der beim Hinzufuegen gespeichert wurde.
-export function computeSizzleSettlement(wishes: readonly SizzleOrderWish[], locale: string, cost: SizzleOrderCost = NO_COST): SizzleSettlement {
+export function computeSizzleSettlement(wishes: readonly SizzleOrderWish[], locale: string, cost: SizzleCostInput = NO_COST): SizzleSettlement {
   const persons = new Map<string, SizzlePersonSettlement>();
   let itemCount = 0;
   for (const wish of wishes.filter((entry) => entry.inOrder)) {
@@ -134,7 +140,10 @@ export function computeSizzleSettlement(wishes: readonly SizzleOrderWish[], loca
     itemCount += wish.quantity;
   }
   const personList = [...persons.values()].sort((a, b) => compareText(a.name, b.name, locale));
-  const shares = distributeCents(cost.shippingCents - cost.discountCents, personList.map((person) => person.goodsCents));
+  const goodsTotal = personList.reduce((total, person) => total + person.goodsCents, 0);
+  const discountBp = cost.discountBp ?? 0;
+  const percentDiscountCents = Math.round((goodsTotal * discountBp) / 10_000);
+  const shares = distributeCents(cost.shippingCents - cost.discountCents - percentDiscountCents, personList.map((person) => person.goodsCents));
   personList.forEach((person, index) => {
     person.lines.sort((a, b) => compareText(a.title, b.title, locale));
     person.extrasCents = shares[index] ?? 0;
@@ -146,6 +155,8 @@ export function computeSizzleSettlement(wishes: readonly SizzleOrderWish[], loca
     goodsCents: sum((person) => person.goodsCents),
     shippingCents: personList.length > 0 ? cost.shippingCents : 0,
     discountCents: personList.length > 0 ? cost.discountCents : 0,
+    percentDiscountCents,
+    discountBp: personList.length > 0 ? discountBp : 0,
     extrasCents: sum((person) => person.extrasCents),
     totalCents: sum((person) => person.totalCents),
     itemCount

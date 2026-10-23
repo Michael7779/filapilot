@@ -5,7 +5,10 @@ import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { STATUS_ORDER } from "../lib/wishlistStatus.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 import { useAuthStore } from "../stores/useAuthStore.js";
+import { useSizzleRefresh } from "../hooks/useSizzleRefresh.js";
 import { SizzleCatalogModal } from "../components/SizzleCatalogModal.js";
+import { SizzleRefreshCard } from "../components/SizzleRefreshCard.js";
+import { SizzleRefreshChip } from "../components/SizzleRefreshChip.js";
 import { SizzleOrderView, type SizzleBulkPatch } from "../components/SizzleOrderView.js";
 import { SizzleSettlementView } from "../components/SizzleSettlementView.js";
 import { SizzleWishEditModal } from "../components/SizzleWishEditModal.js";
@@ -40,13 +43,12 @@ export function SizzlePage(): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const [wishes, setWishes] = useState<SizzleWish[] | null>(null);
-  const [cost, setCost] = useState<SizzleOrderCost>({ shippingCents: 0, discountCents: 0 });
+  const [cost, setCost] = useState<SizzleOrderCost>({ shippingCents: 0, discountCents: 0, discountBp: 0 });
   const [catalog, setCatalog] = useState<SizzleCatalog | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<SizzleTab>("list");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState<SizzleWish | null>(null);
   const [filter, setFilter] = useState<WishFilter>(EMPTY_FILTER);
 
@@ -69,10 +71,21 @@ export function SizzlePage(): React.JSX.Element {
     }
   }, [t]);
 
+  // Ist ein Abgleich mit dem Shop fertig, kommen neue Preise und Produkte (auch in bestehenden Wuenschen)
+  const refresh = useSizzleRefresh(
+    useCallback(() => {
+      void loadCatalog();
+      void loadWishes();
+    }, [loadCatalog, loadWishes])
+  );
+  const startRefresh = refresh.start;
+
+  // Beim Oeffnen der Seite: Liste sofort zeigen und im Hintergrund aktualisieren (hoechstens alle 5 Minuten)
   useEffect(() => {
     void loadWishes();
     void loadCatalog();
-  }, [loadWishes, loadCatalog]);
+    void startRefresh(true);
+  }, [loadWishes, loadCatalog, startRefresh]);
 
   // Fehler bei Aktionen anzeigen statt sie zu verschlucken; im Auswahldialog dort, sonst auf der Seite
   async function guarded(action: () => Promise<void>): Promise<void> {
@@ -86,19 +99,6 @@ export function SizzlePage(): React.JSX.Element {
       } else {
         setError(message);
       }
-    }
-  }
-
-  async function refreshCatalog(): Promise<void> {
-    setRefreshing(true);
-    try {
-      setCatalog(await apiRequest<SizzleCatalog>("/sizzle/products/refresh", { method: "POST" }));
-      setCatalogError(null);
-      await loadWishes();
-    } catch (err) {
-      setCatalogError(err instanceof ApiRequestError ? err.message : t("sizzle.catalog.loadFailed"));
-    } finally {
-      setRefreshing(false);
     }
   }
 
@@ -196,9 +196,17 @@ export function SizzlePage(): React.JSX.Element {
           <h2 className="text-lg font-bold">{t("sizzle.title")}</h2>
           <p className="text-sm text-[var(--color-text-secondary)]">{t("sizzle.hint")}</p>
         </div>
-        <button type="button" onClick={() => setPickerOpen(true)} className="rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: "var(--accent)" }}>
-          {t("sizzle.pick")}
-        </button>
+        <div className="relative flex w-full items-center gap-2 md:w-auto">
+          <button type="button" onClick={() => setPickerOpen(true)} className="rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: "var(--accent)" }}>
+            {t("sizzle.pick")}
+          </button>
+          <div className="md:hidden">
+            <SizzleRefreshChip view={refresh} syncedAt={catalog?.syncedAt ?? null} onRefresh={() => void startRefresh(false)} onCancel={refresh.cancel} />
+          </div>
+        </div>
+      </div>
+      <div className="hidden md:block">
+        <SizzleRefreshCard view={refresh} syncedAt={catalog?.syncedAt ?? null} onRefresh={() => void startRefresh(false)} onCancel={refresh.cancel} />
       </div>
 
       <div role="tablist" className="flex gap-1 self-start rounded-xl border border-[var(--color-border)] bg-white p-1">
@@ -283,10 +291,8 @@ export function SizzlePage(): React.JSX.Element {
           products={catalog?.products ?? []}
           syncedAt={catalog?.syncedAt ?? null}
           error={catalogError}
-          refreshing={refreshing}
           mineByVariant={mineByVariant}
           onAdd={addWish}
-          onRefresh={() => void refreshCatalog()}
           onClose={() => setPickerOpen(false)}
         />
       )}

@@ -3,8 +3,11 @@ import assert from "node:assert/strict";
 import { prisma } from "../../src/prisma.js";
 import { AppError } from "../../src/lib/apiResult.js";
 import {
+  cancelCatalogSync,
+  getRefreshStatus,
   loadCatalog,
   refreshCatalogIfDue,
+  startCatalogRefresh,
   resetCatalogAttemptForTests,
   setCatalogFetcherForTests,
   syncCatalog
@@ -133,6 +136,169 @@ describe("Abgleich des Sizzle-Katalogs mit dem Shop (echte DB, Shop gefaket)", (
     assert.equal(await refreshCatalogIfDue(60_000), true);
     assert.equal(await refreshCatalogIfDue(60_000), false);
     assert.equal(shop.calls(), 1);
+  });
+
+  describe("Fortschritt, Abbruch und Start", () => {
+    const oneProduct = (): unknown => ({ products: [product(1, [{ id: 11, title: "A", price: "1.00" }])] });
+    // Ein Abruf, der haengt, bis man ihn freigibt oder abbricht (wie eine schlechte Verbindung)
+    function hangingShop(): { fetcher: (page: number, signal?: AbortSignal) => Promise<unknown>; release: () => void; sawSignal: () => boolean } {
+      let release: () => void = () => undefined;
+      let seen = false;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return {
+        fetcher: async (_page, signal) => {
+          seen = signal !== undefined;
+          await Promise.race([
+            gate,
+            new Promise<never>((_, reject) => signal?.addEventListener("abort", () => reject(new Error("abgebrochen")), { once: true }))
+          ]);
+          return oneProduct();
+        },
+        release,
+        sawSignal: () => seen
+      };
+    }
+
+    it("meldet vor dem ersten Lauf 'idle'", () => {
+      assert.deepEqual(getRefreshStatus(), { state: "idle", phase: null, startedAt: null, finishedAt: null, total: null, message: null });
+    });
+
+    it("meldet waehrend des Abrufs 'running' im Schritt 'fetch' und danach 'done' mit Anzahl", async () => {
+      const shop = hangingShop();
+      setCatalogFetcherForTests(shop.fetcher);
+      const run = syncCatalog();
+      const during = getRefreshStatus();
+      assert.equal(during.state, "running");
+      assert.equal(during.phase, "fetch");
+      assert.ok(during.startedAt);
+      assert.equal(during.finishedAt, null);
+
+      shop.release();
+      await run;
+      const after = getRefreshStatus();
+      assert.equal(after.state, "done");
+      assert.equal(after.phase, null);
+      assert.equal(after.total, 1);
+      assert.ok(after.finishedAt);
+    });
+
+    it("gibt dem Abruf ein Abbruch-Signal mit", async () => {
+      const shop = hangingShop();
+      setCatalogFetcherForTests(shop.fetcher);
+      const run = syncCatalog();
+      shop.release();
+      await run;
+      assert.equal(shop.sawSignal(), true);
+    });
+
+    it("bricht einen haengenden Abruf ab: 'cancelled', der Katalog bleibt unveraendert", async () => {
+      setCatalogFetcherForTests(fakeShop([[product(1, [{ id: 11, title: "A", price: "1.00" }])]]).fetcher);
+      await syncCatalog();
+
+      const shop = hangingShop();
+      setCatalogFetcherForTests(shop.fetcher);
+      const run = syncCatalog();
+      const outcome = assert.rejects(run, (err) => err instanceof AppError && err.code === "CONFLICT");
+      assert.equal(cancelCatalogSync(), true);
+      await outcome;
+
+      const status = getRefreshStatus();
+      assert.equal(status.state, "cancelled");
+      assert.equal(status.phase, null);
+      assert.ok(status.finishedAt);
+      assert.equal((await loadCatalog()).products.length, 1);
+      assert.equal((await prisma.sizzleProduct.findUniqueOrThrow({ where: { shopifyVariantId: "11" } })).priceCents, 100);
+    });
+
+    it("bricht auch ab, wenn der Abruf das Signal ignoriert und danach doch antwortet (es wird nichts gespeichert)", async () => {
+      let answer: ((value: unknown) => void) | undefined;
+      setCatalogFetcherForTests(
+        () =>
+          new Promise((resolve) => {
+            answer = resolve;
+          })
+      );
+      const run = syncCatalog();
+      const outcome = assert.rejects(run, (err) => err instanceof AppError && err.code === "CONFLICT");
+      cancelCatalogSync();
+      answer?.(oneProduct());
+      await outcome;
+      assert.equal(getRefreshStatus().state, "cancelled");
+      assert.equal(await prisma.sizzleProduct.count(), 0);
+    });
+
+    it("Abbrechen ohne laufenden Abgleich tut nichts", () => {
+      assert.equal(cancelCatalogSync(), false);
+      assert.equal(getRefreshStatus().state, "idle");
+    });
+
+    it("meldet einen Fehler des Shops mit verstaendlichem Text", async () => {
+      setCatalogFetcherForTests(() => Promise.reject(new AppError("UPSTREAM_ERROR", "Der SizzleBrothers-Shop ist gerade nicht erreichbar.")));
+      await assert.rejects(syncCatalog());
+      const status = getRefreshStatus();
+      assert.equal(status.state, "error");
+      assert.equal(status.message, "Der SizzleBrothers-Shop ist gerade nicht erreichbar.");
+    });
+
+    it("kennt nach einem unerwarteten Fehler nur einen allgemeinen Text (keine Interna)", async () => {
+      setCatalogFetcherForTests(() => Promise.reject(new Error("ECONNRESET geheimer-interner-host:443")));
+      await assert.rejects(syncCatalog());
+      const status = getRefreshStatus();
+      assert.equal(status.state, "error");
+      assert.equal(status.message?.includes("geheimer-interner-host"), false);
+    });
+
+    it("startCatalogRefresh startet im Hintergrund und kehrt sofort zurueck", async () => {
+      const shop = hangingShop();
+      setCatalogFetcherForTests(shop.fetcher);
+      const started = await startCatalogRefresh(0);
+      assert.equal(started.started, true);
+      assert.equal(started.status.state, "running");
+
+      const joined = await startCatalogRefresh(0);
+      assert.equal(joined.started, false, "ein laufender Abgleich wird nicht doppelt gestartet");
+      assert.equal(joined.status.state, "running");
+
+      shop.release();
+      while (getRefreshStatus().state === "running") {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      assert.equal(getRefreshStatus().state, "done");
+    });
+
+    it("mit Mindestpause startet nur, wenn der letzte Abgleich lange genug her ist; ohne Pause (Knopf) immer", async () => {
+      const shop = fakeShop([[product(1, [{ id: 11, title: "A", price: "1.00" }])]]);
+      setCatalogFetcherForTests(shop.fetcher);
+      await syncCatalog();
+      assert.equal(shop.calls(), 1);
+
+      const auto = await startCatalogRefresh(5 * 60_000);
+      assert.equal(auto.started, false, "innerhalb von 5 Minuten kein automatischer Abgleich");
+      assert.equal(shop.calls(), 1);
+
+      const manual = await startCatalogRefresh(0);
+      assert.equal(manual.started, true, "der Knopf aktualisiert immer");
+      while (getRefreshStatus().state === "running") {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      assert.equal(shop.calls(), 2);
+    });
+
+    it("ein fehlgeschlagener Start zaehlt als Versuch fuer die Mindestpause, ein Neustart nach Abbruch ist sofort moeglich", async () => {
+      setCatalogFetcherForTests(() => Promise.reject(new AppError("UPSTREAM_ERROR", "down")));
+      await startCatalogRefresh(5 * 60_000);
+      while (getRefreshStatus().state === "running") {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      assert.equal(getRefreshStatus().state, "error");
+      assert.equal((await startCatalogRefresh(5 * 60_000)).started, false);
+      assert.equal((await startCatalogRefresh(0)).started, true);
+      while (getRefreshStatus().state === "running") {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    });
   });
 
   it("zaehlt auch einen fehlgeschlagenen Versuch als Pause", async () => {

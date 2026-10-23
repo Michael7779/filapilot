@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { SizzleProduct as PrismaSizzleProduct } from "@prisma/client";
-import type { SizzleCatalog, SizzleProduct } from "@filapilot/shared";
+import type { SizzleCatalog, SizzleProduct, SizzleRefreshPhase, SizzleRefreshStatus } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { logger } from "../logger.js";
 import { AppError } from "../lib/apiResult.js";
@@ -102,16 +102,21 @@ export function parseShopifyProducts(json: unknown): { variants: ParsedVariant[]
   return { variants, skipped };
 }
 
-export type PageFetcher = (page: number) => Promise<unknown>;
+// signal: ein Abbruch durch den Benutzer (zusaetzlich zum eigenen Zeitlimit)
+export type PageFetcher = (page: number, signal?: AbortSignal) => Promise<unknown>;
 
-async function fetchShopPage(page: number): Promise<unknown> {
+async function fetchShopPage(page: number, signal?: AbortSignal): Promise<unknown> {
   let response: Response;
   try {
     response = await fetch(`${PRODUCTS_URL}?limit=${PAGE_SIZE}&page=${page}`, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      signal: AbortSignal.any([AbortSignal.timeout(FETCH_TIMEOUT_MS), ...(signal ? [signal] : [])]),
       headers: { Accept: "application/json", "User-Agent": "FilaPilot (self-hosted)" }
     });
   } catch (err) {
+    if (signal?.aborted) {
+      // Vom Benutzer abgebrochen, kein Fehler des Shops
+      throw err;
+    }
     logger.warn("SizzleBrothers-Shop nicht erreichbar", { err });
     throw new AppError("UPSTREAM_ERROR", "Der SizzleBrothers-Shop ist gerade nicht erreichbar.");
   }
@@ -122,6 +127,9 @@ async function fetchShopPage(page: number): Promise<unknown> {
   try {
     return await response.json();
   } catch (err) {
+    if (signal?.aborted) {
+      throw err;
+    }
     logger.warn("SizzleBrothers-Shop lieferte kein lesbares JSON", { err });
     throw new AppError("UPSTREAM_ERROR", "Die Antwort des SizzleBrothers-Shops ist nicht lesbar.");
   }
@@ -134,21 +142,29 @@ export function setCatalogFetcherForTests(fetcher: PageFetcher | null): void {
   pageFetcher = fetcher ?? fetchShopPage;
 }
 
-async function fetchAllVariants(fetchPage: PageFetcher): Promise<ParsedVariant[]> {
-  const all: ParsedVariant[] = [];
+// Holt alle Seiten des Shops (Schritt "fetch"): weitere Seiten gibt es nur, wenn die Seite voll war.
+async function fetchAllPages(fetchPage: PageFetcher, signal: AbortSignal): Promise<unknown[]> {
+  const pages: unknown[] = [];
   for (let page = 1; page <= MAX_PAGES; page += 1) {
-    const { variants, skipped } = parseShopifyProducts(await fetchPage(page));
-    if (skipped > 0) {
-      logger.warn("Einige Shop-Produkte waren unbrauchbar und wurden uebersprungen", { page, skipped });
-    }
-    all.push(...variants);
-    // Mehr als eine Seite gibt es nur, wenn die Seite voll war (Produkte, nicht Varianten, zaehlen)
-    const productCount = new Set(variants.map((variant) => variant.shopifyProductId)).size;
-    if (productCount < PAGE_SIZE) {
+    const raw = await fetchPage(page, signal);
+    // Eine Antwort nach dem Abbruch (der Abruf hat das Signal ignoriert) wird verworfen
+    signal.throwIfAborted();
+    pages.push(raw);
+    if (z.object({ products: z.array(z.unknown()) }).parse(raw).products.length < PAGE_SIZE) {
       break;
     }
   }
-  return all;
+  return pages;
+}
+
+function parseAllPages(pages: readonly unknown[]): ParsedVariant[] {
+  return pages.flatMap((raw, index) => {
+    const { variants, skipped } = parseShopifyProducts(raw);
+    if (skipped > 0) {
+      logger.warn("Einige Shop-Produkte waren unbrauchbar und wurden uebersprungen", { page: index + 1, skipped });
+    }
+    return variants;
+  });
 }
 
 export interface SyncResult {
@@ -156,21 +172,70 @@ export interface SyncResult {
   deactivated: number;
 }
 
+const IDLE_STATUS: SizzleRefreshStatus = { state: "idle", phase: null, startedAt: null, finishedAt: null, total: null, message: null };
 let running: Promise<SyncResult> | null = null;
+let controller: AbortController | null = null;
 let lastAttemptAt: Date | null = null;
+let progress: SizzleRefreshStatus = IDLE_STATUS;
+
+export function getRefreshStatus(): SizzleRefreshStatus {
+  return { ...progress };
+}
+
+function setPhase(phase: SizzleRefreshPhase): void {
+  progress = { ...progress, phase };
+}
+
+// Bricht einen laufenden Abgleich ab (Abruf beim Shop wird beendet, es wird nichts gespeichert). Ab dem Speichern geht das nicht
+// mehr - das dauert nur einen Moment und laesst die Datenbank sonst halb aktualisiert zurueck. Liefert, ob abgebrochen wurde.
+export function cancelCatalogSync(): boolean {
+  if (!running || !controller || progress.phase === "save") {
+    return false;
+  }
+  controller.abort();
+  return true;
+}
 
 // Gleicht den Katalog mit dem Shop ab: neue/geaenderte Varianten werden gespeichert, nicht mehr gelieferte auf inaktiv gesetzt
-// (nie geloescht, bestehende Wuensche bleiben lesbar). Gleichzeitige Aufrufe teilen sich einen Lauf.
+// (nie geloescht, bestehende Wuensche bleiben lesbar). Gleichzeitige Aufrufe teilen sich einen Lauf; der Stand steht in getRefreshStatus().
 export function syncCatalog(): Promise<SyncResult> {
-  running ??= runSync(pageFetcher, new Date()).finally(() => {
-    running = null;
-  });
+  if (!running) {
+    const own = new AbortController();
+    controller = own;
+    running = runTracked(own.signal).finally(() => {
+      running = null;
+      controller = null;
+    });
+  }
   return running;
 }
 
-async function runSync(fetchPage: PageFetcher, now: Date): Promise<SyncResult> {
-  lastAttemptAt = now;
-  const variants = await fetchAllVariants(fetchPage);
+async function runTracked(signal: AbortSignal): Promise<SyncResult> {
+  const startedAt = new Date();
+  lastAttemptAt = startedAt;
+  progress = { state: "running", phase: "fetch", startedAt, finishedAt: null, total: null, message: null };
+  try {
+    const result = await runSync(pageFetcher, startedAt, signal);
+    progress = { state: "done", phase: null, startedAt, finishedAt: new Date(), total: result.total, message: null };
+    return result;
+  } catch (err) {
+    if (signal.aborted) {
+      progress = { state: "cancelled", phase: null, startedAt, finishedAt: new Date(), total: null, message: null };
+      throw new AppError("CONFLICT", "Die Aktualisierung wurde abgebrochen.");
+    }
+    if (!(err instanceof AppError)) {
+      logger.error("Abgleich des SizzleBrothers-Katalogs fehlgeschlagen", { err });
+    }
+    const message = err instanceof AppError ? err.message : "Die Aktualisierung ist fehlgeschlagen.";
+    progress = { state: "error", phase: null, startedAt, finishedAt: new Date(), total: null, message };
+    throw err;
+  }
+}
+
+async function runSync(fetchPage: PageFetcher, now: Date, signal: AbortSignal): Promise<SyncResult> {
+  const pages = await fetchAllPages(fetchPage, signal);
+  setPhase("parse");
+  const variants = parseAllPages(pages);
   if (variants.length === 0) {
     throw new AppError("UPSTREAM_ERROR", "Der SizzleBrothers-Shop lieferte keine Produkte.");
   }
@@ -186,6 +251,8 @@ async function runSync(fetchPage: PageFetcher, now: Date): Promise<SyncResult> {
     active: true,
     syncedAt: now
   });
+  signal.throwIfAborted();
+  setPhase("save");
   const deactivated = await prisma.$transaction(
     async (tx) => {
       for (const variant of variants) {
@@ -227,9 +294,28 @@ export async function refreshCatalogIfDue(minIntervalMs: number): Promise<boolea
   return true;
 }
 
+// Gleicht im Hintergrund ab und kehrt sofort zurueck (der Stand steht in getRefreshStatus). Mit Mindestpause (> 0) nur, wenn der
+// letzte Abgleich oder Versuch lange genug her ist (Aufruf der Seite); mit 0 immer (Knopf). Laeuft schon einer, wird er nicht doppelt gestartet.
+export async function startCatalogRefresh(minIntervalMs: number): Promise<{ started: boolean; status: SizzleRefreshStatus }> {
+  const notStarted = (): { started: boolean; status: SizzleRefreshStatus } => ({ started: false, status: getRefreshStatus() });
+  if (running) {
+    return notStarted();
+  }
+  if (minIntervalMs > 0 && !isCatalogDue(await lastCatalogSyncAt(), lastAttemptAt, new Date(), minIntervalMs)) {
+    return notStarted();
+  }
+  if (running) {
+    return notStarted();
+  }
+  // Das Ergebnis steht im Status, ein Fehler ist in runTracked bzw. beim Abruf schon protokolliert
+  syncCatalog().catch(() => undefined);
+  return { started: true, status: getRefreshStatus() };
+}
+
 // Nach einem Neustart weiss der Speicher nichts mehr vom letzten Versuch (Tests).
 export function resetCatalogAttemptForTests(): void {
   lastAttemptAt = null;
+  progress = IDLE_STATUS;
 }
 
 function smallImage(url: string | null): string | null {

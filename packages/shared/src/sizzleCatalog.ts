@@ -11,6 +11,22 @@ export interface SizzleProductGroup {
   variants: SizzleProduct[];
 }
 
+export type SizzleRefreshState = "idle" | "running" | "done" | "cancelled" | "error";
+// Schritte des Abgleichs: Shop abfragen, Antwort auswerten, Katalog speichern (ab hier ist ein Abbruch nicht mehr moeglich)
+export type SizzleRefreshPhase = "fetch" | "parse" | "save";
+
+// Stand des Katalog-Abgleichs mit dem Shop (fuer die Fortschrittsanzeige). Es gibt hoechstens einen Abgleich gleichzeitig.
+export interface SizzleRefreshStatus {
+  state: SizzleRefreshState;
+  phase: SizzleRefreshPhase | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  // Anzahl Produktvarianten nach einem erfolgreichen Abgleich
+  total: number | null;
+  // Verstaendlicher Text bei einem Fehler
+  message: string | null;
+}
+
 // Filterwert fuer "Produkte ohne Produktart" (ein leerer Wert heisst "alle")
 export const NO_PRODUCT_TYPE_FILTER = "none";
 

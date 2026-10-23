@@ -65,6 +65,8 @@ describe("SizzleBrothers-Wunschliste - Negativ-Tests", () => {
     ["put", "/api/sizzle/costs"],
     ["get", "/api/sizzle/products"],
     ["post", "/api/sizzle/products/refresh"],
+    ["get", "/api/sizzle/products/refresh"],
+    ["post", "/api/sizzle/products/refresh/cancel"],
     ["get", "/api/sizzle/wishes"],
     ["post", "/api/sizzle/wishes"],
     ["patch", "/api/sizzle/wishes/bulk"],
@@ -106,25 +108,92 @@ describe("SizzleBrothers-Wunschliste - Negativ-Tests", () => {
       assert.ok(res.body.data.syncedAt);
     });
 
-    it("Aktualisieren: haelt die Abkuehlzeit ein, der Shop wird nicht bei jedem Tippen abgefragt", async () => {
+    const SHOP_ANSWER = (price: string): unknown => ({
+      products: [{ id: 1, title: "BBQ-Sauce", handle: "sauce", product_type: "Grillsauce", images: [{ src: IMAGE }], variants: [{ id: 11, title: "500 ml", price }] }]
+    });
+    const waitUntilIdle = async (user: TestUser): Promise<{ state: string; message: string | null; phase: string | null }> => {
+      for (let attempt = 0; attempt < 200; attempt += 1) {
+        const res = await call("get", "/api/sizzle/products/refresh", user);
+        if (res.body.data.state !== "running") {
+          return res.body.data;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      throw new Error("Abgleich wurde nicht fertig");
+    };
+
+    it("Aktualisieren: der Knopf aktualisiert immer, beim Oeffnen (auto) nur nach 5 Minuten; der Stand ist abfragbar", async () => {
       let calls = 0;
       setCatalogFetcherForTests(() => {
         calls += 1;
-        return Promise.resolve({ products: [{ id: 1, title: "BBQ-Sauce", handle: "sauce", product_type: "Grillsauce", images: [{ src: IMAGE }], variants: [{ id: 11, title: "500 ml", price: "6.99" }] }] });
+        return Promise.resolve(SHOP_ANSWER(calls === 1 ? "6.99" : "5.49"));
       });
       resetCatalogAttemptForTests();
       await prisma.sizzleProduct.updateMany({ data: { syncedAt: new Date(Date.now() - 3_600_000) } });
+      await prisma.auditLog.deleteMany();
 
-      const first = await call("post", "/api/sizzle/products/refresh", alice);
-      assert.equal(first.status, 200);
+      const opened = await call("post", "/api/sizzle/products/refresh", alice, { auto: true });
+      assert.equal(opened.status, 200);
+      assert.equal(opened.body.data.state, "running", "die Antwort kommt sofort, der Abgleich laeuft im Hintergrund");
+      assert.equal((await waitUntilIdle(alice)).state, "done");
       assert.equal(calls, 1);
-      assert.equal(first.body.data.products.find((product: { title: string }) => product.title === "BBQ-Sauce").priceCents, 699);
+      const afterFirst = await call("get", "/api/sizzle/products", bob);
+      assert.equal(afterFirst.body.data.products.find((product: { title: string }) => product.title === "BBQ-Sauce").priceCents, 699);
 
-      const second = await call("post", "/api/sizzle/products/refresh", bob);
-      assert.equal(second.status, 200);
-      assert.equal(calls, 1, "innerhalb der Mindestpause kein zweiter Abruf");
+      const again = await call("post", "/api/sizzle/products/refresh", bob, { auto: true });
+      assert.equal(again.status, 200);
+      assert.equal(again.body.data.state, "done", "innerhalb von 5 Minuten kein automatischer Abgleich");
+      assert.equal(calls, 1);
 
+      const button = await call("post", "/api/sizzle/products/refresh", bob, {});
+      assert.equal(button.body.data.state, "running", "der Knopf aktualisiert auch innerhalb der 5 Minuten");
+      assert.equal((await waitUntilIdle(bob)).state, "done");
+      assert.equal(calls, 2);
+      const afterButton = await call("get", "/api/sizzle/products", alice);
+      assert.equal(afterButton.body.data.products.find((product: { title: string }) => product.title === "BBQ-Sauce").priceCents, 549);
+
+      const audited = await prisma.auditLog.findMany({ where: { area: "SIZZLE" }, select: { description: true, username: true } });
+      assert.deepEqual(audited, [{ description: "Katalog manuell aktualisiert", username: "sizbob" }], "nur der Knopf steht im Protokoll");
       await prisma.sizzleProduct.update({ where: { id: sauceId }, data: { priceCents: 720 } });
+    });
+
+    it("lehnt eine falsche Eingabe beim Aktualisieren ab (400)", async () => {
+      for (const body of [{ auto: "ja" }, { auto: 1 }, { force: true }, { auto: true, extra: 1 }]) {
+        assert.equal((await call("post", "/api/sizzle/products/refresh", alice, body)).status, 400, JSON.stringify(body));
+      }
+    });
+
+    it("Abbrechen: beendet einen haengenden Abgleich, der Katalog bleibt unveraendert; ohne laufenden Abgleich passiert nichts", async () => {
+      resetCatalogAttemptForTests();
+      const before = await prisma.sizzleProduct.findMany({ select: { id: true, priceCents: true, syncedAt: true }, orderBy: { id: "asc" } });
+      setCatalogFetcherForTests(
+        (_page, signal) =>
+          new Promise((_resolve, reject) => {
+            signal?.addEventListener("abort", () => reject(new Error("abgebrochen")), { once: true });
+          })
+      );
+      const started = await call("post", "/api/sizzle/products/refresh", alice, {});
+      assert.equal(started.body.data.state, "running");
+
+      const cancelled = await call("post", "/api/sizzle/products/refresh/cancel", bob);
+      assert.equal(cancelled.status, 200);
+      assert.equal(cancelled.body.data.cancelled, true);
+      const final = await waitUntilIdle(alice);
+      assert.equal(final.state, "cancelled");
+      const after = await prisma.sizzleProduct.findMany({ select: { id: true, priceCents: true, syncedAt: true }, orderBy: { id: "asc" } });
+      assert.deepEqual(after, before);
+
+      const nothing = await call("post", "/api/sizzle/products/refresh/cancel", alice);
+      assert.equal(nothing.body.data.cancelled, false);
+    });
+
+    it("meldet einen Shop-Fehler im Stand (verstaendlicher Text, keine Interna)", async () => {
+      resetCatalogAttemptForTests();
+      setCatalogFetcherForTests(() => Promise.reject(new AppError("UPSTREAM_ERROR", "Der SizzleBrothers-Shop ist gerade nicht erreichbar.")));
+      await call("post", "/api/sizzle/products/refresh", alice, {});
+      const status = await waitUntilIdle(alice);
+      assert.equal(status.state, "error");
+      assert.equal(status.message, "Der SizzleBrothers-Shop ist gerade nicht erreichbar.");
     });
 
     it("meldet 502, wenn der Katalog leer ist und der Shop nicht antwortet", async () => {
@@ -367,17 +436,35 @@ describe("SizzleBrothers-Wunschliste - Negativ-Tests", () => {
 
     it("liefert ohne Eintrag 0/0; jeder Freigegebene setzt Versand und Rabatt, ein zweites Setzen ueberschreibt", async () => {
       await prisma.sizzleOrderCost.deleteMany();
-      assert.deepEqual(await getCosts(alice), { shippingCents: 0, discountCents: 0 });
+      assert.deepEqual(await getCosts(alice), { shippingCents: 0, discountCents: 0, discountBp: 0 });
 
-      const saved = await call("put", "/api/sizzle/costs", bob, { shippingCents: 590, discountCents: 200 });
+      const saved = await call("put", "/api/sizzle/costs", bob, { shippingCents: 590, discountCents: 200, discountBp: 750 });
       assert.equal(saved.status, 200);
-      assert.deepEqual(saved.body.data, { shippingCents: 590, discountCents: 200 });
-      assert.deepEqual(await getCosts(alice), { shippingCents: 590, discountCents: 200 });
+      assert.deepEqual(saved.body.data, { shippingCents: 590, discountCents: 200, discountBp: 750 });
+      assert.deepEqual(await getCosts(alice), { shippingCents: 590, discountCents: 200, discountBp: 750 });
 
-      await call("put", "/api/sizzle/costs", alice, { shippingCents: 0, discountCents: 0 });
-      assert.deepEqual(await getCosts(bob), { shippingCents: 0, discountCents: 0 });
+      await call("put", "/api/sizzle/costs", alice, { shippingCents: 0, discountCents: 0, discountBp: 0 });
+      assert.deepEqual(await getCosts(bob), { shippingCents: 0, discountCents: 0, discountBp: 0 });
       assert.equal(await prisma.sizzleOrderCost.count(), 1, "immer nur eine Zeile");
       assert.equal((await prisma.sizzleOrderCost.findUniqueOrThrow({ where: { id: 1 } })).updatedByName, "sizalice");
+    });
+
+    it("ohne discountBp (aeltere Oberflaeche) bleibt der gespeicherte Prozent-Rabatt erhalten", async () => {
+      await call("put", "/api/sizzle/costs", alice, { shippingCents: 100, discountCents: 0, discountBp: 1000 });
+      const res = await call("put", "/api/sizzle/costs", bob, { shippingCents: 200, discountCents: 50 });
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body.data, { shippingCents: 200, discountCents: 50, discountBp: 1000 });
+      await call("put", "/api/sizzle/costs", bob, { shippingCents: 0, discountCents: 0, discountBp: 0 });
+    });
+
+    it("lehnt einen ungueltigen Prozent-Rabatt ab: negativ, ueber 100 %, Dezimal, Text (400)", async () => {
+      await call("put", "/api/sizzle/costs", alice, { shippingCents: 0, discountCents: 0, discountBp: 500 });
+      for (const discountBp of [-1, 10_001, 7.5, "10", null, true]) {
+        const res = await call("put", "/api/sizzle/costs", alice, { shippingCents: 0, discountCents: 0, discountBp });
+        assert.equal(res.status, 400, String(discountBp));
+      }
+      assert.deepEqual(await getCosts(bob), { shippingCents: 0, discountCents: 0, discountBp: 500 }, "unveraendert");
+      await call("put", "/api/sizzle/costs", alice, { shippingCents: 0, discountCents: 0, discountBp: 0 });
     });
 
     it("lehnt krumme Betraege, fehlende und fremde Schluessel ab (400)", async () => {
@@ -404,14 +491,14 @@ describe("SizzleBrothers-Wunschliste - Negativ-Tests", () => {
       const stays = await createWish(bob, pepperId);
       await call("patch", `/api/sizzle/wishes/${ordered.id}`, alice, { inOrder: true, status: "DONE" });
       await call("patch", `/api/sizzle/wishes/${stays.id}`, bob, { inOrder: true });
-      await call("put", "/api/sizzle/costs", alice, { shippingCents: 590, discountCents: 100 });
+      await call("put", "/api/sizzle/costs", alice, { shippingCents: 590, discountCents: 100, discountBp: 1000 });
 
       await call("delete", "/api/sizzle/wishes/done", alice);
-      assert.deepEqual(await getCosts(alice), { shippingCents: 590, discountCents: 100 }, "ein Wunsch steht noch in der Bestellliste");
+      assert.deepEqual(await getCosts(alice), { shippingCents: 590, discountCents: 100, discountBp: 1000 }, "ein Wunsch steht noch in der Bestellliste");
 
       await call("patch", `/api/sizzle/wishes/${stays.id}`, bob, { status: "DONE" });
       await call("delete", "/api/sizzle/wishes/done", alice);
-      assert.deepEqual(await getCosts(alice), { shippingCents: 0, discountCents: 0 });
+      assert.deepEqual(await getCosts(alice), { shippingCents: 0, discountCents: 0, discountBp: 0 });
     });
   });
 
