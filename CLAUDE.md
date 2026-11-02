@@ -37,7 +37,7 @@ Jede neue Datenbank-Tabelle muss zu einem dieser Modelle in Beziehung stehen ode
 - **Files**: lokaler Storage im Docker-Volume (eigener Server, unproblematisch) — NIE Supabase
 - **Backup**: täglicher Cron-Job (DB-Dump via `pg_dump` + Datei-Ordner + Settings-Export als JSON) in den konfigurierten Backup-Ordner auf der Synology; zusätzlich manueller "Jetzt sichern"-Button für Admins. Restore ist ein bewusster, separat bestätigter Admin-Vorgang (z.B. nach Synology-Wechsel) — nie automatisch beim Start.
 - **Hosting**: eigener Server (Synology) via `docker-compose`, Deployment durch `git clone` + `docker compose build` (kein Registry-Pull nötig)
-- **Update-Mechanismus**: `scripts/update-synology.sh`, ausgelöst über die Synology-Aufgabenplanung (geplant oder manuell): `git fetch` → `LOCAL`/`REMOTE`-Vergleich → bei Unterschied `git pull` + `docker compose build` + `docker compose up -d`. Voraussetzung: `git`-Binary auf der Synology verfügbar (z.B. Paket "Git Server").
+- **Update-Mechanismus**: `scripts/update-synology.sh`, ausgelöst über die Synology-Aufgabenplanung (geplant oder manuell): `git fetch` → `LOCAL`/`REMOTE`-Vergleich → bei Unterschied `git pull` + `docker compose build --pull` + `docker compose up -d`. Voraussetzung: `git`-Binary auf der Synology verfügbar (z.B. Paket "Git Server").
 - **Linting**: ESLint + `eslint-plugin-sonarjs` + `eslint-plugin-tailwindcss`
 - **Formatting**: Prettier + `prettier-plugin-tailwindcss`
 - **Logger**: Winston (eigener Server hat ein Dateisystem)
