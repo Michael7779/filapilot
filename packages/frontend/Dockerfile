@@ -16,6 +16,10 @@ RUN pnpm --filter @filapilot/shared build
 RUN pnpm --filter @filapilot/frontend build
 
 FROM nginx:alpine AS runtime
+# nginx:alpine liefert teils eine aeltere brotli-libs mit (1.2.0, CVE-2026-111497), bevor das Basis-Image
+# neu gebaut wird. nginx selbst nutzt sie nicht (nicht gelinkt, kein Modul geladen) - das Upgrade
+# schliesst die Luecke trotzdem, falls ein eingebundenes Werkzeug (curl, freetype) sie benutzt.
+RUN apk upgrade --no-cache brotli-libs
 COPY --from=build /app/packages/frontend/dist /usr/share/nginx/html
 COPY packages/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
