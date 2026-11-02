@@ -77,3 +77,8 @@ wirklich verschickt wurde).
 - **R15**: Ab 0.33.0: Freigaben je Benutzer (`canUseFilament`, `canUseSizzle`) und Super-Admin (`isSuperAdmin`): siehe
   `sizzle.md` (Z1-Z9). Kurz: nur Super-Admins setzen sie, Super-Admin-Konten fasst nur ein Super-Admin an, es bleibt
   immer mindestens einer. Tests: `tests/security/userAccess.test.ts`, `tests/integration/superAdmin.test.ts`
+- **R16**: (CVE-2026-111497, Brotli-Decoder) Der globale Body-Parser (`express.json`, auch vor dem Login)
+  dekodiert kein Brotli. Eine Anfrage mit `Content-Encoding: br` (auch `BR`, gestapelt oder eine andere unbekannte
+  Kodierung) oder mit nicht unterstuetztem Zeichensatz liefert 400 `VALIDATION_ERROR` ohne Stack-Trace und ohne
+  Eintrag im Fehler-Log (vorher: 500 `INTERNAL_ERROR` samt Log-Eintrag, anonym ausloesbar); `gzip` und `deflate`
+  werden weiter dekodiert. Test: `packages/backend/tests/security/requestEncoding.test.ts`
