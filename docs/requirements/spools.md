@@ -223,3 +223,8 @@
   Farbflaeche (28 px). Mouseover zeigt den Namen (`title`), ein Tippen zeigt auf Touch-Geraeten eine Sprechblase ueber dem Symbol (`position: fixed`, im Bildschirm geklemmt per `placeTooltip`, schliesst bei Tippen daneben, Scrollen und nach 4 s - nicht ueber `blur`, weil Safari Buttons beim Tippen nicht fokussiert); `aria-label` fuer
   Screenreader. Reine Darstellung, keine Route, kein Schema. Test: `tests/unit/spoolPackaging.test.ts`; Oberflaeche manuell im
   Browser geprueft (alle vier Ansichten).
+- **R37**: Ab 0.37.0: Die Listenansicht hat unter der Kopfzeile eine zweite Zeile "Weiter sortieren nach:" (`SpoolListSortBar.tsx`) mit Sortier-Knoepfen fuer
+  alle Angaben, die sonst nur aufgeklappt sichtbar sind (Duese, Bett, Restlaenge, Preis, Gekauft am, Hinzugefuegt am, Geaendert am, Notiz); die Spalte
+  "Lieferform" ist in der Kopfzeile selbst sortierbar. Die mehrzeilige Darstellung (Kernangaben + aufklappbare Details, R31) bleibt unveraendert, die
+  Beschriftungen im aufgeklappten Bereich sortieren weiterhin. Sortierlogik unveraendert (R27, `sortSpoolsByColumn()`). Reine Darstellung, keine Route,
+  kein Schema. Test: `packages/frontend/tests/unit/spoolListSortBar.test.tsx`; die Oberflaeche wurde noch nicht im Browser geprueft.

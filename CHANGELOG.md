@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.37.0] - 2026-11-04
+
+### Hinzugefuegt
+- Spulen, Listenansicht: Unter der Kopfzeile steht jetzt "Weiter sortieren nach:" mit Düse, Bett, Restlänge, Preis, Gekauft am, Hinzugefügt am, Geändert am und Notiz. So lässt sich auch nach diesen Angaben auf- und absteigend sortieren, ohne vorher eine Zeile aufzuklappen. Die Liste bleibt dabei so übersichtlich wie bisher. Auch die Lieferform in der Kopfzeile ist jetzt sortierbar.
+
 ## [0.36.0] - 2026-10-23
 
 ### Hinzugefuegt

@@ -4,6 +4,7 @@ import { remainingPercent, spoolPackaging, type SpoolSortColumn, type SpoolWithR
 import { PackagingIcon } from "./PackagingIcon.js";
 import { SpoolActions } from "./SpoolActions.js";
 import { SpoolListDetail } from "./SpoolListDetail.js";
+import { SpoolListSortBar } from "./SpoolListSortBar.js";
 import { ColorDot, WeightBar, type SpoolViewProps } from "./SpoolViews.js";
 
 const headClass = "whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-[var(--color-text-secondary)]";
@@ -123,13 +124,18 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
               <span className="mx-1 font-normal">·</span>
               {sortButton("material", t("spools.material"))}
             </th>
-            <th className={headClass}>{t("spools.packaging.listLabel")}</th>
+            {sortHead("packaging", t("spools.packaging.listLabel"))}
             {isAll && sortHead("inventory", t("spools.inventory"))}
             {sortHead("weight", t("spools.list.weight"))}
             {sortHead("location", t("spools.filter.location"))}
             {sortHead("status", t("spools.list.status"))}
             <th className={headClass}>
               <span className="sr-only">{t("spools.actions")}</span>
+            </th>
+          </tr>
+          <tr className="border-b border-[var(--color-border)]">
+            <th colSpan={columnCount} className="pl-9 pt-1 text-left">
+              <SpoolListSortBar sortButton={sortButton} activeColumn={columnSort?.column} />
             </th>
           </tr>
         </thead>
