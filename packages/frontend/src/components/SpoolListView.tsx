@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { remainingPercent, spoolPackaging, type SpoolSortColumn, type SpoolWithRelations } from "@filapilot/shared";
+import { findSameFilamentSpools, remainingPercent, spoolPackaging, type SpoolSortColumn, type SpoolWithRelations } from "@filapilot/shared";
+import { spoolRowDomId, useSpoolFocus } from "../hooks/useSpoolFocus.js";
 import { PackagingIcon } from "./PackagingIcon.js";
 import { SpoolActions } from "./SpoolActions.js";
 import { SpoolListDetail } from "./SpoolListDetail.js";
+import { SpoolListSiblings } from "./SpoolListSiblings.js";
 import { SpoolListSortBar } from "./SpoolListSortBar.js";
 import { ColorDot, WeightBar, type SpoolViewProps } from "./SpoolViews.js";
 
@@ -37,6 +39,8 @@ function statusKey(spool: SpoolWithRelations): string {
 }
 
 interface SpoolRowsProps {
+  rowId: string;
+  flash: boolean;
   open: boolean;
   columnCount: number;
   archived: boolean;
@@ -45,10 +49,16 @@ interface SpoolRowsProps {
 }
 
 // Hauptzeile + (aufgeklappt) Detailzeile.
-function SpoolRows({ open, columnCount, archived, main, detail }: SpoolRowsProps): React.JSX.Element {
+function SpoolRows({ rowId, flash, open, columnCount, archived, main, detail }: SpoolRowsProps): React.JSX.Element {
   return (
     <>
-      <tr className={`border-b border-[var(--color-border)] last:border-b-0 ${archived ? "opacity-70" : ""}`}>{main}</tr>
+      <tr
+        id={rowId}
+        className={`border-b border-[var(--color-border)] transition-colors duration-700 last:border-b-0 motion-reduce:transition-none ${archived ? "opacity-70" : ""}`}
+        style={flash ? { backgroundColor: "color-mix(in srgb, var(--accent) 14%, transparent)" } : undefined}
+      >
+        {main}
+      </tr>
       {open && (
         <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg)] last:border-b-0">
           <td colSpan={columnCount} className="py-3 pl-12 pr-4">
@@ -62,13 +72,14 @@ function SpoolRows({ open, columnCount, archived, main, detail }: SpoolRowsProps
 
 // Liste: pro Spule eine Zeile mit den Kernangaben (Farbe, Hersteller/Material, Restgewicht, Lagerort, Status);
 // alles Weitere (Temperaturen, Preis, Datum, Notiz, Zusatzfelder) klappt unter der Zeile auf.
-export function ListView({ spools, materials, isAll, customFieldDefinitions, columnSort, onColumnSort, density = "normal", ...handlers }: SpoolViewProps): React.JSX.Element {
+export function ListView({ spools, materials, isAll, customFieldDefinitions, columnSort, onColumnSort, density = "normal", allSpools, onJumpToSpool, focus, ...handlers }: SpoolViewProps): React.JSX.Element {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const compact = density === "compact";
   const cellClass = `px-3 align-middle ${compact ? "py-1" : "py-2.5"}`;
   const allOpen = spools.length > 0 && spools.every((spool) => expanded.has(spool.id));
   const columnCount = isAll ? 9 : 8;
+  const flashId = useSpoolFocus(focus, spools.map((spool) => spool.id));
 
   function toggle(id: string): void {
     setExpanded((current) => {
@@ -144,10 +155,13 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
             const open = expanded.has(spool.id);
             const percent = Math.round(remainingPercent(spool));
             // Ein Klick auf eine Zelle klappt die Zeile auf; die Aktionen und der Pfeil bleiben davon unberuehrt.
+            const siblings = allSpools ? findSameFilamentSpools(spool, allSpools) : [];
             const toggleCell = { onClick: () => toggle(spool.id), className: `${cellClass} cursor-pointer` };
             return (
               <SpoolRows
                 key={spool.id}
+                rowId={spoolRowDomId(spool.id)}
+                flash={flashId === spool.id}
                 open={open}
                 columnCount={columnCount}
                 archived={Boolean(spool.archivedAt)}
@@ -194,8 +208,9 @@ export function ListView({ spools, materials, isAll, customFieldDefinitions, col
                     <td {...toggleCell} className={`${toggleCell.className} whitespace-nowrap`} style={!spool.archivedAt && !spool.openedAt ? { color: "var(--accent)" } : undefined}>
                       {t(statusKey(spool))}
                     </td>
-                    <td className="px-3 align-middle">
+                    <td className={`px-3 ${siblings.length > 0 ? "py-2 align-top" : "align-middle"}`}>
                       <SpoolActions spool={spool} {...handlers} labelledReorder />
+                      {onJumpToSpool && <SpoolListSiblings siblings={siblings} onJump={onJumpToSpool} />}
                     </td>
                   </>
                 }

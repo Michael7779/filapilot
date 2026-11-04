@@ -228,3 +228,10 @@
   "Lieferform" ist in der Kopfzeile selbst sortierbar. Die mehrzeilige Darstellung (Kernangaben + aufklappbare Details, R31) bleibt unveraendert, die
   Beschriftungen im aufgeklappten Bereich sortieren weiterhin. Sortierlogik unveraendert (R27, `sortSpoolsByColumn()`). Reine Darstellung, keine Route,
   kein Schema. Test: `packages/frontend/tests/unit/spoolListSortBar.test.tsx`; die Oberflaeche wurde noch nicht im Browser geprueft.
+- **R38**: Ab 0.38.0: In der Listenansicht steht unter den Aktionen jeder Spule, zu der es weitere Spulen desselben Filaments gibt
+  (gleiches Lager, Hersteller, Material und gleiche Farbe wie bei der Wunschlisten-Erkennung, ohne archivierte; `findSameFilamentSpools()` in
+  `packages/shared/src/spoolSiblings.ts`), der Block "Weitere Spulen (n)": je Spule eine kleine Zeile mit Balken, Gramm und Prozent, die vollste zuerst.
+  Ein Klick darauf springt zu dieser Spule (`useSpoolJump`): schaltet auf die Seite mit der Spule, setzt einen Filter zurueck, der sie ausblendet,
+  scrollt die Zeile in die Mitte und hebt sie 2 Sekunden hervor (`useSpoolFocus`). Reine Client-Logik auf der bereits rechtegeprueft geladenen Liste,
+  keine neue Route, kein Schema. Tests: `packages/backend/tests/unit/spoolSiblings.test.ts`, `packages/frontend/tests/unit/spoolListSiblings.test.tsx`;
+  die Oberflaeche wurde noch nicht im Browser geprueft.

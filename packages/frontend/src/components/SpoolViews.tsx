@@ -25,6 +25,17 @@ export interface SpoolViewProps extends SpoolHandlers {
   onColumnSort?: (column: SpoolSortColumn) => void;
   // Nur von ListView genutzt (Zeilenhoehe).
   density?: SpoolDensity;
+  // Nur von ListView genutzt: der ganze Bestand (fuer "Weitere Spulen" unter einer Spule), der Klick darauf und die
+  // Spule, zu der gerade gesprungen wurde (wird kurz hervorgehoben).
+  allSpools?: readonly SpoolWithRelations[];
+  onJumpToSpool?: (spoolId: string) => void;
+  focus?: SpoolFocus | null;
+}
+
+// nonce: derselbe Sprung auf dieselbe Spule loest erneut aus.
+export interface SpoolFocus {
+  spoolId: string;
+  nonce: number;
 }
 
 function isLow(spool: SpoolWithRelations): boolean {

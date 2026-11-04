@@ -35,6 +35,7 @@ import { CompactView, StandardView, SwatchView } from "../components/SpoolViews.
 import { SpoolDensitySwitch, SpoolPager, SpoolPageSizeSelect, SpoolViewSwitch } from "../components/SpoolViewControls.js";
 import { useSpoolPreferences } from "../hooks/useSpoolPreferences.js";
 import { useSpoolDensity } from "../hooks/useSpoolDensity.js";
+import { useSpoolJump } from "../hooks/useSpoolJump.js";
 import { useWishlistItems } from "../hooks/useWishlistItems.js";
 import { SpoolLabelModal } from "../components/SpoolLabelModal.js";
 import { SpoolHistoryModal } from "../components/SpoolHistoryModal.js";
@@ -325,6 +326,7 @@ export function SpoolsPage(): React.JSX.Element {
   const pageCount = pageSize === 0 ? 1 : Math.max(1, Math.ceil(visibleSpools.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pagedSpools = pageSize === 0 ? visibleSpools : visibleSpools.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const { focus, jumpTo } = useSpoolJump({ visibleSpools, pageSize, setPage, resetFilter: () => setFilterState(EMPTY_SPOOL_FILTER) });
   const SpoolViewComponent = { standard: StandardView, compact: CompactView, list: ListView, swatch: SwatchView }[view];
   const renderSpoolView = (viewSpools: SpoolWithRelations[]): React.JSX.Element => (
     <SpoolViewComponent
@@ -334,6 +336,9 @@ export function SpoolsPage(): React.JSX.Element {
       isAll={isAll}
       columnSort={activeColumnSort}
       onColumnSort={handleColumnSort}
+      allSpools={spools}
+      onJumpToSpool={jumpTo}
+      focus={focus}
       canEdit={canEdit}
       onEdit={openEdit}
       onArchive={(spool, archive) => void handleArchive(spool, archive)}

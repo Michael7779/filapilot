@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.38.0] - 2026-11-04
+
+### Hinzugefuegt
+- Spulen, Listenansicht: Gibt es von einem Filament (gleicher Hersteller, gleiches Material, gleiche Farbe) noch weitere Spulen, stehen sie jetzt klein unter den Knöpfen der Spule, jede mit Balken, Gramm und Prozent. So sieht man sofort, ob noch Ersatz da ist. Ein Klick auf eine dieser Zeilen springt direkt zu der Spule in der Liste und hebt sie kurz hervor, auch wenn sie auf einer anderen Seite steht oder gerade ausgefiltert ist.
+
 ## [0.37.0] - 2026-11-04
 
 ### Hinzugefuegt

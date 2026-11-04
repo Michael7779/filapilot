@@ -676,7 +676,7 @@
     },
     "packaging": { "label": "Packaging", "withSpool": "Filament with spool", "withSpoolShort": "with spool", "refill": "Refill", "listLabel": "Packaging" },
     "priceHint": { "last": "Suggested: last entered price for this material", "material": "Suggested: material's reference price (Settings → Master data)" },
-    "list": { "expandRow": "Show details", "collapseRow": "Hide details", "expandAll": "Show all details", "collapseAll": "Hide all details", "sortBy": "Sort by {{column}}", "sortMore": "Also sort by:", "color": "Color", "nozzle": "Nozzle", "bed": "Bed", "weight": "Remaining weight", "length": "Remaining length", "approx": "≈", "purchasedAt": "Purchased", "addedAt": "Added", "lastModifiedAt": "Last modified", "status": "Status", "active": "Active" },
+    "list": { "expandRow": "Show details", "collapseRow": "Hide details", "expandAll": "Show all details", "collapseAll": "Hide all details", "sortBy": "Sort by {{column}}", "sortMore": "Also sort by:", "siblings": "Other spools ({{n}})", "siblingJump": "Jump to this spool", "siblingJumpHint": "Jump to this spool ({{details}})", "color": "Color", "nozzle": "Nozzle", "bed": "Bed", "weight": "Remaining weight", "length": "Remaining length", "approx": "≈", "purchasedAt": "Purchased", "addedAt": "Added", "lastModifiedAt": "Last modified", "status": "Status", "active": "Active" },
     "showArchived": "Show archive",
     "archive": "Archive",
     "unarchive": "Restore",
