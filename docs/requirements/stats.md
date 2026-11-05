@@ -58,3 +58,9 @@
   Spulen-Export) mit Zeitabschnitten, Gesamt-/Vorzeitraum-Summen und den drei Aufschluesselungen. Oberflaeche:
   "CSV exportieren"-Knopf in `components/ConsumptionChart.tsx`. Test: `tests/security/stats.test.ts`.
 
+- **R6**: Ab 0.39.0: Die drei Aufschluesselungen der Statistik-Seite (Verbrauch nach Material-Typ, Material, Hersteller) sind wie
+  "Restbestand nach Material-Typ" im Dashboard aufklappbar (siehe `dashboard.md` R4): Klick auf eine Zeile zeigt die Spulen dahinter
+  (Farbpunkt, Farbname, Hersteller + Material, Farbbalken in Filamentfarbe, Gramm und Prozent Fuellstand, verbrauchte Gramm,
+  Archiviert-Marke), absteigend nach Verbrauch; archivierte Spulen zaehlen wie in der Summe mit. Rein clientseitig
+  (`components/ConsumptionBreakdownList.tsx`, `lib/consumptionBreakdown.ts`), keine neue Route. Test:
+  `tests/unit/consumptionBreakdown.test.ts`.

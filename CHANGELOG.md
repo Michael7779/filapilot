@@ -12,6 +12,7 @@ erscheint nicht in der App.
 
 ### Hinzugefuegt
 - Dashboard, "Restbestand nach Material-Typ": Ein Klick auf ein Material (z.B. PLA) klappt darunter alle Spulen dieses Materials auf, jede mit Farbe, Hersteller, Balken, Gramm und Prozent; der Balken hat die Farbe des Filaments. Ein weiterer Klick klappt die Liste wieder zu. Es können mehrere Materialien gleichzeitig offen sein; neben dem Namen steht jetzt auch, wie viele Spulen dahinterstecken.
+- Statistik: Die drei Aufschlüsselungen (Verbrauch nach Material-Typ, nach Material und nach Hersteller) lassen sich genauso aufklappen. Darunter stehen die einzelnen Spulen mit Farbe, Farbbalken, Füllstand in Gramm und Prozent und dem Verbrauch; archivierte Spulen sind markiert.
 
 ## [0.38.0] - 2026-11-04
 

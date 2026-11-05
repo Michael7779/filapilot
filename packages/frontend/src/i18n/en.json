@@ -209,8 +209,6 @@
       "lowStock": "{{count}} spool(s) almost empty"
     },
     "stockByType": "Remaining stock by material type",
-    "stockSpoolCount_one": "{{count}} spool",
-    "stockSpoolCount_other": "{{count}} spools",
     "noStock": "No spools in stock yet."
   },
   "stats": {
@@ -247,6 +245,7 @@
       "loadFailed": "Couldn't load the print jobs."
     },
     "noConsumption": "No consumption recorded yet.",
+    "spoolConsumed": "{{g}} g used",
     "loadFailed": "Couldn't load statistics."
   },
   "auth": {
@@ -553,6 +552,8 @@
   },
   "common": {
     "loading": "Loading…",
+    "spoolCount_one": "{{count}} spool",
+    "spoolCount_other": "{{count}} spools",
     "logout": "Sign out",
     "save": "Save",
     "saved": "Saved.",

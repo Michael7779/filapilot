@@ -209,8 +209,6 @@
       "lowStock": "{{count}} Spule(n) fast leer"
     },
     "stockByType": "Restbestand nach Material-Typ",
-    "stockSpoolCount_one": "{{count}} Spule",
-    "stockSpoolCount_other": "{{count}} Spulen",
     "noStock": "Noch keine Spulen im Bestand."
   },
   "stats": {
@@ -247,6 +245,7 @@
       "loadFailed": "Druckaufträge konnten nicht geladen werden."
     },
     "noConsumption": "Noch kein Verbrauch erfasst.",
+    "spoolConsumed": "{{g}} g verbraucht",
     "loadFailed": "Statistik konnte nicht geladen werden."
   },
   "auth": {
@@ -553,6 +552,8 @@
   },
   "common": {
     "loading": "Lädt…",
+    "spoolCount_one": "{{count}} Spule",
+    "spoolCount_other": "{{count}} Spulen",
     "logout": "Abmelden",
     "save": "Speichern",
     "saved": "Gespeichert.",
