@@ -37,3 +37,9 @@
 - **R3**: Ab 0.22.7: "Restbestand nach Material-Typ" zeigt nur nicht archivierte Spulen, gruppiert nach
   Material-Typ, absteigend sortiert; ohne Bestand erscheint ein Leertext statt einer leeren Karte.
   Test: manuell im Browser.
+- **R4**: Ab 0.39.0: Jede Zeile in "Restbestand nach Material-Typ" ist ein Knopf (`aria-expanded`); ein Klick klappt
+  darunter die einzelnen nicht archivierten Spulen dieses Typs auf (Farbpunkt, Farbname, Hersteller, Material, Balken,
+  Farbbalken in Filamentfarbe, Gramm und Prozent, absteigend nach Restgewicht), ein zweiter Klick klappt zu. Mehrere Zeilen koennen gleichzeitig offen
+  sein; Start ist immer zugeklappt. Rein clientseitig (`components/StockByType.tsx`, Gruppierung in
+  `lib/stockByType.ts`), keine neue Route. Test: `tests/unit/stockByType.test.ts`,
+  `tests/unit/stockByTypeComponent.test.tsx`.

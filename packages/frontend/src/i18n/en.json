@@ -209,6 +209,8 @@
       "lowStock": "{{count}} spool(s) almost empty"
     },
     "stockByType": "Remaining stock by material type",
+    "stockSpoolCount_one": "{{count}} spool",
+    "stockSpoolCount_other": "{{count}} spools",
     "noStock": "No spools in stock yet."
   },
   "stats": {

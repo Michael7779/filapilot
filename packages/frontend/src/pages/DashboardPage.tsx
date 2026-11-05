@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LOW_STOCK_THRESHOLD_RATIO, materialTypeOf } from "@filapilot/shared";
+import { LOW_STOCK_THRESHOLD_RATIO } from "@filapilot/shared";
 import type { Material, PrinterLiveStatus, PrinterPublic, SpoolFilter, SpoolWithRelations } from "@filapilot/shared";
 import { apiRequest } from "../lib/api.js";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 import { ConsumptionChart } from "../components/ConsumptionChart.js";
+import { StockByType } from "../components/StockByType.js";
 
 interface StatCardProps {
   label: string;
@@ -119,54 +120,6 @@ function NeedsAttention({
             </li>
           ))}
         </ul>
-      )}
-    </div>
-  );
-}
-
-interface BreakdownEntry {
-  label: string;
-  valueG: number;
-}
-
-// Restbestand je Material-Typ (nicht Verbrauch - das zeigt schon die Statistik-Seite): "was habe ich noch da".
-function StockByType({ spools }: { spools: SpoolWithRelations[] }): React.JSX.Element {
-  const { t } = useTranslation();
-  const totals = new Map<string, number>();
-  for (const spool of spools) {
-    if (spool.archivedAt) {
-      continue;
-    }
-    const key = materialTypeOf(spool.materialName);
-    totals.set(key, (totals.get(key) ?? 0) + spool.remainingWeightG);
-  }
-  const entries: BreakdownEntry[] = [...totals.entries()]
-    .map(([label, valueG]) => ({ label, valueG }))
-    .sort((a, b) => b.valueG - a.valueG);
-  const max = Math.max(1, ...entries.map((entry) => entry.valueG));
-
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-white p-4">
-      <h3 className="mb-3 text-sm font-semibold">{t("dashboard.stockByType")}</h3>
-      {entries.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-secondary)]">{t("dashboard.noStock")}</p>
-      ) : (
-        <div className="flex flex-col gap-2.5">
-          {entries.map((entry) => (
-            <div key={entry.label}>
-              <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="font-medium">{entry.label}</span>
-                <span className="text-[var(--color-text-muted)]">{(entry.valueG / 1000).toFixed(2)} kg</span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-[var(--color-bg)]">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${(entry.valueG / max) * 100}%`, backgroundColor: "var(--accent)" }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
       )}
     </div>
   );

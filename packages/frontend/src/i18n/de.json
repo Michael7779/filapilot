@@ -209,6 +209,8 @@
       "lowStock": "{{count}} Spule(n) fast leer"
     },
     "stockByType": "Restbestand nach Material-Typ",
+    "stockSpoolCount_one": "{{count}} Spule",
+    "stockSpoolCount_other": "{{count}} Spulen",
     "noStock": "Noch keine Spulen im Bestand."
   },
   "stats": {

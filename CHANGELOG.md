@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.39.0] - 2026-11-05
+
+### Hinzugefuegt
+- Dashboard, "Restbestand nach Material-Typ": Ein Klick auf ein Material (z.B. PLA) klappt darunter alle Spulen dieses Materials auf, jede mit Farbe, Hersteller, Balken, Gramm und Prozent; der Balken hat die Farbe des Filaments. Ein weiterer Klick klappt die Liste wieder zu. Es können mehrere Materialien gleichzeitig offen sein; neben dem Namen steht jetzt auch, wie viele Spulen dahinterstecken.
+
 ## [0.38.0] - 2026-11-04
 
 ### Hinzugefuegt
