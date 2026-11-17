@@ -45,6 +45,12 @@ describe("Spulen: Suche, Filter, Sortierung", () => {
     assert.deepEqual(filterSpools(list, f({ search: "REGAL rot" }), 0.15).map((s) => s.colorName), ["Rot"]);
     assert.equal(filterSpools(list, f({ search: "prusa rot" }), 0.15).length, 0);
   });
+  it("Suche: findet auch Woerter aus der Notiz", () => {
+    const withNote = [spool({ colorName: "Rot", note: "Gekauft bei Petra" }), spool({ colorName: "Blau", note: null })];
+    assert.deepEqual(filterSpools(withNote, f({ search: "petra" }), 0.15).map((s) => s.colorName), ["Rot"]);
+    assert.deepEqual(filterSpools(withNote, f({ search: "petra rot" }), 0.15).map((s) => s.colorName), ["Rot"]);
+    assert.equal(filterSpools(withNote, f({ search: "petra blau" }), 0.15).length, 0);
+  });
   it("Dropdown-Filter und Restgewicht-Bereich", () => {
     assert.deepEqual(filterSpools(list, f({ manufacturerId: "m2" }), 0.15).map((s) => s.colorName), ["Blau"]);
     assert.deepEqual(filterSpools(list, f({ remainingMinG: 500, remainingMaxG: 950 }), 0.15).map((s) => s.colorName), ["Blau"]);

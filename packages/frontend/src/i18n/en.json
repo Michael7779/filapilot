@@ -634,7 +634,7 @@
     "sort": { "added": "Recently added", "manufacturer": "Manufacturer", "name": "Material and color", "price": "Purchase price", "remaining": "Remaining weight" },
     "filter": {
       "search": "Search spools",
-      "searchPlaceholder": "Search by manufacturer, material, color, location …",
+      "searchPlaceholder": "Search by manufacturer, material, color, location, note …",
       "searchToggle": "Search",
       "all": "All",
       "location": "Location",

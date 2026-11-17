@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.39.1] - 2026-11-17
+
+### Behoben
+- Spulen, Suche: Die Suche findet jetzt auch Wörter aus der Notiz einer Spule (z.B. einen Namen oder Kaufort), nicht mehr nur Hersteller, Material, Farbe und Lagerort.
+
 ## [0.39.0] - 2026-11-05
 
 ### Hinzugefuegt

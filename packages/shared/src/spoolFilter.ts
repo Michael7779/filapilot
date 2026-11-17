@@ -74,7 +74,7 @@ function matchesSearch(spool: SpoolWithRelations, search: string): boolean {
   if (words.length === 0) {
     return true;
   }
-  const haystack = [spool.manufacturerName, spool.materialName, spool.colorName, spool.location ?? "", spool.inventoryName ?? ""]
+  const haystack = [spool.manufacturerName, spool.materialName, spool.colorName, spool.location ?? "", spool.inventoryName ?? "", spool.note ?? ""]
     .join(" ")
     .toLowerCase();
   return words.every((word) => haystack.includes(word));

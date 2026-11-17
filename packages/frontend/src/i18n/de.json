@@ -634,7 +634,7 @@
     "sort": { "added": "Zuletzt hinzugefügt", "manufacturer": "Hersteller", "name": "Material und Farbe", "price": "Kaufpreis", "remaining": "Restgewicht" },
     "filter": {
       "search": "Spulen durchsuchen",
-      "searchPlaceholder": "Suchen nach Hersteller, Material, Farbe, Lagerort …",
+      "searchPlaceholder": "Suchen nach Hersteller, Material, Farbe, Lagerort, Notiz …",
       "searchToggle": "Suche",
       "all": "Alle",
       "location": "Lagerort",

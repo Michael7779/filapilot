@@ -177,6 +177,9 @@
   "Sortieren nach"-Dropdown und hebt die Gruppierung "Ungeoeffnet/Angefangen" auf; das Dropdown setzt sie zurueck.
   Reine Client-Logik auf der bereits rechtegeprueft geladenen Liste, keine neue Route. Test:
   `tests/unit/spoolColumnSort.test.ts`; die Oberflaeche wurde nicht im Browser geprueft (kein Dev-Server aktiv).
+- **R27a**: Ab 0.39.1: Die Spulen-Suche (`matchesSearch()` in `packages/shared/src/spoolFilter.ts`) durchsucht zusaetzlich zu
+  Hersteller, Material, Farbe, Lagerort und Lagername auch die Notiz (`note`). Reine Client-Logik, keine neue Route.
+  Test: `tests/unit/spoolFilter.test.ts` ("Suche: findet auch Woerter aus der Notiz").
 - **R28**: Ab 0.26.0: Eine Spule hat `isRefill` (Boolean, Standard `false` = "Filament mit Spule", `true` =
   "Nachfuellung" ohne Spule). Das Formular zeigt die Auswahl nur bei ungeoeffneten Spulen
   (`openedAt === null` bzw. neue Spule ohne "Schon angebrochen"); die Liste hat dazu die sortierbare Spalte
