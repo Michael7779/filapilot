@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.40.0] - 2026-11-17
+
+### Geändert
+- Spulen, Listenansicht: Die Angaben, die man bisher erst durch Aufklappen sah (Düse, Bett, Restlänge, Kaufpreis, Datum, Notiz, Zusatzfelder), stehen jetzt klein und kompakt in einer Zeile direkt unter jeder Spule. Angaben ohne Wert (z.B. kein Preis, keine Notiz) werden einfach weggelassen. Das Aufklappen und der Pfeil am Zeilenanfang entfallen; „Weiter sortieren nach“ oben bleibt.
+
 ## [0.39.1] - 2026-11-17
 
 ### Behoben

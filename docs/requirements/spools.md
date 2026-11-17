@@ -208,6 +208,11 @@
 - **R31**: Ab 0.29.0: Die Listenansicht zeigt pro Spule sieben Kernangaben (Pfeil, Farbe, Hersteller · Material, Restgewicht, Lagerort, Status, Aktionen; bei "alle Lager" zusaetzlich das Lager) und passt ohne seitliches Scrollen auf einen Desktop-Bildschirm.
   Alle weiteren Angaben (Duese, Bett, Restlaenge, Preis, Gekauft/Hinzugefuegt/Geaendert am, Lieferform, Notiz, Zusatzfelder) stehen in einer aufklappbaren Zeile; der Pfeil in der Kopfzeile klappt alle auf/zu.
   Sortierbar bleiben alle bisherigen Spalten (die aufgeklappten Beschriftungen sind Sortier-Knoepfe). Reine Darstellung, kein Server-/Rechte-Einfluss. Die Oberflaeche wurde manuell im Browser geprueft.
+- **R31a**: Ab 0.40.0 (ersetzt das Aufklappen aus R31): Die Listenansicht hat keine Pfeil-Spalte und kein Aufklappen mehr. Direkt unter jeder Spule steht eine
+  kompakte Detailzeile (`SpoolListDetail.tsx`, `buildDetailItems()`) mit Duese, Bett, Restlaenge, Preis, Gekauft/Hinzugefuegt/Geaendert am, Lieferform (nur ungeoeffnet),
+  Zusatzfeldern und Notiz; Angaben ohne Wert entfallen. Sortiert wird weiter ueber die Kopfzeile und "Weiter sortieren nach" (R37), die Detail-Beschriftungen sind
+  keine Sortier-Knoepfe mehr. Reine Darstellung, keine Route, kein Schema. Test: `packages/frontend/tests/unit/spoolListDetail.test.tsx`;
+  die Oberflaeche wurde noch nicht im Browser geprueft (Typecheck, Lint und Build laufen).
 - **R32**: Ab 0.29.0: Umschalter "Normal / Kompakt" (Zeilenhoehe) fuer die Listenansicht, nur pro Browser in `localStorage` gemerkt (kein Konto-Wert, keine Schema-Aenderung). Manuell im Browser geprueft.
 - **R33**: Ab 0.29.0: Ein-Klick-"Zur Wunschliste" als eigener Knopf an jeder Spule in allen Ansichten; knappe Spulen (<= 15 % Rest, nicht archiviert, `isLowStockSpool`) zeigen in Liste und Standardansicht den beschrifteten Knopf "Nachbestellen".
   Steht die Spule (Hersteller + Material + Farbe) schon als offener/bestellter Wunsch auf der Liste (`isSpoolOnWishlist`, alte Wuensche ohne Farbfeld werden am Titel erkannt, erledigte zaehlen nicht), ist der Knopf ausgegraut.
@@ -228,8 +233,8 @@
   Browser geprueft (alle vier Ansichten).
 - **R37**: Ab 0.37.0: Die Listenansicht hat unter der Kopfzeile eine zweite Zeile "Weiter sortieren nach:" (`SpoolListSortBar.tsx`) mit Sortier-Knoepfen fuer
   alle Angaben, die sonst nur aufgeklappt sichtbar sind (Duese, Bett, Restlaenge, Preis, Gekauft am, Hinzugefuegt am, Geaendert am, Notiz); die Spalte
-  "Lieferform" ist in der Kopfzeile selbst sortierbar. Die mehrzeilige Darstellung (Kernangaben + aufklappbare Details, R31) bleibt unveraendert, die
-  Beschriftungen im aufgeklappten Bereich sortieren weiterhin. Sortierlogik unveraendert (R27, `sortSpoolsByColumn()`). Reine Darstellung, keine Route,
+  "Lieferform" ist in der Kopfzeile selbst sortierbar. Die mehrzeilige Darstellung (Kernangaben + Detailzeile, R31a) bleibt unveraendert; seit 0.40.0 sind die
+  Beschriftungen der Detailzeile keine Sortier-Knoepfe mehr. Sortierlogik unveraendert (R27, `sortSpoolsByColumn()`). Reine Darstellung, keine Route,
   kein Schema. Test: `packages/frontend/tests/unit/spoolListSortBar.test.tsx`; die Oberflaeche wurde noch nicht im Browser geprueft.
 - **R38**: Ab 0.38.0: In der Listenansicht steht unter den Aktionen jeder Spule, zu der es weitere Spulen desselben Filaments gibt
   (gleiches Lager, Hersteller, Material und gleiche Farbe wie bei der Wunschlisten-Erkennung, ohne archivierte; `findSameFilamentSpools()` in
