@@ -596,7 +596,7 @@
     "unopened": "Ungeöffnet",
     "markOpened": "Als geöffnet markieren",
     "markOpenedFailed": "Konnte nicht markiert werden.",
-    "groups": { "unopened": "Ungeöffnet", "started": "Angefangen", "summary": "{{count}} Spulen · {{weight}}" },
+    "groups": { "label": "Spulen nach Zustand", "unopened": "Ungeöffnete", "started": "Angefangene", "summary": "{{count}} Spulen · {{weight}}" },
     "export": { "label": "Exportieren:", "csv": "CSV", "json": "JSON", "xlsx": "Excel", "failed": "Export fehlgeschlagen." },
     "addToWishlist": "Zur Wunschliste",
     "reorder": "Nachbestellen",

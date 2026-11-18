@@ -29,6 +29,8 @@ import { downloadFile } from "../lib/download.js";
 import { SpoolFormModal } from "../components/SpoolFormModal.js";
 import { BulkSpoolModal } from "../components/BulkSpoolModal.js";
 import { SpoolFilterBar } from "../components/SpoolFilterBar.js";
+import { SpoolOpenedTabs, spoolTabPanelId } from "../components/SpoolOpenedTabs.js";
+import { useSpoolOpenedTabs } from "../hooks/useSpoolOpenedTabs.js";
 import { BambuSyncStatus } from "../components/BambuSyncStatus.js";
 import { ListView } from "../components/SpoolListView.js";
 import { CompactView, StandardView, SwatchView } from "../components/SpoolViews.js";
@@ -70,6 +72,7 @@ export function SpoolsPage(): React.JSX.Element {
   // Sortierung per Klick auf eine Spaltenueberschrift (nur Listenansicht); hat Vorrang vor dem Sortier-Dropdown.
   const [columnSort, setColumnSort] = useState<SpoolColumnSort | null>(null);
   const [page, setPage] = useState(1);
+  const resetPage = useCallback((): void => setPage(1), []);
   const { view, pageSize, setView, setPageSize } = useSpoolPreferences();
   const { density, setDensity } = useSpoolDensity();
   const { items: wishlistItems, reload: reloadWishlist } = useWishlistItems();
@@ -302,20 +305,12 @@ export function SpoolsPage(): React.JSX.Element {
     await load();
   }
 
-  // Ungeoeffnete Spulen zuerst geclustert (innerhalb jeder Gruppe bleibt die gewaehlte Sortierung erhalten) -
-  // Grundlage fuer die zwei Abschnitte "Ungeoeffnet"/"Angefangen" im Standard-Bestand.
-  // Mit aktiver Spaltensortierung entfaellt die Clusterung, damit die Reihenfolge der Spalte durchgehend gilt.
   const visibleSpools = useMemo(() => {
-    const filtered = filterSpools(spools, filter, LOW_STOCK_THRESHOLD_RATIO);
-    if (activeColumnSort) {
-      return sortSpoolsByColumn(sortSpools(filtered, sort, i18n.language), activeColumnSort, i18n.language, materials);
-    }
-    const sorted = sortSpools(filtered, sort, i18n.language);
-    return [...sorted.filter((spool) => !spool.openedAt), ...sorted.filter((spool) => spool.openedAt)];
+    const sorted = sortSpools(filterSpools(spools, filter, LOW_STOCK_THRESHOLD_RATIO), sort, i18n.language);
+    return activeColumnSort ? sortSpoolsByColumn(sorted, activeColumnSort, i18n.language, materials) : sorted;
   }, [spools, filter, sort, activeColumnSort, materials, i18n.language]);
-  const unopenedVisible = visibleSpools.filter((spool) => !spool.openedAt);
-  const startedVisible = visibleSpools.filter((spool) => spool.openedAt);
-  const showOpenedGroups = !activeColumnSort && unopenedVisible.length > 0 && startedVisible.length > 0;
+  // Die zwei Tabs "Angefangene"/"Ungeoeffnete": jede Gruppe behaelt die gewaehlte Sortierung, Seiteneinteilung je Tab.
+  const { openedTab, setOpenedTab, startedSpools, unopenedSpools, showTabs, tabSpools, listSpools, listFor, showTabOf } = useSpoolOpenedTabs(visibleSpools, resetPage);
   let emptyText = "";
   if (spools.length === 0) {
     emptyText = t("spools.empty");
@@ -323,10 +318,10 @@ export function SpoolsPage(): React.JSX.Element {
     emptyText = t("spools.filter.noMatch");
   }
   // Seitenweise anzeigen (0 = alle); bei geaenderten Filtern zurueck auf Seite 1
-  const pageCount = pageSize === 0 ? 1 : Math.max(1, Math.ceil(visibleSpools.length / pageSize));
+  const pageCount = pageSize === 0 ? 1 : Math.max(1, Math.ceil(listSpools.length / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const pagedSpools = pageSize === 0 ? visibleSpools : visibleSpools.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const { focus, jumpTo } = useSpoolJump({ visibleSpools, pageSize, setPage, resetFilter: () => setFilterState(EMPTY_SPOOL_FILTER) });
+  const pagedSpools = pageSize === 0 ? listSpools : listSpools.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const { focus, jumpTo } = useSpoolJump({ visibleSpools, pageSize, setPage, resetFilter: () => setFilterState(EMPTY_SPOOL_FILTER), listFor, onLocate: showTabOf });
   const SpoolViewComponent = { standard: StandardView, compact: CompactView, list: ListView, swatch: SwatchView }[view];
   const renderSpoolView = (viewSpools: SpoolWithRelations[]): React.JSX.Element => (
     <SpoolViewComponent
@@ -492,33 +487,22 @@ export function SpoolsPage(): React.JSX.Element {
         <p className="text-sm text-[var(--color-text-secondary)]">{emptyText}</p>
       ) : (
         <>
-          {showOpenedGroups
-            ? ([
-                ["unopened", unopenedVisible] as const,
-                ["started", startedVisible] as const
-              ] as const).map(([key, groupSpools]) => {
-                const pageIds = new Set(pagedSpools.map((spool) => spool.id));
-                const onPage = groupSpools.filter((spool) => pageIds.has(spool.id));
-                if (onPage.length === 0) {
-                  return null;
-                }
-                const weight = groupSpools.reduce((sum, spool) => sum + spool.remainingWeightG, 0);
-                return (
-                  <div key={key} className="flex flex-col gap-2">
-                    <div className="flex items-baseline justify-between">
-                      <h3 className="text-sm font-semibold" style={key === "unopened" ? { color: "var(--accent)" } : undefined}>
-                        {t(`spools.groups.${key}`)}
-                      </h3>
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        {t("spools.groups.summary", { count: groupSpools.length, weight: formatWeight(weight) })}
-                      </span>
-                    </div>
-                    {renderSpoolView(onPage)}
-                  </div>
-                );
-              })
-            : renderSpoolView(pagedSpools)}
-          <SpoolPager page={currentPage} pageCount={pageCount} total={visibleSpools.length} onPage={setPage} />
+          {showTabs ? (
+            <div className="flex flex-col gap-3">
+              <SpoolOpenedTabs
+                active={openedTab}
+                counts={{ started: startedSpools.length, unopened: unopenedSpools.length }}
+                summary={t("spools.groups.summary", { count: tabSpools.length, weight: formatWeight(tabSpools.reduce((sum, spool) => sum + spool.remainingWeightG, 0)) })}
+                onChange={setOpenedTab}
+              />
+              <div id={spoolTabPanelId} role="tabpanel" aria-labelledby={`spool-tab-${openedTab}`}>
+                {renderSpoolView(pagedSpools)}
+              </div>
+            </div>
+          ) : (
+            renderSpoolView(pagedSpools)
+          )}
+          <SpoolPager page={currentPage} pageCount={pageCount} total={listSpools.length} onPage={setPage} />
         </>
       )}
 

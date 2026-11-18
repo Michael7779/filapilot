@@ -122,7 +122,7 @@
   legen neue Spulen immer als geoeffnet an (dem Drucker/Dienst bereits bekannt). Automatisch geoeffnet wird eine
   Spule bei der ersten echten Restgewicht-Aenderung (manuell, Wiegen, Druckverbrauch - zentral in
   `recordWeightChange()`) oder der ersten AMS-Zuordnung; `POST /api/spools/:id/mark-opened` (EDITOR im Lager)
-  markiert sie auch von Hand (kein Weg zurueck). Die Spulen-Seite gruppiert den Bestand in "Ungeoeffnet"/"Angefangen"
+  markiert sie auch von Hand (kein Weg zurueck). Ab 0.41.0 zeigt die Spulen-Seite Tabs "Angefangene | Ungeoeffnete" (siehe R39a; vorher zwei Abschnitte untereinander)
   (nur wenn beide nicht leer sind, sonst normale Liste), mit dezenter Kennzeichnung je Karte/Zeile in allen vier
   Ansichten; Filter `unopenedOnly` und Dashboard-/Statistik-Kachel ergaenzen das. Kein Weg zurueck auf "ungeoeffnet".
   Bestehende Spulen aus Installationen vor 0.22.0 haben `openedAt` zunaechst leer (neue, nullable Spalte) - ein
@@ -174,7 +174,7 @@
   `packages/shared/src/spoolColumnSort.ts`; Spalten: Farbe, Hersteller, Material, Lager, Duese, Bett, Restgewicht,
   Restlaenge, Lagerort, Preis, Gekauft am, Hinzugefuegt am, Geaendert am, Notiz, Status). Spulen ohne Wert stehen in
   beiden Richtungen am Ende, Gleichstand behaelt die bisherige Reihenfolge. Die Spaltensortierung hat Vorrang vor dem
-  "Sortieren nach"-Dropdown und hebt die Gruppierung "Ungeoeffnet/Angefangen" auf; das Dropdown setzt sie zurueck.
+  "Sortieren nach"-Dropdown und gilt innerhalb jedes Tabs "Angefangene/Ungeoeffnete" (seit 0.41.0); das Dropdown setzt sie zurueck.
   Reine Client-Logik auf der bereits rechtegeprueft geladenen Liste, keine neue Route. Test:
   `tests/unit/spoolColumnSort.test.ts`; die Oberflaeche wurde nicht im Browser geprueft (kein Dev-Server aktiv).
 - **R27a**: Ab 0.39.1: Die Spulen-Suche (`matchesSearch()` in `packages/shared/src/spoolFilter.ts`) durchsucht zusaetzlich zu
@@ -242,4 +242,11 @@
   Ein Klick darauf springt zu dieser Spule (`useSpoolJump`): schaltet auf die Seite mit der Spule, setzt einen Filter zurueck, der sie ausblendet,
   scrollt die Zeile in die Mitte und hebt sie 2 Sekunden hervor (`useSpoolFocus`). Reine Client-Logik auf der bereits rechtegeprueft geladenen Liste,
   keine neue Route, kein Schema. Tests: `packages/backend/tests/unit/spoolSiblings.test.ts`, `packages/frontend/tests/unit/spoolListSiblings.test.tsx`;
+  die Oberflaeche wurde noch nicht im Browser geprueft.
+- **R39a**: Ab 0.41.0: Statt der zwei Abschnitte "Ungeoeffnet"/"Angefangen" untereinander zeigt die Spulen-Seite Tabs "Angefangene | Ungeoeffnete"
+  (`SpoolOpenedTabs.tsx`, Logik in `useSpoolOpenedTabs.ts`, in dieser Reihenfolge, Standard-Tab "Angefangene"). Ein Klick zeigt darunter nur die Spulen
+  dieses Tabs; Anzahl je Tab und "n Spulen · Gewicht" des gewaehlten Tabs stehen in der Leiste. Die Tabs erscheinen nur, wenn nach Filter beide Gruppen Spulen
+  haben, sonst steht die eine Gruppe wie bisher ohne Tab-Leiste da. Sortierung (Dropdown und Spaltenklick) gilt in jedem Tab, die Seiteneinteilung zaehlt je Tab
+  (Tab-Wechsel springt auf Seite 1). "Zur Spule springen" (R38, `useSpoolJump`) wechselt bei Bedarf auf den Tab der Ziel-Spule. Tastatur: Pfeil links/rechts
+  wechselt den Tab. Reine Darstellung, keine Route, kein Schema. Test: `packages/frontend/tests/unit/spoolOpenedTabs.test.tsx`;
   die Oberflaeche wurde noch nicht im Browser geprueft.

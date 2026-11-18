@@ -596,7 +596,7 @@
     "unopened": "Unopened",
     "markOpened": "Mark as opened",
     "markOpenedFailed": "Could not mark as opened.",
-    "groups": { "unopened": "Unopened", "started": "Started", "summary": "{{count}} spools · {{weight}}" },
+    "groups": { "label": "Spools by state", "unopened": "Unopened", "started": "Started", "summary": "{{count}} spools · {{weight}}" },
     "export": { "label": "Export:", "csv": "CSV", "json": "JSON", "xlsx": "Excel", "failed": "Export failed." },
     "addToWishlist": "Add to wishlist",
     "reorder": "Reorder",

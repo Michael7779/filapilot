@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.41.0] - 2026-11-18
+
+### Geändert
+- Spulen: „Angefangene“ und „Ungeöffnete“ stehen jetzt als zwei Tabs nebeneinander (zuerst die angefangenen), statt als zwei lange Abschnitte untereinander. Ein Klick auf den Tab zeigt darunter nur die Spulen dieser Gruppe, mit Anzahl und Gesamtgewicht rechts in der Leiste. Die Seiteneinteilung zählt je Tab. Gibt es nur eine der beiden Gruppen, erscheint wie bisher keine Tab-Leiste.
+
 ## [0.40.0] - 2026-11-17
 
 ### Geändert
