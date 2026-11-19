@@ -8,6 +8,14 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.41.1] - 2026-11-19
+
+### Sicherheit
+- Der Webserver, der die Oberfläche ausliefert (nginx), wurde auf Version 1.31.9 aktualisiert. Sie schließt mehrere bekannte Sicherheitslücken vom 18.11.2026. Für diese Installation bestand nach unserer Prüfung kein konkretes Risiko, weil die betroffenen Funktionen nicht verwendet werden.
+
+### Hinweis zum Update
+- Der Frontend-Container wird neu gebaut (`docker compose build`, macht das Update-Skript); danach ist nichts weiter zu tun. Das nginx-Basisimage ist jetzt auf Version 1.31.9 mit fester Prüfsumme festgelegt (`packages/frontend/Dockerfile`). `docker compose build --pull` holt dafür keine neueren Versionen mehr; künftige nginx-Updates erfordern, Tag und Prüfsumme dort von Hand anzupassen.
+
 ## [0.41.0] - 2026-11-18
 
 ### Geändert
