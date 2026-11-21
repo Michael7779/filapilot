@@ -33,9 +33,11 @@ echo "Update gefunden: $LOCAL -> $REMOTE. Baue neu..."
 # aendert die Datei erst DANACH, wenn der Rumpf schon vollstaendig im Speicher steht.
 apply_update() {
   git pull origin main
-  # "--pull" holt die Basis-Images (node:22-slim, nginx:alpine) bei jedem Build neu. Ohne das bliebe
+  # "--pull" holt die Basis-Images (node:22-slim) bei jedem Build neu. Ohne das bliebe
   # ein einmal geladenes, gecachtes Image dauerhaft in Gebrauch und Sicherheitsupdates von Node
   # (zuletzt CVE-2026-111497, Brotli-Decoder) kaemen nie an.
+  # Das nginx-Image ist im Frontend-Dockerfile mit Tag und Pruefsumme fest gepinnt; "--pull" bringt
+  # dort keine neuere Version. nginx-Updates also von Hand im Dockerfile nachziehen.
   docker compose build --pull
 
   # Schema-Abgleich VOR dem Neustart des Backends (nicht danach) - sonst liefe der neue Programmcode
