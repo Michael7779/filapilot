@@ -396,9 +396,9 @@ model Spool {
   isRefill            Boolean    @default(false)
   purchasedAt         DateTime?
   location            String?
-  // Optional nur wegen der Datenuebernahme per "db push"; ensureDefaultInventory() fuellt es, der Code schreibt nie ohne Lager.
-  inventoryId         String?
-  inventory           Inventory? @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
+  // Pflicht: jede Spule gehoert zu genau einem Lager (seit 0.42.0; vorher optional wegen der Datenuebernahme in die Lager).
+  inventoryId         String
+  inventory           Inventory  @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
   // Spulen-ID der Bambu-Cloud beim Import (der Import erkennt damit schon importierte Spulen und aktualisiert deren Restgewicht).
   // Bewusst KEINE Datenbank-Eindeutigkeit (@@unique): "prisma db push" verlangt fuer eine neue Eindeutigkeitsregel auf einer
   // gefuellten Tabelle eine Freigabe (--accept-data-loss), und das Update-Skript bricht dann ab. Die Eindeutigkeit stellt der
@@ -461,8 +461,9 @@ model Printer {
   accessCode          String
   syncMode            PrinterSyncMode     @default(PERIODIC)
   syncIntervalSeconds Int                 @default(60)
-  inventoryId         String?
-  inventory           Inventory?          @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
+  // Pflicht: jeder Drucker gehoert zu genau einem Lager (seit 0.42.0, siehe Spool.inventoryId).
+  inventoryId         String
+  inventory           Inventory           @relation(fields: [inventoryId], references: [id], onDelete: Restrict)
   createdAt           DateTime            @default(now())
   printJobs           PrintJob[]
   amsSlots            AmsSlotAssignment[]

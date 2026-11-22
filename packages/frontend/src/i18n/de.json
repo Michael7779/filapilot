@@ -206,7 +206,12 @@
       "allGood": "Alles im grünen Bereich.",
       "printFailed": "Druck auf \"{{name}}\" fehlgeschlagen",
       "printerOffline": "Drucker \"{{name}}\" nicht verbunden",
-      "lowStock": "{{count}} Spule(n) fast leer"
+      "lowStock": "{{count}} Spule(n) fast leer",
+      "backupNever": "Die automatische Sicherung ist aktiv, aber es gibt noch keine Sicherung",
+      "backupStale": "Die letzte Sicherung ist {{days}} Tag(e) alt",
+      "bambuTokenExpired": "Bambu-Cloud in \"{{name}}\": Anmeldung abgelaufen, bitte neu verbinden",
+      "bambuSyncFailed": "Bambu-Cloud-Abgleich in \"{{name}}\" fehlgeschlagen: {{reason}}",
+      "bambuTokenExpiresSoon": "Bambu-Cloud in \"{{name}}\": Anmeldung läuft in {{days}} Tag(en) ab"
     },
     "stockByType": "Restbestand nach Material-Typ",
     "noStock": "Noch keine Spulen im Bestand."

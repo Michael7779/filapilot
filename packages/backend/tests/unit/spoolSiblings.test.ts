@@ -4,7 +4,7 @@ import { findSameFilamentSpools } from "@filapilot/shared";
 
 interface TestSpool {
   id: string;
-  inventoryId: string | null;
+  inventoryId: string;
   manufacturerId: string;
   materialId: string;
   colorName: string;

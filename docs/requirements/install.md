@@ -15,8 +15,8 @@
 ## 1.1 Offene Punkte
 - OP-I1: Die Anleitung wurde nach den Aufgabenplaner-/DSM-Menuenamen der Autologbuch-Anleitung und dem eigenen
   Ablauf geschrieben, aber nicht Schritt fuer Schritt auf einer frisch installierten zweiten NAS durchgespielt.
-- OP-I2: Das Datenbank-Schema muss bei der Erstinstallation einmal per Aufgabe angelegt werden (`prisma db push`);
-  das Backend koennte das beim Start selbst tun.
+- OP-I2 ✅ (0.42.0): Das Backend legt das Datenbank-Schema bei der Erstinstallation beim Start selbst an (R4); die Aufgabe "Datenbank anlegen"
+  aus der Anleitung entfaellt.
 - OP-I3: Die Anleitung ist noch nicht auf einer oeffentlichen Website veroeffentlicht.
 
 ## 1.2 Anforderungen
@@ -28,3 +28,11 @@
   Prisma eine Freigabe verlangt (neue Eindeutigkeitsregel, Pflichtspalte auf gefuellter Tabelle). Anlass: 0.14.0 scheiterte auf der
   Synology an `@@unique([inventoryId, bambuCloudId])`, weil die Tests mit `--accept-data-loss` liefen und das verdeckten.
   Neue Eindeutigkeit daher im Code sicherstellen, nicht per `@@unique` auf bestehenden Tabellen.
+- **R4** ✅ Ab 0.42.0: Beim Start legt `services/schemaBootstrap.ts` (`ensureDatabaseSchema`) das Schema per `prisma db push` an, aber NUR wenn das Schema
+  `public` der Datenbank KEINE Tabelle hat (frische Installation). Eine Datenbank mit irgendeiner Tabelle wird nie angefasst - Aenderungen an bestehenden
+  Installationen laufen weiter ausschliesslich ueber `scripts/update-synology.sh` (bricht bei datenverlust-traechtigen Aenderungen bewusst ab) bzw. die
+  Wiederherstellung. Der Aufruf geht ohne Shell mit festem Argument-Array (Prisma-CLI ueber `process.execPath`) und nie mit `--accept-data-loss` oder
+  `--force-reset`; ein fehlgeschlagener Abgleich wird weitergeworfen (der Start versucht es per `runWithStartupRetry` erneut und loggt jeden Fehler).
+  Threat-Model: keine Route, keine Eingabe von aussen; Missbrauch braeuchte Zugriff auf Umgebung/Container (und damit mehr als dieser Weg hergibt).
+  Test: `tests/unit/schemaBootstrap.test.ts` (Logik mit Fake-Abhaengigkeiten, verbotene Flags, Shell-Zeichen),
+  `tests/integration/schemaBootstrap.test.ts` (echte leere Datenbank wird mit allen Tabellen angelegt, zweiter Start ohne Wirkung, fremde Tabellen werden nicht angefasst).

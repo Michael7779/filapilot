@@ -160,12 +160,14 @@ describe("Materials - Negativ-Tests", () => {
   it("lehnt Loeschen eines Materials ab, das noch von Spulen genutzt wird (409)", async () => {
     const manufacturer = await prisma.manufacturer.create({ data: { name: "Mat Test Hersteller" } });
     const material = await prisma.material.create({ data: { name: "Benutzt Test", printTempMinC: 1, printTempMaxC: 2 } });
+    const inventory = await prisma.inventory.create({ data: { name: "Material-Loeschen-Test" } });
     await prisma.spool.create({
-      data: { materialId: material.id, manufacturerId: manufacturer.id, colorName: "Rot", initialWeightG: 1000, remainingWeightG: 1000 }
+      data: { materialId: material.id, manufacturerId: manufacturer.id, colorName: "Rot", initialWeightG: 1000, remainingWeightG: 1000, inventoryId: inventory.id }
     });
     const res = await request(app).delete(`/api/materials/${material.id}`).set("Cookie", adminCookie);
     assert.equal(res.status, 409);
     await prisma.spool.deleteMany();
+    await prisma.inventory.delete({ where: { id: inventory.id } });
     await prisma.manufacturer.delete({ where: { id: manufacturer.id } });
   });
 

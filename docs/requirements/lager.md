@@ -17,14 +17,14 @@ Design: `docs/design/lager.md` (abgestimmt 2026-09-26). Umgesetzt in Version 0.1
   (Abgleich nach jeder Aenderung und jede Minute).
 - Datenuebernahme: `ensureDefaultInventory()` legt beim Start (und nach dem Einspielen einer alten Sicherung) das
   "Hauptlager" an, macht bestehende Benutzer zu Mitgliedern (Admins Besitzer, andere Bearbeiter) und ordnet Spulen und Drucker
-  ohne Lager zu. `inventoryId` ist in der Datenbank zunaechst optional (`db push` kann keine Daten umschreiben).
+  ohne Lager zu. `inventoryId` war in der Datenbank zunaechst optional (`db push` kann keine Daten umschreiben) und ist seit 0.42.0 Pflicht (R14).
 - Oberflaeche: Umschalter (Seitenleiste, am Handy Kopfzeile; bei nur einem Lager ohne Auswahlliste), "Alle Lager"-Dashboard,
   Einstellungen -> Lager (anlegen, umbenennen, Farbe, Mitglieder, Loeschen mit Namen), Spule in anderes Lager verschieben,
   Lager-Filter im Protokoll. Ohne Lager zeigt die App eine Einladung zum Anlegen.
 
 ## 1.1 Offene Punkte
 - OP-L1: Import aus der Bambu-Cloud pro Lager: umgesetzt in 0.14.0, siehe `bambu-import.md`.
-- OP-L2: `inventoryId` ist in der Datenbank noch optional (`String?`); auf Pflicht stellen, sobald alle Installationen migriert sind.
+- OP-L2 ✅ (0.42.0): `Spool.inventoryId` und `Printer.inventoryId` sind jetzt Pflicht (`String`, NOT NULL), siehe R14. Folge: Sicherungen vor 0.13.0 lassen sich nicht mehr einspielen (R14).
 - OP-L3: Ein Drucker laesst sich nicht in ein anderes Lager verschieben (bewusst: loeschen und neu anlegen).
 - OP-L4: Beim Loeschen eines Benutzers werden seine Mitgliedschaften entfernt; ein Lager ohne Besitzer bleibt nur fuer Admins verwaltbar.
 - OP-L5 ✅ (0.21.3): `GET /api/inventories/:id/audit-log` (Rolle `OWNER`) zeigt das Protokoll dieses einen Lagers -
@@ -61,3 +61,12 @@ Design: `docs/design/lager.md` (abgestimmt 2026-09-26). Umgesetzt in Version 0.1
   Rolle `OWNER` (Fremde 404, Bearbeiter/Betrachter 403); Filter (Bereich/Aktion/Zeitraum/Suche) wie beim admin-weiten
   Protokoll, aber `inventoryId` ist serverseitig fest gesetzt. Oberflaeche: "Verlauf"-Knopf bei Einstellungen -> Lager
   (`components/InventoryAuditModal.tsx`). Test: `tests/security/inventoryAudit.test.ts`
+- **R14** ✅ Ab 0.42.0: `Spool.inventoryId` und `Printer.inventoryId` sind in der Datenbank Pflicht (NOT NULL, Fremdschluessel mit `onDelete: Restrict`). Die Datenbank
+  verweigert Zeilen ohne oder mit unbekanntem Lager; `ensureDefaultInventory()` legt nur noch das Hauptlager samt Mitgliedschaften an (keine Zuordnung
+  lagerloser Zeilen mehr); `requireAccessToObjectInventory` kennt keinen Sonderweg fuer Objekte ohne Lager mehr (vorher: nur fuer Admins erreichbar).
+  Das Update gleicht das Schema ohne `--accept-data-loss` ab (Release-Gate `scripts/check-schema-upgrade.sh` bestanden, siehe `install.md` R3).
+  Befund/Grenze: Eine Sicherung aus der Zeit vor den Lagern (vor 0.13.0, kein `CREATE TABLE public.inventories` im Dump) laesst sich nicht mehr in das
+  Schema ueberfuehren; `startRestore` weist sie VOR jedem Eingriff ab (400, es wird nichts gesichert, geloescht oder eingespielt, `services/backupCompatibility.ts`).
+  Das ersetzt die Zusage aus dem Design (`docs/design/lager.md`, "aeltere Sicherung bleibt wiederherstellbar").
+  Test: `tests/integration/inventoryMigration.test.ts` (Datenbank verweigert Spule/Drucker ohne Lager, Hauptlager-Anlage),
+  `tests/integration/backupCompatibility.test.ts` und `tests/integration/restoreService.test.ts` (alte Sicherung wird vor dem Eingriff abgewiesen).

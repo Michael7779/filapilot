@@ -159,19 +159,14 @@ Punkt** bei allen drei Bausteinen (Datenbank `postgres`, `backend` und `frontend
 
 Schlägt das Bauen mit „address already in use“ fehl, ist der Port schon vergeben — siehe „Häufige Fragen“.
 
-### Das Datenbank-Schema anlegen
+### Das Datenbank-Schema
 
-Beim allerersten Start muss einmal die Datenbank-Struktur angelegt werden. Lege dafür wie in Teil B eine Aufgabe
-`FilaPilot Datenbank anlegen` an (Benutzer **root**, **Nicht wiederholen**), füge dieses Skript ein und führe sie
-einmal aus:
+Die Datenbank-Struktur legt FilaPilot beim allerersten Start **selbst** an. Du musst dafür nichts tun, es dauert nur
+wenige Sekunden. Das passiert ausschließlich in einer komplett leeren Datenbank — eine bestehende Datenbank fasst der
+Start nie an. Spätere Updates gleichen die Struktur automatisch ab (siehe „Updates einrichten“).
 
-```bash
-cd /volume1/docker/filapilot
-docker compose exec -T backend node_modules/.bin/prisma db push --schema=prisma/schema.prisma
-```
-
-Im Ergebnis sollte am Ende `Your database is now in sync with your Prisma schema` stehen. Diese Aufgabe brauchst du
-danach nie wieder — spätere Updates erledigen das automatisch (siehe „Updates einrichten“). Du kannst sie löschen.
+Hast du nach einer älteren Version dieser Anleitung die Aufgabe `FilaPilot Datenbank anlegen` eingerichtet, kannst du
+sie löschen. Sie schadet aber auch nicht.
 
 ---
 
@@ -437,7 +432,8 @@ Sicherheit → Firewall** den Port freigeben.
 ### Ein Baustein im Container Manager wird nicht grün.
 
 Im Container Manager unter **Container** den betroffenen Baustein anklicken → **Protokoll**. Häufig steht dort, was
-fehlt. Beim Backend meist: Datenbank noch nicht angelegt (siehe „Das Datenbank-Schema anlegen“ in Teil D).
+fehlt. Beim Backend: Direkt nach dem allerersten Start braucht es einige Sekunden, bis die Datenbank-Struktur angelegt ist;
+danach sollte der Baustein grün werden.
 
 ### Der Bauvorgang meldet „address already in use“.
 

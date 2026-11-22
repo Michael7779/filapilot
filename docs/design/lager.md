@@ -73,10 +73,11 @@ und eine neue Pflichtspalte auf gefüllten Tabellen würde es ablehnen, siehe fr
   (wie der bestehende `ensureCatalog()`) ein Lager **"Hauptlager"** an, falls es noch keines gibt, ordnet alle Spulen und
   Drucker ohne Lager diesem zu und macht **alle bestehenden Benutzer zu Mitgliedern**: Admins als Besitzer, alle anderen
   als Bearbeiter. Dadurch ändert sich für bestehende Installationen zunächst nichts.
-- Der Code schreibt nie mehr eine Spule oder einen Drucker ohne Lager (Zod + Service); die Spalte kann in einer späteren
-  Version auf Pflicht gestellt werden.
-- Das Backup enthält die neuen Tabellen. Eine ältere Sicherung (vor 0.13.0) lässt sich weiter wiederherstellen: Nach dem
-  Einspielen füllt `ensureDefaultInventory()` die fehlenden Lager.
+- Der Code schreibt nie mehr eine Spule oder einen Drucker ohne Lager (Zod + Service). **Seit 0.42.0 ist die Spalte Pflicht**
+  (NOT NULL), die Zuordnung lagerloser Zeilen beim Start entfällt.
+- Das Backup enthält die neuen Tabellen. Eine ältere Sicherung (vor 0.13.0) ließ sich ursprünglich weiter wiederherstellen
+  (`ensureDefaultInventory()` füllte die fehlenden Lager). **Seit 0.42.0 nicht mehr:** Mit dem Pflichtfeld lässt sich ein Dump
+  ohne Lager-Tabelle nicht mehr ins Schema überführen; die Wiederherstellung weist ihn vorab ab (siehe `docs/requirements/lager.md` R14).
 - Neue Benutzer werden **nicht** automatisch Mitglied. Ein Besitzer oder Admin fügt sie hinzu. Einzige Ausnahme: Wer ein
   Lager anlegt, wird dessen Besitzer.
 

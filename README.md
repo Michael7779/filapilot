@@ -49,11 +49,8 @@ Postgres-Verbindungs-URL kaputt macht. `FRONTEND_ORIGIN` muss die tatsächlich e
 docker compose up -d --build
 ```
 
-Einmalig das Datenbank-Schema anlegen:
-
-```bash
-docker compose exec backend node_modules/.bin/prisma db push --schema=prisma/schema.prisma
-```
+Das Datenbank-Schema legt das Backend beim allerersten Start selbst an (nur in einer komplett leeren
+Datenbank, nie in einer bestehenden). Dafür ist kein weiterer Schritt nötig.
 
 Danach die App im Browser öffnen (`http://<synology-ip>:<FRONTEND_PORT>`): Beim ersten Aufruf erscheint
 der **Einrichtungsbildschirm**, dort legst du den ersten Administrator mit eigenem Passwort an. Der

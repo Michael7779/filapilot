@@ -18,28 +18,21 @@ type Actor = Pick<User, "id" | "role">;
 
 let running: Promise<void> | null = null;
 
-// Legt beim ersten Start (und nach dem Einspielen einer alten Sicherung) das "Hauptlager" an, macht alle bestehenden
-// Benutzer zu Mitgliedern (Admins als Besitzer, alle anderen als Bearbeiter) und ordnet Spulen und Drucker ohne Lager
-// dem aeltesten Lager zu. Wiederholbar ohne Wirkung.
+// Legt beim ersten Start (und nach einer Wiederherstellung ohne jedes Lager) das "Hauptlager" an und macht alle bestehenden
+// Benutzer zu Mitgliedern (Admins als Besitzer, alle anderen als Bearbeiter). Spulen und Drucker brauchen keine Zuordnung mehr:
+// sie haben seit 0.42.0 ein Pflicht-Lager in der Datenbank. Wiederholbar ohne Wirkung.
 async function seedDefaultInventory(): Promise<void> {
-  let first = await prisma.inventory.findFirst({ orderBy: { createdAt: "asc" } });
-  if (!first) {
-    const users = await prisma.user.findMany({ select: { id: true, role: true } });
-    first = await prisma.inventory.create({
-      data: {
-        name: DEFAULT_INVENTORY_NAME,
-        members: { create: users.map((user) => ({ userId: user.id, role: user.role === "ADMIN" ? "OWNER" : "EDITOR" })) }
-      }
-    });
-    logger.info("Hauptlager angelegt", { members: users.length });
+  if (await prisma.inventory.findFirst({ select: { id: true } })) {
+    return;
   }
-  const [spools, printers] = await Promise.all([
-    prisma.spool.updateMany({ where: { inventoryId: null }, data: { inventoryId: first.id } }),
-    prisma.printer.updateMany({ where: { inventoryId: null }, data: { inventoryId: first.id } })
-  ]);
-  if (spools.count > 0 || printers.count > 0) {
-    logger.info("Spulen und Drucker dem Hauptlager zugeordnet", { spools: spools.count, printers: printers.count });
-  }
+  const users = await prisma.user.findMany({ select: { id: true, role: true } });
+  await prisma.inventory.create({
+    data: {
+      name: DEFAULT_INVENTORY_NAME,
+      members: { create: users.map((user) => ({ userId: user.id, role: user.role === "ADMIN" ? "OWNER" : "EDITOR" })) }
+    }
+  });
+  logger.info("Hauptlager angelegt", { members: users.length });
 }
 
 export function ensureDefaultInventory(): Promise<void> {

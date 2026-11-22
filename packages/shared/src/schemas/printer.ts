@@ -11,7 +11,7 @@ export const printerSchema = z.object({
   accessCode: z.string().min(1).max(60),
   syncMode: printerSyncModeSchema,
   syncIntervalSeconds: z.number().int().min(10).max(3600),
-  inventoryId: z.string().uuid().nullable(),
+  inventoryId: z.string().uuid(),
   createdAt: z.coerce.date()
 });
 export type Printer = z.infer<typeof printerSchema>;

@@ -46,7 +46,8 @@ describe("Wiederherstellung - Ablauf (Kommandos nachgestellt, keine echte Datenb
   before(async () => {
     folder = await fs.mkdtemp(path.join(os.tmpdir(), "filapilot-restore-"));
     uploads = await fs.mkdtemp(path.join(os.tmpdir(), "filapilot-uploads-"));
-    await fs.writeFile(path.join(folder, `filapilot-db-${TIMESTAMP}.sql`), "-- dump");
+    // Ein Dump ab 0.13.0 enthaelt die Lager-Tabelle (sonst weist startRestore ihn ab, siehe letzter Test).
+    await fs.writeFile(path.join(folder, `filapilot-db-${TIMESTAMP}.sql`), "-- dump\nCREATE TABLE public.inventories (\n    id text\n);\n");
   });
 
   beforeEach(async () => {
@@ -144,6 +145,20 @@ describe("Wiederherstellung - Ablauf (Kommandos nachgestellt, keine echte Datenb
     await first.finished;
     const third = await startRestore(TIMESTAMP, deps());
     await third.finished;
+    assert.equal(getRestoreStatus().state, "done");
+  });
+
+  it("weist eine Sicherung aus der Zeit vor den Lagern ab, BEVOR etwas gesichert, geloescht oder eingespielt wird", async () => {
+    const legacy = "2026-09-01T01-00-00-000Z";
+    await fs.writeFile(path.join(folder, `filapilot-db-${legacy}.sql`), "CREATE TABLE public.spools (\n    id text\n);\n");
+
+    await assert.rejects(() => startRestore(legacy, deps()), { code: "VALIDATION_ERROR" });
+
+    assert.deepEqual(calls, []);
+    assert.equal(getRestoreStatus().state, "idle");
+    // Die Sperre ist nicht haengen geblieben: eine gueltige Wiederherstellung laeuft danach normal.
+    const next = await startRestore(TIMESTAMP, deps());
+    await next.finished;
     assert.equal(getRestoreStatus().state, "done");
   });
 

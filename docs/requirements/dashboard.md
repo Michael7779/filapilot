@@ -22,9 +22,9 @@
 - "Lager im Vergleich" (nur in der "Alle Lager"-Ansicht) unveraendert.
 
 ## 1.1 Offene Punkte
-- OP-D1: Kein Offline-/Fehler-Signal aus dem Backup-Prozess oder der Bambu-Cloud-Verbindung auf dem Dashboard -
-  nur Drucker-Live-Status und Restgewicht. Bei Bedarf spaeter ergaenzbar (Daten existieren teilweise schon, z.B.
-  `BambuConnectionInfo.connected`).
+- OP-D1 ✅ (0.42.0): Backup- und Bambu-Cloud-Signale stehen jetzt in "Braucht Aufmerksamkeit", siehe R5.
+  Weiterhin kein eigenes Signal fuer den Ausfall des Backup-Jobs selbst: der Job schreibt nur ins Server-Log; das Dashboard erkennt ihn
+  indirekt an einer zu alten Sicherung. Ein zu altes Token zeigt nur, wer mindestens Betrachter im Lager ist.
 
 ## 1.2 Anforderungen
 - **R1**: Jeder eingeloggte Nutzer sieht auf dem Dashboard die fuenf Kennzahlen-Kacheln seines gewaehlten Lagers
@@ -43,3 +43,13 @@
   sein; Start ist immer zugeklappt. Rein clientseitig (`components/StockByType.tsx`, Gruppierung in
   `lib/stockByType.ts`), keine neue Route. Test: `tests/unit/stockByType.test.ts`,
   `tests/unit/stockByTypeComponent.test.tsx`.
+- **R5**: Ab 0.42.0: "Braucht Aufmerksamkeit" zeigt zusaetzlich Betriebs-Signale (`hooks/useSystemAttention.ts`, Logik in `lib/dashboardSignals.ts`),
+  rein clientseitig aus bestehenden Routen, keine neue Route. (a) Sicherung - NUR fuer Admins (`GET /api/settings` und `GET /api/settings/backups` sind
+  Admin-Routen, andere Nutzer fragen sie gar nicht erst ab): ist die automatische Sicherung aktiv und es gibt keine Sicherung bzw. die neueste ist
+  mindestens 36 Stunden alt (taeglicher Lauf 03:00 UTC), erscheint eine Warnung mit Link zu den Einstellungen; bei ausgeschalteter Sicherung bleibt es still.
+  (b) Bambu-Cloud je Lager (`GET /api/inventories/:id/bambu-import/connection`, Rolle `VIEWER`, bei "Alle Lager" je eigenem Lager): nur bei gemerkter
+  Verbindung - abgelaufenes Token (rot), fehlgeschlagener Abgleich mit Grund (rot), Token laeuft in hoechstens 3 Tagen ab (gelb); es wird nur das
+  wichtigste Signal je Lager gezeigt. Ein nicht ermittelbares Signal bleibt weg, statt eine falsche Warnung zu zeigen.
+  Negativ-Pfad serverseitig bereits getestet: Sicherungs-Routen `tests/security/backups.test.ts` (ohne Anmeldung 401, USER 403), Verbindungs-Route
+  `tests/security/bambuConnection.test.ts` (Fremder 404). Test der Signal-Logik: `packages/frontend/tests/unit/dashboardSignals.test.ts`. Oberflaeche:
+  manuell im Browser.

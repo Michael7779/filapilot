@@ -9,6 +9,8 @@ import { ensureOpenedAtBackfilled } from "./services/openedAtBackfill.js";
 import { ensureSuperAdmin } from "./services/superAdminService.js";
 import { startSizzleCatalogScheduler } from "./services/sizzleCatalogScheduler.js";
 import { runWithStartupRetry } from "./lib/startupRetry.js";
+import { countPublicTables, ensureDatabaseSchema, pushSchemaWithCli } from "./services/schemaBootstrap.js";
+import { prisma } from "./prisma.js";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
 
@@ -23,10 +25,11 @@ startBambuAutoSync();
 // Produkte des SizzleBrothers-Shops regelmaessig abgleichen (beim Start und danach alle paar Stunden)
 startSizzleCatalogScheduler();
 
-// Erst das Hauptlager sicherstellen (Spulen/Drucker ohne Lager zuordnen), dann die Drucker verbinden. Direkt nach einem Update
-// fehlen der Datenbank evtl. noch Tabellen (das Update-Skript gleicht sie erst nach dem Start ab) - dann wird es wiederholt.
+// Erst bei einer frischen Installation das Schema anlegen (nur in einer komplett leeren Datenbank), dann das Hauptlager
+// sicherstellen und die Drucker verbinden. Bei einem Fehler (z.B. Datenbank noch nicht bereit) wird es wiederholt.
 runWithStartupRetry(
   async () => {
+    await ensureDatabaseSchema({ countTables: () => countPublicTables(prisma), pushSchema: () => pushSchemaWithCli() });
     await ensureDefaultInventory();
     await ensureOpenedAtBackfilled();
     await ensureSuperAdmin();
@@ -36,7 +39,7 @@ runWithStartupRetry(
     attempts: STARTUP_ATTEMPTS,
     delayMs: STARTUP_RETRY_DELAY_MS,
     onRetry: (attempt, err) => {
-      logger.warn("Lager oder Drucker konnten beim Start noch nicht vorbereitet werden (Datenbank-Schema noch nicht abgeglichen?) - neuer Versuch", {
+      logger.warn("Lager oder Drucker konnten beim Start noch nicht vorbereitet werden (Datenbank noch nicht bereit?) - neuer Versuch", {
         attempt,
         err
       });

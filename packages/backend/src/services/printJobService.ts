@@ -46,13 +46,13 @@ export async function listPrintJobs(user: { id: string; role: "ADMIN" | "USER" }
 
   if (query.printerId) {
     const printer = await prisma.printer.findUnique({ where: { id: query.printerId }, select: { inventoryId: true } });
-    if (!printer || printer.inventoryId === null || !scopeIds.includes(printer.inventoryId)) {
+    if (!printer || !scopeIds.includes(printer.inventoryId)) {
       throw new AppError("NOT_FOUND", "Drucker wurde nicht gefunden.");
     }
   }
   if (query.spoolId) {
     const spool = await prisma.spool.findUnique({ where: { id: query.spoolId }, select: { inventoryId: true } });
-    if (!spool || spool.inventoryId === null || !scopeIds.includes(spool.inventoryId)) {
+    if (!spool || !scopeIds.includes(spool.inventoryId)) {
       throw new AppError("NOT_FOUND", "Spule wurde nicht gefunden.");
     }
   }

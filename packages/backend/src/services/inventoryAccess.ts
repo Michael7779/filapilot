@@ -40,19 +40,13 @@ export async function requireInventoryRole(
   return role;
 }
 
-// Fuer Objekte (Spule, Drucker), deren Lager aus der Datenbank kommt. Ein Objekt ohne Lager (nur vor der
-// Datenuebernahme moeglich) ist ausschliesslich fuer Admins erreichbar.
+// Fuer Objekte (Spule, Drucker), deren Lager aus der Datenbank kommt. Jedes Objekt hat ein Pflicht-Lager (seit 0.42.0), es gibt
+// keinen Sonderweg fuer Objekte ohne Lager mehr.
 export async function requireAccessToObjectInventory(
   user: Pick<User, "id" | "role">,
-  inventoryId: string | null,
+  inventoryId: string,
   minimum: InventoryRole
 ): Promise<InventoryRole> {
-  if (inventoryId === null) {
-    if (user.role === "ADMIN") {
-      return "OWNER";
-    }
-    throw new AppError("NOT_FOUND", "Eintrag wurde nicht gefunden.");
-  }
   return requireInventoryRole(user, inventoryId, minimum);
 }
 

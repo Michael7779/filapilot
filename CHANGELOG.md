@@ -8,6 +8,19 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.42.0] - 2026-11-22
+
+### Hinzugefuegt
+- Dashboard, "Braucht Aufmerksamkeit": Hier steht jetzt auch, wenn bei der Sicherung oder der Bambu-Cloud etwas nicht stimmt. Admins sehen einen Hinweis, wenn die automatische Sicherung eingeschaltet ist, aber keine Sicherung existiert oder die letzte älter als anderthalb Tage ist. Bei einem Lager mit gemerkter Bambu-Cloud-Verbindung erscheint ein Hinweis, wenn der letzte Abgleich fehlgeschlagen ist (mit dem Grund), die Anmeldung abgelaufen ist oder in den nächsten drei Tagen abläuft. Ein Klick führt zu den Einstellungen bzw. zu den Spulen.
+
+### Geändert
+- Jede Spule und jeder Drucker gehört jetzt in der Datenbank zwingend zu einem Lager (bisher war das nur im Programm sichergestellt). Im Alltag ändert sich nichts.
+- Sicherungen aus der Zeit vor den Lagern (vor Version 0.13.0, September 2026) lassen sich nicht mehr wiederherstellen. Die App meldet das sofort, bevor etwas verändert wird. Alle neueren Sicherungen funktionieren wie bisher.
+
+### Hinweis zum Update
+- Schema: `Spool.inventoryId` und `Printer.inventoryId` sind jetzt Pflichtfelder (NOT NULL). Das Update-Skript gleicht das ohne Rückfrage ab, solange keine Spule und kein Drucker ohne Lager existiert; das ist seit 0.13.0 durch das Hauptlager beim Start sichergestellt (mit dem Release-Gate `scripts/check-schema-upgrade.sh` gegen 0.41.1 geprüft). Gäbe es doch lagerlose Zeilen, bricht `prisma db push` ab, ohne neu zu starten. Dann einmalig `UPDATE spools SET "inventoryId" = (SELECT id FROM inventories ORDER BY "createdAt" LIMIT 1) WHERE "inventoryId" IS NULL;` und dasselbe für `printers` ausführen und das Update-Skript erneut starten.
+- Frische Installation: Das Backend legt das Datenbank-Schema beim ersten Start selbst an (nur in einer komplett leeren Datenbank). Die Aufgabe „Datenbank anlegen“ aus der Installationsanleitung entfällt; eine bereits vorhandene Aufgabe schadet nicht.
+
 ## [0.41.1] - 2026-11-19
 
 ### Sicherheit

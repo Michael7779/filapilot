@@ -15,7 +15,7 @@ function spool(over: Partial<SpoolWithRelations>): SpoolWithRelations {
     id: "00000000-0000-4000-8000-000000000001",
     materialId: PLA,
     manufacturerId: "m1",
-    inventoryId: null,
+    inventoryId: "inv1",
     colorName: "Schwarz",
     colorHex: null,
     initialWeightG: 1000,

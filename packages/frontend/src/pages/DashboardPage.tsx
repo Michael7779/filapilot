@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LOW_STOCK_THRESHOLD_RATIO } from "@filapilot/shared";
-import type { Material, PrinterLiveStatus, PrinterPublic, SpoolFilter, SpoolWithRelations } from "@filapilot/shared";
+import type { Material, PrinterLiveStatus, PrinterPublic, SpoolWithRelations } from "@filapilot/shared";
 import { apiRequest } from "../lib/api.js";
+import type { AttentionItem } from "../lib/dashboardSignals.js";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
+import { useSystemAttention } from "../hooks/useSystemAttention.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 import { ConsumptionChart } from "../components/ConsumptionChart.js";
 import { StockByType } from "../components/StockByType.js";
@@ -37,24 +39,18 @@ async function fetchPrinterWithStatus(printer: PrinterPublic): Promise<PrinterWi
   return { printer, status };
 }
 
-interface AttentionItem {
-  key: string;
-  severity: "danger" | "warning";
-  text: string;
-  to: string;
-  state?: { presetFilter: Partial<SpoolFilter> };
-}
-
 // "Braucht Aufmerksamkeit": buendelt die Signale, die schon einzeln in der App stecken (Restgewicht der
-// Spulen, Live-Status der Drucker), damit man sie nicht erst auf drei Seiten zusammensuchen muss. Bewusst
-// nur Signale, fuer die es bereits ein Datenfeld gibt - kein neues Konzept (z.B. "Trocknung faellig") ohne
-// Faelligkeitsdatum im Modell.
+// Spulen, Live-Status der Drucker, Sicherung, Bambu-Cloud-Verbindung), damit man sie nicht erst auf mehreren
+// Seiten zusammensuchen muss. Bewusst nur Signale, fuer die es bereits ein Datenfeld gibt - kein neues Konzept
+// (z.B. "Trocknung faellig") ohne Faelligkeitsdatum im Modell. Die Betriebs-Signale kommen aus useSystemAttention.
 function NeedsAttention({
   spools,
-  printersWithStatus
+  printersWithStatus,
+  systemItems
 }: {
   spools: SpoolWithRelations[];
   printersWithStatus: PrinterWithStatus[];
+  systemItems: AttentionItem[];
 }): React.JSX.Element {
   const { t } = useTranslation();
   const lowStockSpools = spools.filter(
@@ -90,7 +86,8 @@ function NeedsAttention({
             state: { presetFilter: { lowStockOnly: true } }
           }
         ]
-      : [])
+      : []),
+    ...systemItems
   ];
 
   return (
@@ -164,6 +161,7 @@ function InventoryComparison({ spools }: { spools: SpoolWithRelations[] }): Reac
 export function DashboardPage(): React.JSX.Element {
   const { t } = useTranslation();
   const { selectedId, isAll } = useCurrentInventory();
+  const systemItems = useSystemAttention(selectedId);
   const [spools, setSpools] = useState<SpoolWithRelations[] | null>(null);
   const [materials, setMaterials] = useState<Material[] | null>(null);
   const [printersWithStatus, setPrintersWithStatus] = useState<PrinterWithStatus[] | null>(null);
@@ -204,7 +202,7 @@ export function DashboardPage(): React.JSX.Element {
         />
       </div>
 
-      {spools && printersWithStatus && <NeedsAttention spools={spools} printersWithStatus={printersWithStatus} />}
+      {spools && printersWithStatus && <NeedsAttention spools={spools} printersWithStatus={printersWithStatus} systemItems={systemItems} />}
 
       {selectedId && <ConsumptionChart inventoryId={selectedId} />}
 

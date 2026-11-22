@@ -33,6 +33,17 @@ INSERT INTO spools (id, "materialId", "manufacturerId", "colorName", "initialWei
   SELECT gen_random_uuid(), m.id, f.id, 'Rot', 1000, 500, now() FROM materials m, manufacturers f;
 INSERT INTO printers (id, name, "ipAddress", "serialNumber", "accessCode") VALUES (gen_random_uuid(), 'Gate', '192.0.2.1', 'GATE-1', 'x');
 SQL
+# Ab dem Stand mit Lagern (0.13.0) gehoeren Spulen und Drucker immer zu einem Lager (ensureDefaultInventory beim Start). Das nachbilden,
+# damit das Gate den echten Updatefall prueft und nicht eine Datenbank mit lagerlosen Zeilen, die es in Betrieb nicht gibt.
+psql -h filapilot-test-db -U filapilot -d fp_upgrade_check -q <<SQL
+DO \$\$ BEGIN
+  IF to_regclass('public.inventories') IS NOT NULL THEN
+    INSERT INTO inventories (id, name) VALUES ('gate-lager', 'Gate-Lager');
+    UPDATE spools SET "inventoryId" = 'gate-lager';
+    UPDATE printers SET "inventoryId" = 'gate-lager';
+  END IF;
+END \$\$;
+SQL
 OUT="$(npx prisma db push --schema=/w/new.prisma --skip-generate 2>&1)"
 psql -h filapilot-test-db -U filapilot -d postgres -q -c "DROP DATABASE IF EXISTS fp_upgrade_check"
 if echo "$OUT" | grep -q "in sync"; then

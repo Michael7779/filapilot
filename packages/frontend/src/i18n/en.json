@@ -206,7 +206,12 @@
       "allGood": "Everything looks good.",
       "printFailed": "Print on \"{{name}}\" failed",
       "printerOffline": "Printer \"{{name}}\" not connected",
-      "lowStock": "{{count}} spool(s) almost empty"
+      "lowStock": "{{count}} spool(s) almost empty",
+      "backupNever": "Automatic backup is on, but there is no backup yet",
+      "backupStale": "The latest backup is {{days}} day(s) old",
+      "bambuTokenExpired": "Bambu Cloud in \"{{name}}\": sign-in expired, please reconnect",
+      "bambuSyncFailed": "Bambu Cloud sync in \"{{name}}\" failed: {{reason}}",
+      "bambuTokenExpiresSoon": "Bambu Cloud in \"{{name}}\": sign-in expires in {{days}} day(s)"
     },
     "stockByType": "Remaining stock by material type",
     "noStock": "No spools in stock yet."

@@ -13,6 +13,7 @@ import { getSettings } from "./settingsService.js";
 import { createBackupUnlocked } from "./backupService.js";
 import { acquireBackupLock } from "./backupLock.js";
 import { backupFileNames } from "./backupCatalog.js";
+import { assertBackupHasInventories } from "./backupCompatibility.js";
 import { recordAudit, type AuditActor } from "./auditService.js";
 import { connectAllPrinters, disconnectAllPrinters } from "./printerRuntime.js";
 
@@ -36,6 +37,8 @@ export interface RestoreDependencies {
   uploadsFolder: string;
   run: CommandRunner;
   createSafetyBackup: () => Promise<string>;
+  // Prueft den Dump VOR jedem Eingriff (wirft bei einer Sicherung, die sich nicht einspielen laesst, z.B. aus der Zeit vor den Lagern).
+  assertDumpCompatible: (dumpPath: string) => Promise<void>;
   afterDatabaseRestore: () => Promise<void>;
   afterAllRestored: () => Promise<void>;
   syncSchema: boolean;
@@ -66,10 +69,12 @@ async function defaultDependencies(): Promise<RestoreDependencies> {
     uploadsFolder: env.UPLOADS_FOLDER_PATH,
     run: defaultRunner,
     createSafetyBackup: () => createBackupUnlocked(),
+    assertDumpCompatible: (dumpPath) => assertBackupHasInventories(dumpPath),
     afterDatabaseRestore: () => prisma.$disconnect(),
     afterAllRestored: async () => {
       disconnectAllPrinters();
-      // Eine Sicherung aus einer Version vor den Lagern hat keine Lager: das Hauptlager wird neu angelegt.
+      // Sicherungen ab 0.13.0 haben Lager (aeltere werden vorher abgewiesen); fehlt dennoch jedes Lager (z.B. alle geloescht), wird das
+      // Hauptlager neu angelegt.
       await ensureDefaultInventory();
       // Eine aeltere Sicherung kennt keine Super-Admins: es muss danach trotzdem einen geben.
       await ensureSuperAdmin();
@@ -210,9 +215,11 @@ export async function startRestore(
     throw new AppError("VALIDATION_ERROR", "Ungueltiger Sicherungs-Zeitstempel.");
   }
   const deps = { ...(await defaultDependencies()), ...overrides };
-  if (!(await exists(path.join(deps.folder, backupFileNames(timestamp).database)))) {
+  const dumpPath = path.join(deps.folder, backupFileNames(timestamp).database);
+  if (!(await exists(dumpPath))) {
     throw new AppError("NOT_FOUND", "Diese Sicherung wurde nicht gefunden.");
   }
+  await deps.assertDumpCompatible(dumpPath);
 
   const release = acquireBackupLock();
   setStep("safety-backup", timestamp);

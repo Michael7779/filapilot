@@ -8,7 +8,7 @@ export const spoolSchema = z.object({
   materialId: z.string().uuid(),
   manufacturerId: z.string().uuid(),
   // Lager der Spule (in der Datenbank nur wegen der Datenuebernahme optional).
-  inventoryId: z.string().uuid().nullable(),
+  inventoryId: z.string().uuid(),
   colorName: z.string().min(1).max(60),
   colorHex: hexColor.nullable(),
   // Zweite Farbe bei zweifarbigem Filament (z.B. Bambu Dual-Color); null = einfarbig.
