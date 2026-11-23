@@ -20,12 +20,12 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
 - Neuer Fehlercode `UPSTREAM_ERROR` (502) fuer "Bambu nicht erreichbar / blockiert / unerwartete Antwort".
 
 ## 1.1 Offene Punkte
-- OP-B1: **Die echte Schnittstelle ist weitgehend geprueft.** Erster Praxistest (2026-09-26, Konto des Nutzers): Die Anmeldung erreicht die
+- OP-B1 ✅ (2026-11-23): Die echte Schnittstelle ist geprueft. Erster Praxistest (2026-09-26, Konto des Nutzers): Die Anmeldung erreicht die
   Cloud (Bot-Schutz kein Problem, es kam ein E-Mail-Code); der Schritt "Code anfordern" antwortet mit HTTP 200 ohne lesbares JSON und wurde
   zunaechst faelschlich als Fehler gewertet (behoben in 0.14.2, Test mit gefaelschten Antworten). Zweiter Praxistest (2026-11-23, Version 0.42.1,
   Konto des Nutzers, Test-Lager): Anmeldung mit E-Mail-Code, Spulenliste und Import laufen durch - 22 Spulen neu angelegt, 0 uebersprungen, die
-  Anzahl stimmt mit der Bambu-App ueberein. Noch nicht ausdruecklich bestaetigt: Hersteller, Material, Farbe und Gewicht einzelner Spulen sowie der
-  Lagerort "im Drucker" (nur die Anzahl wurde verglichen).
+  Anzahl stimmt mit der Bambu-App ueberein; Hersteller, Material, Farbe und Gewicht der Stichprobe stimmen. Nicht verglichen wurde der Lagerort
+  "im Drucker" (Druckername).
 - OP-B6: Ob Bambu beim Anmelden selbst einen Code verschickt oder erst auf "Code anfordern": Im Praxistest kamen bei wenigen Versuchen mehrere
   E-Mails an. Seit 0.14.2 wird kein Code automatisch angefordert, sondern nur auf Wunsch (max. 1x pro Minute); im Protokoll des Servers
   stehen bei Fehlern Schritt, Status und Feldnamen (nie Inhalte).
@@ -58,7 +58,7 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   archivieren (`CLOUD_REMOVED`), Zurueckgekehrte wiederherstellen, von Hand archivierte nie anfassen; bei leerer, unvollstaendiger oder ungewoehnlich
   lueckenhafter Liste wird nichts archiviert. Tests: `tests/security/bambuConnection.test.ts`, `tests/unit/bambuCloudClient.test.ts`
 - **R7** ✅ Oberflaeche (Assistent, Datei-Weg, Vorschau, Ergebnis): manuell per Browser mit dem Datei-Weg geprueft (2026-09-26); der Weg ueber
-  die echte Cloud ist seit 2026-11-23 geprueft (Anzahl; Feldzuordnung siehe OP-B1).
+  die echte Cloud ist seit 2026-11-23 geprueft (Anzahl, Hersteller, Material, Farbe, Gewicht; siehe OP-B1).
 - **R-AUTO**: Ab 0.16.0: `Settings.bambuAutoSyncMinutes` (0 = aus, sonst 60/180/360/720/1440; nur Admin aenderbar, andere Werte 400) steuert den automatischen Abgleich
   aller gemerkten Verbindungen (`services/bambuAutoSync.ts`, Pruefung alle 5 Minuten, nacheinander mit Pause). Faellig = letzter Versuch (auch fehlgeschlagen) laenger als das
   Intervall her; Fehler werden am Lager vermerkt (`lastSyncError`) und nicht sofort wiederholt; 401 der Cloud trennt die Verbindung; das Archivieren hat dieselben Schutzgrenzen wie
