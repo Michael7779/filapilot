@@ -7,7 +7,7 @@ export const spoolSchema = z.object({
   id: z.string().uuid(),
   materialId: z.string().uuid(),
   manufacturerId: z.string().uuid(),
-  // Lager der Spule (in der Datenbank nur wegen der Datenuebernahme optional).
+  // Lager der Spule (seit 0.42.0 auch in der Datenbank Pflicht).
   inventoryId: z.string().uuid(),
   colorName: z.string().min(1).max(60),
   colorHex: hexColor.nullable(),
@@ -44,7 +44,9 @@ export type Spool = z.infer<typeof spoolSchema>;
 // Beim Anlegen ist das Lager Pflicht; beim Aendern optional (Angabe = in dieses Lager verschieben). customFields
 // ist hier nur roh (unbekannte Schluessel erlaubt) - die Route validiert es gegen die bekannten Definitionen
 // (Whitelist, siehe validateCustomFieldValues) und macht daraus die geprueften Werte oben.
-export const createSpoolInputSchema = spoolSchema
+// Gemeinsame Felder fuer Anlegen und Aendern OHNE Standardwerte. Zod 4 wendet default() auch nach partial() an - ein PATCH
+// ohne note/isRefill/... wuerde sonst still die gespeicherten Werte zuruecksetzen. Deshalb haengen die Standardwerte nur am Anlegen.
+const spoolInputBaseSchema = spoolSchema
   .omit({
     id: true,
     createdAt: true,
@@ -61,19 +63,28 @@ export const createSpoolInputSchema = spoolSchema
   })
   .extend({
     inventoryId: z.string().uuid(),
-    // Neuere, optionale Felder: weglassen ist gleichbedeutend mit "kein Wert" (Abwaertskompatibilitaet).
-    colorHex2: hexColor.nullable().optional().default(null),
-    note: z.string().trim().max(500).nullable().optional().default(null),
-    isRefill: z.boolean().optional().default(false),
-    tareWeightG: z.number().int().min(0).nullable().optional().default(null),
-    customFields: rawCustomFieldValuesSchema.optional().default({}),
+    colorHex2: hexColor.nullable().optional(),
+    note: z.string().trim().max(500).nullable().optional(),
+    isRefill: z.boolean().optional(),
+    tareWeightG: z.number().int().min(0).nullable().optional(),
+    customFields: rawCustomFieldValuesSchema.optional(),
     // Eine manuell angelegte Spule ist standardmaessig ungeoeffnet; true = diese Spule ist schon angebrochen
     // (z.B. bestehender Lagerbestand wird nur nachgetragen). Kein echtes Spool-Feld - die Route macht daraus openedAt.
-    alreadyOpened: z.boolean().optional().default(false)
+    alreadyOpened: z.boolean().optional()
   });
+
+// Neuere, optionale Felder: weglassen ist beim Anlegen gleichbedeutend mit "kein Wert" (Abwaertskompatibilitaet).
+export const createSpoolInputSchema = spoolInputBaseSchema.extend({
+  colorHex2: spoolInputBaseSchema.shape.colorHex2.default(null),
+  note: spoolInputBaseSchema.shape.note.default(null),
+  isRefill: spoolInputBaseSchema.shape.isRefill.default(false),
+  tareWeightG: spoolInputBaseSchema.shape.tareWeightG.default(null),
+  customFields: spoolInputBaseSchema.shape.customFields.default({}),
+  alreadyOpened: spoolInputBaseSchema.shape.alreadyOpened.default(false)
+});
 export type CreateSpoolInput = z.infer<typeof createSpoolInputSchema>;
 
-export const updateSpoolInputSchema = createSpoolInputSchema.omit({ alreadyOpened: true }).partial();
+export const updateSpoolInputSchema = spoolInputBaseSchema.omit({ alreadyOpened: true }).partial();
 export type UpdateSpoolInput = z.infer<typeof updateSpoolInputSchema>;
 
 export const spoolWithRelationsSchema = spoolSchema.extend({

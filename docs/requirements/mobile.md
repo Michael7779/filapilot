@@ -61,5 +61,5 @@
   `packages/frontend/tests/unit/pwaUpdateReload.test.ts`. Im Produktions-Build mit `vite preview` und Playwright (Chromium,
   Firefox, WebKit) geprueft: Hinweis auf der Login-Seite nach Tab-Wechsel und nach F5, Klick laedt ueber `controllerchange` neu.
   Nicht geprueft: echtes Safari (macOS/iOS) und der 5-Sekunden-Timer im echten Browser (nur Unit-Test).
-- OP-MO3: Ein Hinweis auf ein auf dem Server bereitliegendes, aber noch nicht eingespieltes Update (gelber Admin-Hinweis wie in
+- OP-MO4: Ein Hinweis auf ein auf dem Server bereitliegendes, aber noch nicht eingespieltes Update (gelber Admin-Hinweis wie in
   AutoLogbuch) existiert in FilaPilot nicht; die Updates laufen ueber `scripts/update-synology.sh`. Nur auf Wunsch zu bauen.

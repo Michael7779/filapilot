@@ -29,7 +29,7 @@ export function errorHandler(
   if (err instanceof ZodError) {
     const body: ApiResult<never> = {
       data: null,
-      error: { code: "VALIDATION_ERROR", message: err.errors.map((e) => e.message).join("; ") }
+      error: { code: "VALIDATION_ERROR", message: err.issues.map((e) => e.message).join("; ") }
     };
     res.status(400).json(body);
     return;

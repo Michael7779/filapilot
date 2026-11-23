@@ -250,3 +250,4 @@
   (Tab-Wechsel springt auf Seite 1). "Zur Spule springen" (R38, `useSpoolJump`) wechselt bei Bedarf auf den Tab der Ziel-Spule. Tastatur: Pfeil links/rechts
   wechselt den Tab. Reine Darstellung, keine Route, kein Schema. Test: `packages/frontend/tests/unit/spoolOpenedTabs.test.tsx`;
   die Oberflaeche wurde noch nicht im Browser geprueft.
+- **R39b**: Ab 0.42.1 (Zod 4): Das Aendern einer Spule (`updateSpoolInputSchema`) setzt nie ein nicht mitgeschicktes Feld auf einen Standardwert zurueck (Notiz, Nachfuell-Kennzeichen, Leergewicht, zweite Farbe, eigene Felder bleiben); Standardwerte gelten nur beim Anlegen. Tests: `packages/backend/tests/unit/spoolInputSchemas.test.ts`, `tests/security/spoolExtras.test.ts`, `tests/security/spoolPriceSuggestions.test.ts`

@@ -8,6 +8,15 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.42.1] - 2026-11-23
+
+### Sicherheit
+- Mehrere Bausteine, auf denen FilaPilot aufbaut, wurden auf den aktuellen Stand gebracht, weil für ältere Versionen Sicherheitslücken bekannt waren (E-Mail-Versand, Prüfung von Eingaben, Webserver-Framework und einzelne Hilfsbibliotheken). Am Aussehen und an der Bedienung ändert sich nichts.
+
+### Hinweis zum Update
+- Abhängigkeiten: nodemailer 6 → 10, zod 3 → 4, express/body-parser/qs/ip-address auf die gepatchten Versionen; `uuid` wird für exceljs per `overrides` in `pnpm-workspace.yaml` auf 11.x gehoben. `pnpm audit --prod` meldet danach keine Lücke mehr. Kein Schema-Update nötig.
+- Zod 4 wendet `default()` auch nach `partial()` an; das Spulen-Änderungsschema ist deshalb von den Standardwerten des Anlegen-Schemas getrennt (sonst hätte ein Ändern ohne Notiz usw. die gespeicherten Werte zurückgesetzt).
+
 ## [0.42.0] - 2026-11-22
 
 ### Hinzugefuegt

@@ -6,7 +6,7 @@ export type PrinterSyncMode = z.infer<typeof printerSyncModeSchema>;
 export const printerSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(60),
-  ipAddress: z.string().ip(),
+  ipAddress: z.union([z.ipv4(), z.ipv6()]),
   serialNumber: z.string().min(1).max(60),
   accessCode: z.string().min(1).max(60),
   syncMode: printerSyncModeSchema,
