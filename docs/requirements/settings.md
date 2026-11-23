@@ -55,7 +55,7 @@
   ueberschreibt nie eine vorhandene Sicherung (409) und spielt nichts ein - Wiederherstellen bleibt ein eigener Schritt.
 
 ## 1.1 Offene Punkte
-- OP-S5 (Sicherheits-Audit 2026-09-29): `createBackupUnlocked` baute `pg_dump`/`tar`-Aufrufe bis 0.22.3 per
+- OP-S5 ✅ (0.22.4, Sicherheits-Audit 2026-09-29): `createBackupUnlocked` baute `pg_dump`/`tar`-Aufrufe bis 0.22.3 per
   `child_process.exec()` als String zusammen (`pg_dump "${databaseUrl}" ...`), der ueber eine Shell laeuft.
   `backupFolderPath` kommt aus den Admin-Settings und ist per Zod nur `z.string().min(1)` (keine Zeichen-Pruefung) -
   ein boesartiger oder kompromittierter Admin-Account haette darin Shell-Metazeichen (`"; ...; echo "`) einschleusen

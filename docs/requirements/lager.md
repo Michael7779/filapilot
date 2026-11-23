@@ -23,7 +23,7 @@ Design: `docs/design/lager.md` (abgestimmt 2026-09-26). Umgesetzt in Version 0.1
   Lager-Filter im Protokoll. Ohne Lager zeigt die App eine Einladung zum Anlegen.
 
 ## 1.1 Offene Punkte
-- OP-L1: Import aus der Bambu-Cloud pro Lager: umgesetzt in 0.14.0, siehe `bambu-import.md`.
+- OP-L1 ✅ (0.14.0): Import aus der Bambu-Cloud pro Lager, siehe `bambu-import.md`.
 - OP-L2 ✅ (0.42.0): `Spool.inventoryId` und `Printer.inventoryId` sind jetzt Pflicht (`String`, NOT NULL), siehe R14. Folge: Sicherungen vor 0.13.0 lassen sich nicht mehr einspielen (R14).
 - OP-L3: Ein Drucker laesst sich nicht in ein anderes Lager verschieben (bewusst: loeschen und neu anlegen).
 - OP-L4: Beim Loeschen eines Benutzers werden seine Mitgliedschaften entfernt; ein Lager ohne Besitzer bleibt nur fuer Admins verwaltbar.
