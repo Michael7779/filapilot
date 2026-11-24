@@ -57,6 +57,9 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
 - **R10** ✅ Abgleich ohne Auswahl: neue Spulen (Status 0/ohne) anlegen, Restgewicht aus der Cloud uebernehmen (Verlauf `CLOUD_SYNC`), in der Cloud entfernte
   archivieren (`CLOUD_REMOVED`), Zurueckgekehrte wiederherstellen, von Hand archivierte nie anfassen; bei leerer, unvollstaendiger oder ungewoehnlich
   lueckenhafter Liste wird nichts archiviert. Tests: `tests/security/bambuConnection.test.ts`, `tests/unit/bambuCloudClient.test.ts`
+  Praxistest gegen die echte Cloud (2026-11-24, Version 0.42.1, Test-Lager mit gemerkter Verbindung): Ein von Hand geaendertes Restgewicht wird vom Abgleich
+  auf den Cloud-Wert zurueckgesetzt ("0 neu, 1 aktualisiert, 0 archiviert, 0 wiederhergestellt"), ein zweiter Abgleich meldet "0 aktualisiert". Nicht
+  geprueft: der Verlauf-Eintrag (R11) dieses echten Abgleichs, das Archivieren und Wiederherstellen gegen die echte Cloud.
 - **R7** ✅ Oberflaeche (Assistent, Datei-Weg, Vorschau, Ergebnis): manuell per Browser mit dem Datei-Weg geprueft (2026-09-26); der Weg ueber
   die echte Cloud ist seit 2026-11-23 geprueft (Anzahl, Hersteller, Material, Farbe, Gewicht; siehe OP-B1).
 - **R-AUTO**: Ab 0.16.0: `Settings.bambuAutoSyncMinutes` (0 = aus, sonst 60/180/360/720/1440; nur Admin aenderbar, andere Werte 400) steuert den automatischen Abgleich
