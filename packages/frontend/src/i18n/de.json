@@ -209,6 +209,7 @@
       "lowStock": "{{count}} Spule(n) fast leer",
       "backupNever": "Die automatische Sicherung ist aktiv, aber es gibt noch keine Sicherung",
       "backupStale": "Die letzte Sicherung ist {{days}} Tag(e) alt",
+      "backupFailed": "Die automatische Sicherung ist fehlgeschlagen: {{reason}}",
       "bambuTokenExpired": "Bambu-Cloud in \"{{name}}\": Anmeldung abgelaufen, bitte neu verbinden",
       "bambuSyncFailed": "Bambu-Cloud-Abgleich in \"{{name}}\" fehlgeschlagen: {{reason}}",
       "bambuTokenExpiresSoon": "Bambu-Cloud in \"{{name}}\": Anmeldung läuft in {{days}} Tag(en) ab"
@@ -837,6 +838,14 @@
   },
   "printers": {
     "newPrinter": "Neuer Drucker",
+    "move": "In anderes Lager verschieben",
+    "moveTitle": "„{{name}}“ verschieben",
+    "moveHint": "Der Drucker wechselt samt Auftragsverlauf in das andere Lager. Die Zuordnung der Spulen zu den AMS-Fächern wird geleert, weil sie zu Spulen des alten Lagers gehört.",
+    "moveTarget": "Ziel-Lager",
+    "movePick": "Lager wählen",
+    "moveNoTarget": "Es gibt kein anderes Lager, in dem du Besitzer bist.",
+    "moveConfirm": "Verschieben",
+    "moveFailed": "Der Drucker konnte nicht verschoben werden.",
     "name": "Name",
     "ipAddress": "IP-Adresse",
     "serialNumber": "Seriennummer",
@@ -855,6 +864,7 @@
     "ams": {
       "title": "AMS-Zuordnung",
       "slot": "Slot {{index}}",
+      "slotInUnit": "AMS {{unit}} · Slot {{index}}",
       "external": "Extern",
       "none": "Keine Spule",
       "loadFailed": "AMS-Zuordnung konnte nicht geladen werden.",

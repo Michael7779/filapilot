@@ -23,8 +23,8 @@
 
 ## 1.1 Offene Punkte
 - OP-D1 ✅ (0.42.0): Backup- und Bambu-Cloud-Signale stehen jetzt in "Braucht Aufmerksamkeit", siehe R5.
-  Weiterhin kein eigenes Signal fuer den Ausfall des Backup-Jobs selbst: der Job schreibt nur ins Server-Log; das Dashboard erkennt ihn
-  indirekt an einer zu alten Sicherung. Ein zu altes Token zeigt nur, wer mindestens Betrachter im Lager ist.
+  Ein zu altes Token zeigt nur, wer mindestens Betrachter im Lager ist.
+- OP-D1b ✅ (0.43.0): Der Ausfall des Backup-Jobs selbst hat jetzt ein eigenes Signal mit Grund, siehe R6.
 
 ## 1.2 Anforderungen
 - **R1**: Jeder eingeloggte Nutzer sieht auf dem Dashboard die fuenf Kennzahlen-Kacheln seines gewaehlten Lagers
@@ -53,3 +53,9 @@
   Negativ-Pfad serverseitig bereits getestet: Sicherungs-Routen `tests/security/backups.test.ts` (ohne Anmeldung 401, USER 403), Verbindungs-Route
   `tests/security/bambuConnection.test.ts` (Fremder 404). Test der Signal-Logik: `packages/frontend/tests/unit/dashboardSignals.test.ts`. Oberflaeche:
   manuell im Browser.
+- **R6**: Ab 0.43.0: Scheitert der taegliche Backup-Job, merkt sich der Server das (`Settings.lastBackupFailedAt`/`lastBackupFailureReason`, Meldung ohne
+  Datenbank-URL/Passwort, auf 300 Zeichen gekuerzt, `services/backupStatusService.ts`) und schreibt einen Protokoll-Eintrag "Automatische Sicherung fehlgeschlagen"
+  (SYSTEM). Die naechste erfolgreiche Sicherung (automatisch oder per Knopf) loescht den Vermerk. `GET /api/settings/backups/last-failure` (nur Admin) liefert ihn;
+  "Braucht Aufmerksamkeit" zeigt ihn (rot, mit Grund) und gibt ihm Vorrang vor "keine/zu alte Sicherung". Bei ausgeschalteter Sicherung bleibt es still.
+  Test: `tests/unit/backupFailure.test.ts` (Bereinigung), `tests/integration/backupJobFailure.test.ts` (merken/loeschen/ausgeschaltet),
+  `tests/security/backupLastFailure.test.ts` (ohne Anmeldung 401, USER 403, keine Zugangsdaten in der Antwort), `packages/frontend/tests/unit/dashboardSignals.test.ts`.

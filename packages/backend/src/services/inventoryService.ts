@@ -180,6 +180,31 @@ export async function addMember(inventoryId: string, userId: string, role: Inven
   return { userId, username: user.username, role };
 }
 
+// Namen aller Lager, in denen dieser Benutzer der einzige Besitzer ist (eine Abfrage, kein N+1). Grundlage dafuer, dass beim
+// Loeschen eines Benutzers kein Lager ohne Besitzer zurueckbleibt.
+export async function inventoryNamesWithSoleOwner(userId: string): Promise<string[]> {
+  const rows = await prisma.inventoryMember.findMany({
+    where: {
+      userId,
+      role: "OWNER",
+      inventory: { members: { none: { role: "OWNER", NOT: { userId } } } }
+    },
+    select: { inventory: { select: { name: true } } },
+    orderBy: { inventory: { name: "asc" } }
+  });
+  return rows.map((row) => row.inventory.name);
+}
+
+export async function assertUserOwnsNoInventoryAlone(userId: string): Promise<void> {
+  const names = await inventoryNamesWithSoleOwner(userId);
+  if (names.length > 0) {
+    throw new AppError(
+      "CONFLICT",
+      `Der Benutzer ist der einzige Besitzer von: ${names.join(", ")}. Bitte zuerst einen anderen Besitzer festlegen oder das Lager loeschen.`
+    );
+  }
+}
+
 async function assertNotLastOwner(inventoryId: string, userId: string): Promise<void> {
   const member = await prisma.inventoryMember.findUnique({
     where: { inventoryId_userId: { inventoryId, userId } },

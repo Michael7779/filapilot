@@ -1,4 +1,9 @@
-import type { BackupInfo, BambuConnectionInfo, SpoolFilter } from "@filapilot/shared";
+import type {
+  BackupFailure,
+  BackupInfo,
+  BambuConnectionInfo,
+  SpoolFilter
+} from "@filapilot/shared";
 
 // Die taegliche Sicherung laeuft um 03:00 UTC (backend/services/backupScheduler.ts). Eine gesunde Sicherung ist also hoechstens
 // ~24 Stunden alt; 36 Stunden lassen Luft fuer eine Laufzeit, schlagen aber an, sobald ein Lauf ausgefallen ist.
@@ -17,15 +22,27 @@ export interface AttentionItem {
   state?: { presetFilter: Partial<SpoolFilter> };
 }
 
-export type BackupSignal = { kind: "never" } | { kind: "stale"; days: number };
+export type BackupSignal =
+  { kind: "never" } | { kind: "stale"; days: number } | { kind: "failed"; reason: string };
 
 // Signal fuer "Braucht Aufmerksamkeit": die automatische Sicherung ist aktiv, aber es gibt keine oder nur eine alte Sicherung.
-// Ausgeschaltete Sicherungen melden bewusst nichts (Entscheidung des Admins). Nur die neueste Sicherung zaehlt.
-export function backupSignal(enabled: boolean, backups: readonly Pick<BackupInfo, "createdAt">[], now: Date): BackupSignal | null {
+// Ausgeschaltete Sicherungen melden bewusst nichts (Entscheidung des Admins). Nur die neueste Sicherung zaehlt. Ein vom Server
+// gemerkter Fehlschlag des Backup-Jobs hat Vorrang, weil er den Grund nennt (die Meldung ist serverseitig bereinigt).
+export function backupSignal(
+  enabled: boolean,
+  backups: readonly Pick<BackupInfo, "createdAt">[],
+  now: Date,
+  failure: BackupFailure | null = null
+): BackupSignal | null {
   if (!enabled) {
     return null;
   }
-  const times = backups.map((backup) => Date.parse(backup.createdAt)).filter((time) => Number.isFinite(time));
+  if (failure) {
+    return { kind: "failed", reason: failure.reason };
+  }
+  const times = backups
+    .map((backup) => Date.parse(backup.createdAt))
+    .filter((time) => Number.isFinite(time));
   if (times.length === 0) {
     return { kind: "never" };
   }

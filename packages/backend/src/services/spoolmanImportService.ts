@@ -34,6 +34,7 @@ interface MappedSpoolmanSpool {
   totalG: number;
   tareWeightG: number | null;
   note: string | null;
+  archived: boolean;
   location: string | null;
   densityGCm3: number | null;
   diameterMm: number | null;
@@ -109,7 +110,8 @@ function mapSpoolmanSpool(raw: SpoolmanSpool): MappedSpoolmanSpool {
     remainingG: remaining,
     totalG: total,
     tareWeightG: tare !== null ? Math.max(0, Math.round(tare)) : null,
-    note: raw.comment ? clean(raw.comment).slice(0, 500) : null,
+    note: raw.comment ? clean(raw.comment).slice(0, 500) || null : null,
+    archived: raw.archived === true,
     location: raw.location ? clean(raw.location).slice(0, 60) : null,
     densityGCm3: filament?.density ?? null,
     diameterMm: filament?.diameter ?? null,
@@ -219,7 +221,16 @@ async function linkExistingUnopenedSpoolmanSpool(
 async function createSpoolmanSpool(context: SpoolmanImportContext, spool: MappedSpoolmanSpool): Promise<void> {
   const manufacturerId = await ensureSpoolmanManufacturer(context, spool);
   const material = await ensureSpoolmanMaterial(context, spool, manufacturerId);
-  const match = await findUnopenedMatch(context.tx, context.inventoryId, manufacturerId, material.id, spool.colorHex);
+  // Eine in Spoolman archivierte Spule ist verbraucht - sie darf nie mit einer ungeoeffneten Spule des Bestands verknuepft werden.
+  const match = spool.archived
+    ? null
+    : await findUnopenedMatch(
+        context.tx,
+        context.inventoryId,
+        manufacturerId,
+        material.id,
+        spool.colorHex
+      );
   if (match) {
     return linkExistingUnopenedSpoolmanSpool(context, spool, match.id, material.name);
   }
@@ -236,7 +247,8 @@ async function createSpoolmanSpool(context: SpoolmanImportContext, spool: Mapped
       note: spool.note,
       location: spool.location,
       spoolmanId: spool.spoolmanId,
-      openedAt: new Date()
+      openedAt: new Date(),
+      ...(spool.archived ? { archivedAt: new Date(), archiveReason: "MANUAL" as const } : {})
     }
   });
   context.auditEvents.push({

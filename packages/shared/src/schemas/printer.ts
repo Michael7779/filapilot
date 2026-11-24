@@ -22,20 +22,32 @@ export type Printer = z.infer<typeof printerSchema>;
 export const printerPublicSchema = printerSchema.omit({ accessCode: true });
 export type PrinterPublic = z.infer<typeof printerPublicSchema>;
 
-// Beim Anlegen ist das Lager Pflicht; ein Drucker gehoert fest zu genau einem Lager und wird nicht verschoben.
+// Beim Anlegen ist das Lager Pflicht; spaeter kann ein Besitzer beider Lager den Drucker in ein anderes Lager verschieben.
 export const createPrinterInputSchema = printerSchema
   .omit({ id: true, createdAt: true, inventoryId: true })
   .extend({ inventoryId: z.string().uuid() });
 export type CreatePrinterInput = z.infer<typeof createPrinterInputSchema>;
 
-export const updatePrinterInputSchema = createPrinterInputSchema.omit({ inventoryId: true }).partial();
+export const updatePrinterInputSchema = createPrinterInputSchema.partial();
 export type UpdatePrinterInput = z.infer<typeof updatePrinterInputSchema>;
 
 // Bambu meldet die extern (nicht in der AMS) eingelegte Spule unter dieser festen Kennung ("vt_tray").
 export const EXTERNAL_AMS_SLOT_INDEX = 254;
 
+// Mehrere AMS-Einheiten in Reihe: Slot-Index = Einheit * 4 + Kammer (Einheit 0-3, Kammer 0-3). Die erste Einheit behaelt damit die
+// Indizes 0-3 aus den Zeiten mit nur einer AMS, bestehende Zuordnungen bleiben gueltig.
+export const AMS_SLOTS_PER_UNIT = 4;
+export const MAX_AMS_UNITS = 4;
+
+export function isValidAmsSlotIndex(value: number): boolean {
+  return (
+    (Number.isInteger(value) && value >= 0 && value < AMS_SLOTS_PER_UNIT * MAX_AMS_UNITS) ||
+    value === EXTERNAL_AMS_SLOT_INDEX
+  );
+}
+
 export const amsSlotStatusSchema = z.object({
-  slotIndex: z.number().int().refine((value) => (value >= 0 && value <= 3) || value === EXTERNAL_AMS_SLOT_INDEX, "Ungueltiger Slot"),
+  slotIndex: z.number().int().refine(isValidAmsSlotIndex, "Ungueltiger Slot"),
   // Rohangaben des Druckers zu dieser Kammer (nicht die FilaPilot-Spule) - nur zur Anzeige/zum Abgleich beim Zuordnen.
   reportedMaterial: z.string().nullable(),
   reportedColorHex: z.string().nullable(),

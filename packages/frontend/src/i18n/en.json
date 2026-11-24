@@ -209,6 +209,7 @@
       "lowStock": "{{count}} spool(s) almost empty",
       "backupNever": "Automatic backup is on, but there is no backup yet",
       "backupStale": "The latest backup is {{days}} day(s) old",
+      "backupFailed": "The automatic backup failed: {{reason}}",
       "bambuTokenExpired": "Bambu Cloud in \"{{name}}\": sign-in expired, please reconnect",
       "bambuSyncFailed": "Bambu Cloud sync in \"{{name}}\" failed: {{reason}}",
       "bambuTokenExpiresSoon": "Bambu Cloud in \"{{name}}\": sign-in expires in {{days}} day(s)"
@@ -837,6 +838,14 @@
   },
   "printers": {
     "newPrinter": "New printer",
+    "move": "Move to another inventory",
+    "moveTitle": "Move “{{name}}”",
+    "moveHint": "The printer moves to the other inventory together with its job history. The assignment of spools to AMS slots is cleared because it refers to spools of the old inventory.",
+    "moveTarget": "Target inventory",
+    "movePick": "Choose inventory",
+    "moveNoTarget": "There is no other inventory where you are an owner.",
+    "moveConfirm": "Move",
+    "moveFailed": "The printer could not be moved.",
     "name": "Name",
     "ipAddress": "IP address",
     "serialNumber": "Serial number",
@@ -855,6 +864,7 @@
     "ams": {
       "title": "AMS assignment",
       "slot": "Slot {{index}}",
+      "slotInUnit": "AMS {{unit}} · Slot {{index}}",
       "external": "External",
       "none": "No spool",
       "loadFailed": "Couldn't load the AMS assignment.",

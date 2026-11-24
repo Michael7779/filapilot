@@ -116,7 +116,8 @@
   verhindert Doppelimport je Lager, wie `bambuCloudId`. Anders als beim Bambu-Import gibt es keine Auswahl - alle
   gueltigen Eintraege werden auf einmal uebernommen. Offener Punkt (OP-SM1): Die Feldnamen stammen aus der
   oeffentlichen Spoolman-API-Dokumentation, sind aber nicht gegen eine echte Spoolman-Installation geprueft (wie
-  OP-B1 beim Bambu-Import). Test: `tests/security/spoolmanImport.test.ts`.
+  OP-B1 beim Bambu-Import). Test: `tests/security/spoolmanImport.test.ts`. Ab 0.43.0: in Spoolman archivierte Spulen (`archived: true`) werden archiviert angelegt (nie mit einer ungeoeffneten
+  Spule verknuepft), und ein Kommentar ueber 500 Zeichen wird gekuerzt statt die ganze Spule zu verwerfen. Test: `tests/security/spoolmanImportArchived.test.ts`.
 - **R22**: Ab 0.22.0: Eine Spule hat `openedAt` (null = ungeoeffnet). Manuell angelegte Spulen sind standardmaessig
   ungeoeffnet (`alreadyOpened: true` im Anlege-Formular legt sie sofort als geoeffnet an); Cloud-/Spoolman-Import
   legen neue Spulen immer als geoeffnet an (dem Drucker/Dienst bereits bekannt). Automatisch geoeffnet wird eine

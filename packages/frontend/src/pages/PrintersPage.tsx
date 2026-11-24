@@ -6,6 +6,7 @@ import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { getSocket } from "../lib/socket.js";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 import { AmsSlotsPanel } from "../components/AmsSlotsPanel.js";
+import { PrinterMoveModal } from "../components/PrinterMoveModal.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 
 function MqttSetupGuide(): React.JSX.Element {
@@ -196,11 +197,14 @@ function NewPrinterModal({
 function PrinterCard({
   printer,
   status,
-  canEdit
+  canEdit,
+  onMove
 }: {
   printer: PrinterPublic;
   status: PrinterLiveStatus | null;
   canEdit: boolean;
+  // Nur gesetzt, wenn der Nutzer im Lager des Druckers Besitzer ist
+  onMove?: () => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
   const connected = status?.connected ?? false;
@@ -243,7 +247,18 @@ function PrinterCard({
         {t("printers.syncMode")}:{" "}
         {printer.syncMode === "LIVE" ? t("printers.syncModeLive") : t("printers.syncModePeriodic")}
       </div>
-      {printer.inventoryId && <AmsSlotsPanel printerId={printer.id} inventoryId={printer.inventoryId} canEdit={canEdit} />}
+      {printer.inventoryId && (
+        <AmsSlotsPanel printerId={printer.id} inventoryId={printer.inventoryId} canEdit={canEdit} />
+      )}
+      {onMove && (
+        <button
+          type="button"
+          onClick={onMove}
+          className="mt-3 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)]"
+        >
+          {t("printers.move")}
+        </button>
+      )}
     </div>
   );
 }
@@ -257,6 +272,7 @@ export function PrintersPage(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [movingPrinter, setMovingPrinter] = useState<PrinterPublic | null>(null);
 
   const load = useCallback(async () => {
     if (!selectedId) {
@@ -346,10 +362,29 @@ export function PrintersPage(): React.JSX.Element {
                   {inventories.find((inventory) => inventory.id === printer.inventoryId)?.name ?? ""}
                 </span>
               )}
-              <PrinterCard printer={printer} status={statusByPrinter[printer.id] ?? null} canEdit={canEdit} />
+              <PrinterCard
+                printer={printer}
+                status={statusByPrinter[printer.id] ?? null}
+                canEdit={canEdit}
+                {...(inventories.find((inventory) => inventory.id === printer.inventoryId)?.role ===
+                "OWNER"
+                  ? { onMove: () => setMovingPrinter(printer) }
+                  : {})}
+              />
             </div>
           ))}
         </div>
+      )}
+
+      {movingPrinter && (
+        <PrinterMoveModal
+          printer={movingPrinter}
+          onClose={() => setMovingPrinter(null)}
+          onMoved={() => {
+            setMovingPrinter(null);
+            void load();
+          }}
+        />
       )}
 
       {modalOpen && selectedId && !isAll && (

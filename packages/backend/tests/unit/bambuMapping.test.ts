@@ -3,6 +3,27 @@ import assert from "node:assert/strict";
 import { importColorName, legacyNearestColorName, nearestColorName, normalizeHexColor } from "@filapilot/shared";
 import { mapBambuSpool, parseBambuHits } from "../../src/services/bambuImportService.js";
 
+describe("Bambu-Import: Notiz der Spule", () => {
+  it("uebernimmt die Notiz getrimmt, leere Notizen werden zu null", () => {
+    assert.equal(
+      mapBambuSpool({ id: "n1", note: "  Trocken gelagert  " }).note,
+      "Trocken gelagert"
+    );
+    assert.equal(mapBambuSpool({ id: "n2", note: "   " }).note, null);
+    assert.equal(mapBambuSpool({ id: "n3" }).note, null);
+    assert.equal(mapBambuSpool({ id: "n4", note: null }).note, null);
+  });
+
+  it("kuerzt zu lange Notizen auf die 500 Zeichen, die FilaPilot speichert (statt die Spule zu verwerfen)", () => {
+    assert.equal(mapBambuSpool({ id: "n5", note: "x".repeat(900) }).note?.length, 500);
+    const { spools, skipped } = parseBambuHits([
+      { id: 7, filamentType: "PLA", note: "y".repeat(5000) }
+    ]);
+    assert.equal(skipped, 0);
+    assert.equal(spools.length, 1);
+  });
+});
+
 describe("Bambu-Import: Zuordnung einer Spule", () => {
   it("uebernimmt Marke, Material, Farbe und Gewicht und schneidet den Alpha-Kanal ab", () => {
     const mapped = mapBambuSpool({

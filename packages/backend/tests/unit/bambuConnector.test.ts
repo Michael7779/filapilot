@@ -73,6 +73,52 @@ describe("parseBambuReport", () => {
     ]);
   });
 
+  it("unterscheidet mehrere AMS-Einheiten: Slot-Index = Einheit * 4 + Kammer (erste Einheit bleibt 0-3)", () => {
+    const raw = {
+      print: {
+        ams: {
+          ams: [
+            { id: "0", tray: [{ id: "0", tray_type: "PLA", tray_color: "FFFFFFFF", remain: 80 }] },
+            {
+              id: "1",
+              tray: [
+                { id: "0", tray_type: "PETG", tray_color: "D14343FF", remain: 50 },
+                { id: "3", tray_type: "ABS", tray_color: "000000FF", remain: 10 }
+              ]
+            }
+          ]
+        }
+      }
+    };
+    assert.deepEqual(parseBambuReport("p", raw)?.amsSlots, [
+      { slotIndex: 0, reportedMaterial: "PLA", reportedColorHex: "#FFFFFF", remainingPercent: 80 },
+      { slotIndex: 4, reportedMaterial: "PETG", reportedColorHex: "#D14343", remainingPercent: 50 },
+      { slotIndex: 7, reportedMaterial: "ABS", reportedColorHex: "#000000", remainingPercent: 10 }
+    ]);
+  });
+
+  it("nimmt die Position in der Liste, wenn eine Einheit keine id meldet, und ignoriert Einheiten ausserhalb 0-3", () => {
+    const raw = {
+      print: {
+        ams: {
+          ams: [
+            { tray: [{ id: "1", tray_type: "PLA" }] },
+            { tray: [{ id: "0", tray_type: "PETG" }] },
+            { id: "128", tray: [{ id: "0", tray_type: "TPU" }] },
+            { id: "kaputt", tray: [{ id: "0", tray_type: "ABS" }] }
+          ]
+        }
+      }
+    };
+    assert.deepEqual(
+      parseBambuReport("p", raw)?.amsSlots.map((slot) => [slot.slotIndex, slot.reportedMaterial]),
+      [
+        [1, "PLA"],
+        [4, "PETG"]
+      ]
+    );
+  });
+
   it("liefert eine leere AMS-Liste ohne AMS/vt_tray im Report (kein Absturz)", () => {
     const status = parseBambuReport("printer-1", { print: { gcode_state: "IDLE" } });
     assert.deepEqual(status?.amsSlots, []);

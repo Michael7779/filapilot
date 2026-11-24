@@ -33,7 +33,8 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   und verweist auf die JSON-Datei.
 - OP-B3 ✅ (0.16.0): Automatischer (zeitgesteuerter) Abgleich gibt es seit `R-AUTO` unten (`Settings.bambuAutoSyncMinutes`).
   Kein Schreiben in die Bambu-Cloud bleibt bewusst so (nur Lesen).
-- OP-B4: Notizen und Bambu-Farbcodes der Spulen werden nicht uebernommen (kein Feld in FilaPilot).
+- OP-B4 ✅ (0.43.0, teilweise): Die Notiz der Spule aus der Bambu-App wird beim Anlegen uebernommen, siehe R16. Bambu-Farbcodes (interne Filament-Kennungen) werden weiterhin nicht uebernommen
+  (kein Feld in FilaPilot, Aufbau nicht verifiziert). Das Feld `note` stammt wie die uebrigen aus der dokumentierten Schnittstelle; ob es in echten Daten gefuellt ist, ist nicht geprueft.
 - OP-B5: Die Bedeutung der Status-Werte ausser 0 ist nicht dokumentiert; solche Spulen sind in der Vorschau abgewaehlt, aber waehlbar.
 
 ## 1.2 Anforderungen
@@ -106,3 +107,6 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
   den Namen nach `importColorName()` (R14). Von Hand geaenderte Namen, Spulen ohne Cloud-Bezug und schon richtige Namen
   bleiben unberuehrt; `lastModifiedAt` aendert sich nicht; je Umbenennung ein Protokoll-Eintrag (SYSTEM). Laeuft nur einmal.
   Test: `tests/integration/legacyColorRename.test.ts`, `tests/unit/bambuMapping.test.ts`.
+- **R16**: Ab 0.43.0: `note` der Cloud-Spule wird beim ANLEGEN (Import und automatischer Abgleich) in die Notiz der Spule uebernommen (getrimmt, auf 500 Zeichen gekuerzt - eine zu lange Notiz verwirft die Spule nicht).
+  Beim Abgleich bestehender Spulen und beim Verknuepfen mit einer vorhandenen ungeoeffneten Spule wird die Notiz nie angefasst - eine Aenderung in Bambu ueberschreibt nie die Notiz in FilaPilot. Die Notiz
+  steht im Protokoll-Eintrag "Angelegt". Test: `tests/unit/bambuMapping.test.ts`, `tests/integration/bambuSyncService.test.ts`.

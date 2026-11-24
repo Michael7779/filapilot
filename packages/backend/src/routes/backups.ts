@@ -11,6 +11,7 @@ import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../midd
 import { getSettings } from "../services/settingsService.js";
 import { backupFileNames, listBackups } from "../services/backupCatalog.js";
 import { getRestoreStatus, startRestore } from "../services/restoreService.js";
+import { getBackupFailure } from "../services/backupStatusService.js";
 import { importBackupArchive } from "../services/backupImportService.js";
 import { actorFromRequest, recordAudit } from "../services/auditService.js";
 
@@ -42,6 +43,19 @@ backupsRouter.get(
   ...requireAdmin,
   asyncHandler(async (_req, res) => {
     sendData(res, getRestoreStatus());
+  })
+);
+
+// Threat-Model: Die Fehlermeldung eines gescheiterten Backup-Laufs kann Pfade und Serverdetails verraten - sie soll weder
+// anonym noch fuer normale Benutzer sichtbar sein. Serverseitig erzwungen: requireRole("ADMIN"); die Meldung wird schon beim
+// Speichern von Datenbank-URLs/Passwoertern bereinigt (backupStatusService.describeBackupFailure), gelesen wird nur das
+// Datenfeld, kein Stack-Trace. Negativ-Tests: kein Cookie -> 401, USER -> 403 (tests/security/backupLastFailure.test.ts).
+// SCOPE: global
+backupsRouter.get(
+  "/last-failure",
+  ...requireAdmin,
+  asyncHandler(async (_req, res) => {
+    sendData(res, await getBackupFailure());
   })
 );
 

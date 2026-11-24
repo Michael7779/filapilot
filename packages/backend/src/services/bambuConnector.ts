@@ -1,5 +1,12 @@
 import mqtt, { type MqttClient } from "mqtt";
-import { EXTERNAL_AMS_SLOT_INDEX, type AmsSlotStatus, type PrinterLiveStatus, type PrintState } from "@filapilot/shared";
+import {
+  AMS_SLOTS_PER_UNIT,
+  EXTERNAL_AMS_SLOT_INDEX,
+  MAX_AMS_UNITS,
+  type AmsSlotStatus,
+  type PrinterLiveStatus,
+  type PrintState
+} from "@filapilot/shared";
 import { logger } from "../logger.js";
 
 // Bambu-Lab-Drucker exponieren lokal einen MQTT-Broker auf Port 8883 (TLS, selbstsigniert),
@@ -91,28 +98,55 @@ function parseTray(raw: unknown, slotIndex: number): AmsSlotStatus | null {
   };
 }
 
-// Die AMS-Kammer meldet ihren Index als String-"id" ("0".."3"); alles andere ist kein gueltiger Slot.
-function trayIndex(tray: unknown): number | null {
-  const id = typeof tray === "object" && tray !== null ? (tray as { id?: unknown }).id : undefined;
-  const index = typeof id === "string" ? Number(id) : NaN;
-  return Number.isInteger(index) && index >= 0 && index <= 3 ? index : null;
+// Eine Zahl, die der Drucker als String ("0") oder Zahl melden kann; alles andere ist keine gueltige Kennung.
+function toIntegerId(value: unknown): number | null {
+  let index = Number.NaN;
+  if (typeof value === "number") {
+    index = value;
+  } else if (typeof value === "string" && value.trim() !== "") {
+    index = Number(value);
+  }
+  return Number.isInteger(index) ? index : null;
 }
 
-// Nur die erste AMS-Einheit (typisches Ein-AMS-Setup); mehrere AMS-Einheiten in Reihe werden nicht unterschieden.
-function firstAmsTrays(print: Record<string, unknown>): unknown[] {
+// Die AMS-Kammer meldet ihren Index als String-"id" ("0".."3"); alles andere ist kein gueltiger Slot.
+function trayIndex(tray: unknown): number | null {
+  const index = toIntegerId(
+    typeof tray === "object" && tray !== null ? (tray as { id?: unknown }).id : undefined
+  );
+  return index !== null && index >= 0 && index < AMS_SLOTS_PER_UNIT ? index : null;
+}
+
+// Alle AMS-Einheiten in Reihe (Index 0-3, wie vom Drucker per "id" gemeldet - ohne "id" zaehlt die Position in der Liste).
+// Andere Einheiten (z.B. AMS HT mit eigener Kennung) werden nicht ausgewertet, weil ihr Aufbau nicht verifiziert ist.
+function amsUnits(print: Record<string, unknown>): { unit: number; trays: unknown[] }[] {
   const ams = print.ams as { ams?: unknown[] } | undefined;
-  const firstUnit = Array.isArray(ams?.ams) ? ams.ams[0] : null;
-  const trays = firstUnit && typeof firstUnit === "object" ? (firstUnit as { tray?: unknown[] }).tray : undefined;
-  return Array.isArray(trays) ? trays : [];
+  if (!Array.isArray(ams?.ams)) {
+    return [];
+  }
+  const units: { unit: number; trays: unknown[] }[] = [];
+  ams.ams.forEach((raw, position) => {
+    if (typeof raw !== "object" || raw === null) {
+      return;
+    }
+    const { id, tray } = raw as { id?: unknown; tray?: unknown };
+    const unit = id === undefined ? position : toIntegerId(id);
+    if (unit !== null && unit >= 0 && unit < MAX_AMS_UNITS && Array.isArray(tray)) {
+      units.push({ unit, trays: tray });
+    }
+  });
+  return units;
 }
 
 function parseAmsSlots(print: Record<string, unknown>): AmsSlotStatus[] {
   const slots: AmsSlotStatus[] = [];
-  for (const tray of firstAmsTrays(print)) {
-    const index = trayIndex(tray);
-    const parsed = index === null ? null : parseTray(tray, index);
-    if (parsed) {
-      slots.push(parsed);
+  for (const { unit, trays } of amsUnits(print)) {
+    for (const tray of trays) {
+      const index = trayIndex(tray);
+      const parsed = index === null ? null : parseTray(tray, unit * AMS_SLOTS_PER_UNIT + index);
+      if (parsed) {
+        slots.push(parsed);
+      }
     }
   }
   const external = parseTray(print.vt_tray, EXTERNAL_AMS_SLOT_INDEX);

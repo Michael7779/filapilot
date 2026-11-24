@@ -108,7 +108,7 @@ describe("Printers - Negativ-Tests (Rechte im Lager)", () => {
     assert.ok(!all.body.data.some((entry: { id: string }) => entry.id === printer.id));
   });
 
-  it("lehnt Aendern und Loeschen ab: Betrachter/Bearbeiter 403, Fremder 404; Besitzer darf, aber das Lager laesst sich nicht wechseln", async () => {
+  it("lehnt Aendern und Loeschen ab: Betrachter/Bearbeiter 403, Fremder 404; Besitzer darf, aber nicht in ein Lager ohne Zugriff verschieben", async () => {
     const printer = await createPrinterIn(lagerId, "Aenderbar");
     for (const user of [viewer, editor]) {
       assert.equal((await request(app).patch(`/api/printers/${printer.id}`).set("Cookie", user.cookie).send({ name: "X" })).status, 403);
@@ -117,10 +117,21 @@ describe("Printers - Negativ-Tests (Rechte im Lager)", () => {
     assert.equal((await request(app).patch(`/api/printers/${printer.id}`).set("Cookie", outsider.cookie).send({ name: "X" })).status, 404);
     assert.equal((await request(app).delete(`/api/printers/${printer.id}`).set("Cookie", outsider.cookie)).status, 404);
 
-    const renamed = await request(app)
+    // In ein Lager, in dem der Besitzer nichts darf, laesst sich der Drucker nicht verschieben (das Ziel bleibt unsichtbar: 404)
+    const blocked = await request(app)
       .patch(`/api/printers/${printer.id}`)
       .set("Cookie", owner.cookie)
       .send({ name: "Umbenannt", inventoryId: otherLagerId });
+    assert.equal(blocked.status, 404);
+    assert.equal(
+      (await prisma.printer.findUniqueOrThrow({ where: { id: printer.id } })).inventoryId,
+      lagerId
+    );
+
+    const renamed = await request(app)
+      .patch(`/api/printers/${printer.id}`)
+      .set("Cookie", owner.cookie)
+      .send({ name: "Umbenannt" });
     assert.equal(renamed.status, 200);
     assert.equal(renamed.body.data.name, "Umbenannt");
     assert.equal(renamed.body.data.inventoryId, lagerId);

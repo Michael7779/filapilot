@@ -16,11 +16,16 @@ const appVersion = (JSON.parse(readFileSync(rootPackageJsonPath, "utf8")) as { v
 const changelogPath = fileURLToPath(new URL("../../CHANGELOG.md", import.meta.url));
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 const changelog = parseChangelog(readFileSync(changelogPath, "utf8"));
+// Englische Fassung (CHANGELOG.en.md, gleicher Aufbau); die App waehlt je nach Sprache und faellt je Version auf Deutsch zurueck.
+const changelogEnPath = fileURLToPath(new URL("../../CHANGELOG.en.md", import.meta.url));
+// eslint-disable-next-line security/detect-non-literal-fs-filename
+const changelogEn = parseChangelog(readFileSync(changelogEnPath, "utf8"));
 
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
-    __CHANGELOG__: JSON.stringify(changelog)
+    __CHANGELOG__: JSON.stringify(changelog),
+    __CHANGELOG_EN__: JSON.stringify(changelogEn)
   },
   plugins: [
     react(),

@@ -25,8 +25,8 @@ Design: `docs/design/lager.md` (abgestimmt 2026-09-26). Umgesetzt in Version 0.1
 ## 1.1 Offene Punkte
 - OP-L1 ✅ (0.14.0): Import aus der Bambu-Cloud pro Lager, siehe `bambu-import.md`.
 - OP-L2 ✅ (0.42.0): `Spool.inventoryId` und `Printer.inventoryId` sind jetzt Pflicht (`String`, NOT NULL), siehe R14. Folge: Sicherungen vor 0.13.0 lassen sich nicht mehr einspielen (R14).
-- OP-L3: Ein Drucker laesst sich nicht in ein anderes Lager verschieben (bewusst: loeschen und neu anlegen).
-- OP-L4: Beim Loeschen eines Benutzers werden seine Mitgliedschaften entfernt; ein Lager ohne Besitzer bleibt nur fuer Admins verwaltbar.
+- OP-L3 ✅ (0.43.0): Ein Drucker laesst sich in ein anderes Lager verschieben, siehe R16 (vorher: loeschen und neu anlegen).
+- OP-L4 ✅ (0.43.0): Ein Benutzer, der in einem Lager der einzige Besitzer ist, kann nicht geloescht werden, siehe R15 - es entsteht kein Lager ohne Besitzer mehr.
 - OP-L5 ✅ (0.21.3): `GET /api/inventories/:id/audit-log` (Rolle `OWNER`) zeigt das Protokoll dieses einen Lagers -
   serverseitig fest auf dessen `inventoryId` begrenzt (kein Filter kann das umgehen), ohne die admin-weiten
   Auswahllisten (welche Nutzer/Lager es sonst noch gibt). Siehe R13.
@@ -70,3 +70,12 @@ Design: `docs/design/lager.md` (abgestimmt 2026-09-26). Umgesetzt in Version 0.1
   Das ersetzt die Zusage aus dem Design (`docs/design/lager.md`, "aeltere Sicherung bleibt wiederherstellbar").
   Test: `tests/integration/inventoryMigration.test.ts` (Datenbank verweigert Spule/Drucker ohne Lager, Hauptlager-Anlage),
   `tests/integration/backupCompatibility.test.ts` und `tests/integration/restoreService.test.ts` (alte Sicherung wird vor dem Eingriff abgewiesen).
+- **R15**: Ab 0.43.0: `DELETE /api/users/:id` (Admin) wird mit 409 abgewiesen, solange der Benutzer in mindestens einem Lager der EINZIGE Besitzer ist; die Meldung nennt
+  die Lager (`inventoryService.inventoryNamesWithSoleOwner`, eine Abfrage). Erst einen anderen Besitzer festlegen oder das Lager loeschen. Bleibt ein anderer Besitzer, geht das Loeschen
+  wie bisher (Mitgliedschaften entfallen). Test: `tests/security/userDeleteLastOwner.test.ts` (409 inkl. Lager-Name und Benutzer bleibt bestehen, USER 403, anderer Besitzer vorhanden -> 200).
+- **R16**: Ab 0.43.0: `PATCH /api/printers/:id` nimmt zusaetzlich `inventoryId` an und verschiebt den Drucker. Serverseitig: OWNER im alten UND im neuen Lager (Admins gelten ueberall als OWNER),
+  ein Ziel ohne Zugriff ist unsichtbar (404), ein nicht existierendes Ziel 404, eine ungueltige ID 400, Editor/Betrachter 403, ohne Anmeldung 401. In EINER Transaktion werden die
+  AMS-Zuordnungen des Druckers geleert (sie meinen Spulen des alten Lagers); der Auftragsverlauf bleibt am Drucker und wechselt mit (Statistik beider Lager aendert sich entsprechend); die MQTT-Verbindung
+  und die Live-Status-Raeume laufen sofort mit dem neuen Lager weiter (`refreshSocketAccess`). Der Lagername steht im Aenderungsprotokoll (`printerSnapshot.lager`). Gleiches Ziel wie bisher:
+  nichts wird geleert. Oberflaeche: Knopf "In anderes Lager verschieben" an der Drucker-Karte (nur Besitzer, `components/PrinterMoveModal.tsx`), nur Lager mit Besitzer-Rolle zur Auswahl.
+  Test: `tests/security/printerMove.test.ts`, `tests/security/printers.test.ts`; Oberflaeche manuell im Browser.

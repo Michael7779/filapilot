@@ -26,6 +26,36 @@ function connection(overrides: Partial<BambuConnectionInfo> = {}): BambuConnecti
   };
 }
 
+describe("backupSignal - fehlgeschlagener Backup-Job", () => {
+  const failure = { at: hoursAgo(2), reason: "pg_dump: Verbindung abgelehnt" };
+
+  it("meldet den Fehlschlag mit Grund, auch wenn die letzte Sicherung noch frisch ist", () => {
+    assert.deepEqual(backupSignal(true, [{ createdAt: hoursAgo(9) }], NOW, failure), {
+      kind: "failed",
+      reason: failure.reason
+    });
+  });
+
+  it("der Fehlschlag hat Vorrang vor 'noch keine Sicherung' und 'zu alt'", () => {
+    assert.deepEqual(backupSignal(true, [], NOW, failure), {
+      kind: "failed",
+      reason: failure.reason
+    });
+    assert.deepEqual(backupSignal(true, [{ createdAt: hoursAgo(500) }], NOW, failure), {
+      kind: "failed",
+      reason: failure.reason
+    });
+  });
+
+  it("meldet bei ausgeschalteter Sicherung auch einen alten Fehlschlag nicht", () => {
+    assert.equal(backupSignal(false, [], NOW, failure), null);
+  });
+
+  it("ohne Fehlschlag (null) bleibt das bisherige Verhalten", () => {
+    assert.equal(backupSignal(true, [{ createdAt: hoursAgo(9) }], NOW, null), null);
+  });
+});
+
 describe("backupSignal - Sicherungen im Blick", () => {
   it("meldet nichts, wenn die automatische Sicherung ausgeschaltet ist (bewusste Entscheidung des Admins)", () => {
     assert.equal(backupSignal(false, [], NOW), null);

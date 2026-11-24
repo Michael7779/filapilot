@@ -525,6 +525,10 @@ model Settings {
   smtpFromAddress                    String?
   backupFolderPath                   String   @default("/data/backups")
   backupEnabled                      Boolean  @default(true)
+  // Letzter Fehlschlag des automatischen Backup-Jobs (null = der letzte Lauf war in Ordnung). Die Meldung ist bereinigt
+  // (keine Datenbank-URL/Passwoerter), siehe backupStatusService.ts.
+  lastBackupFailedAt                 DateTime?
+  lastBackupFailureReason            String?
   // Wie viele Sicherungen aufbewahrt werden; aeltere werden nach jeder regulaeren Sicherung geloescht.
   backupRetentionCount               Int      @default(14)
   // Wie viele Monate das Aenderungsprotokoll aufbewahrt wird; 0 = unbegrenzt.

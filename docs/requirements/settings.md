@@ -107,3 +107,5 @@
   laufenden Version abweicht (`components/BackupManager.tsx`, Vergleich mit `__APP_VERSION__`, rein clientseitig).
   Der Sicherungs-Upload/-Download/das Aufraeumen behandeln die neue Datei wie die uebrigen (generische Namensliste),
   keine Anpassung noetig. Test: `tests/unit/backupCatalog.test.ts`.
+- **R13**: Ab 0.43.0: Der Ausfall des taeglichen Backup-Jobs wird gemerkt und gemeldet (`GET /api/settings/backups/last-failure`, nur Admin; Dashboard-Signal), siehe `dashboard.md` R6.
+  Test: `tests/security/backupLastFailure.test.ts`, `tests/integration/backupJobFailure.test.ts`.

@@ -78,4 +78,30 @@ describe("Bambu-Cloud-Abgleich: lastModifiedAt nur bei echter Aenderung (R26)", 
     assert.equal(archived.archiveReason, "CLOUD_REMOVED");
     assert.ok(archived.lastModifiedAt !== null);
   });
+
+  it("uebernimmt die Notiz einer neuen Cloud-Spule, ueberschreibt aber spaeter nie die Notiz in FilaPilot", async () => {
+    await createCatalogEntries();
+    const inv = { id: inventoryId, name: inventoryName };
+    await syncInventoryFromCloud(
+      inventoryId,
+      [cloudSpool({ id: "cloud-note", note: "Aus Bambu" })],
+      actor,
+      inv
+    );
+    const created = await prisma.spool.findFirstOrThrow({
+      where: { inventoryId, bambuCloudId: "cloud-note" }
+    });
+    assert.equal(created.note, "Aus Bambu");
+
+    await prisma.spool.update({ where: { id: created.id }, data: { note: "Meine eigene Notiz" } });
+    await syncInventoryFromCloud(
+      inventoryId,
+      [cloudSpool({ id: "cloud-note", note: "In Bambu geaendert", netWeight: 400 })],
+      actor,
+      inv
+    );
+    const after = await prisma.spool.findUniqueOrThrow({ where: { id: created.id } });
+    assert.equal(after.note, "Meine eigene Notiz");
+    assert.equal(after.remainingWeightG, 400);
+  });
 });

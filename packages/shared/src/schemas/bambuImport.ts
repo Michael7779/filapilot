@@ -48,7 +48,10 @@ export const bambuSpoolSchema = z.object({
   totalNetWeight: z.number().finite().nullish(),
   status: z.number().int().nullish(),
   inPrinter: z.boolean().nullish(),
-  deviceName: z.string().max(120).nullish()
+  deviceName: z.string().max(120).nullish(),
+  // Notiz aus der Bambu-App. Bewusst ohne Laengenpruefung: eine zu lange Notiz soll die Spule nicht verwerfen, sondern wird beim
+  // Zuordnen auf die Laenge gekuerzt, die FilaPilot speichert (bambuImportService.mapBambuSpool).
+  note: z.string().nullish()
 });
 export type BambuSpool = z.infer<typeof bambuSpoolSchema>;
 

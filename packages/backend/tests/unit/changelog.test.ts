@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseChangelog } from "@filapilot/shared";
+import { localizeChangelog, parseChangelog } from "@filapilot/shared";
 
 const SAMPLE = `# Changelog
 
@@ -82,8 +82,89 @@ describe("Aenderungsverlauf-Parser", () => {
   });
 });
 
-function realChangelog(): string {
-  // Fester relativer Pfad zum CHANGELOG.md des Projekts, kein Nutzer-Input.
+const SAMPLE_EN = `# Changelog
+
+## [0.2.0] - 2026-09-25
+
+### Added
+- First new
+  runs on two lines with \`code\`.
+
+### Fixed
+- A bug
+
+### Note on updating
+- Admins only
+`;
+
+const KIND_IN_ENGLISH: Record<string, string> = {
+  Neu: "New",
+  Geändert: "Changed",
+  Behoben: "Fixed",
+  Sicherheit: "Security"
+};
+
+describe("Englischer Aenderungsverlauf", () => {
+  it("liest englische Ueberschriften mit englischen Vorsilben und laesst den Admin-Hinweis weg", () => {
+    assert.deepEqual(parseChangelog(SAMPLE_EN), [
+      {
+        version: "0.2.0",
+        date: "2026-09-25",
+        items: ["New: First new runs on two lines with code.", "Fixed: A bug"]
+      }
+    ]);
+  });
+
+  it("localizeChangelog nimmt bei Englisch den englischen Text und faellt je Version auf Deutsch zurueck", () => {
+    const de = [
+      { version: "0.3.0", date: "2026-10-01", items: ["Neu: Drei"] },
+      { version: "0.2.0", date: "2026-09-25", items: ["Neu: Zwei"] }
+    ];
+    const en = [{ version: "0.2.0", date: "2026-09-25", items: ["New: Two"] }];
+    assert.deepEqual(localizeChangelog(de, en, "en"), [de[0], en[0]]);
+    assert.deepEqual(localizeChangelog(de, en, "en-US"), [de[0], en[0]]);
+    assert.deepEqual(localizeChangelog(de, en, "de"), de);
+    assert.deepEqual(localizeChangelog(de, en, "fr"), de);
+  });
+
+  it("jede Version mit sichtbaren Punkten im deutschen CHANGELOG.md hat im CHANGELOG.en.md einen Eintrag mit gleich vielen Punkten", () => {
+    const german = parseChangelog(realChangelog());
+    const english = new Map(
+      parseChangelog(realChangelog("CHANGELOG.en.md")).map((entry) => [entry.version, entry])
+    );
+    for (const entry of german) {
+      const translated = english.get(entry.version);
+      assert.ok(translated, `Version ${entry.version} fehlt im CHANGELOG.en.md`);
+      assert.equal(
+        translated.items.length,
+        entry.items.length,
+        `Version ${entry.version}: andere Anzahl Punkte als im deutschen Verlauf`
+      );
+      assert.equal(translated.date, entry.date, `Version ${entry.version}: anderes Datum`);
+      assert.deepEqual(
+        translated.items.map((item) => item.split(":")[0]),
+        entry.items.map((item) => KIND_IN_ENGLISH[item.split(":")[0] ?? ""]),
+        `Version ${entry.version}: Art der Punkte (Neu/Geändert/Behoben/Sicherheit) weicht ab`
+      );
+    }
+  });
+
+  it("jede Abschnitts-Ueberschrift im CHANGELOG.en.md ist eine bekannte", () => {
+    const headings = [...realChangelog("CHANGELOG.en.md").matchAll(/^### (.+)$/gm)].map((match) =>
+      match[1]?.trim()
+    );
+    const known = new Set(["Added", "Changed", "Fixed", "Security"]);
+    for (const heading of headings) {
+      assert.ok(
+        heading && known.has(heading),
+        `Unbekannte Abschnitts-Ueberschrift "${heading}" im CHANGELOG.en.md`
+      );
+    }
+  });
+});
+
+function realChangelog(file = "CHANGELOG.md"): string {
+  // Fester relativer Pfad zum CHANGELOG des Projekts, kein Nutzer-Input.
   // eslint-disable-next-line security/detect-non-literal-fs-filename
-  return readFileSync(new URL("../../../../CHANGELOG.md", import.meta.url), "utf8");
+  return readFileSync(new URL(`../../../../${file}`, import.meta.url), "utf8");
 }

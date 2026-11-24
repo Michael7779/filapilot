@@ -33,7 +33,7 @@
 - OP-P1 ✅ (0.17.0): AMS-Fach-Parsing (`bambuConnector.ts::parseAmsSlots`) liest `ams.ams[0].tray[]` (Material,
   Farbe, Restprozent) und `vt_tray` (externe Spule, Slot 254). Die Feld-Namen stammen aus oeffentlich dokumentiertem
   Reverse-Engineering des Bambu-Reports, nicht von einem echten Drucker verifiziert - muss nach dem Update geprueft
-  werden. Nur die erste AMS-Einheit wird ausgewertet (mehrere AMS in Reihe werden nicht unterschieden).
+  werden. Mehrere AMS-Einheiten: siehe OP-P7 / R9.
 - OP-P2 ✅ (0.17.0): Zuordnung Spule ↔ AMS-Slot ueber `GET/PUT /api/printers/:id/ams-slots(/:slotIndex)`, siehe R6.
 - OP-P4 ✅ (0.17.0): `PrintJob.printer`/`PrintJob.spool` loeschen jetzt kaskadierend (wie `SpoolWeightLog`) - kein
   Datenbank-Fehler mehr beim Loeschen eines Druckers/einer Spule mit Auftrags-Verlauf.
@@ -43,7 +43,8 @@
 - OP-P6 ✅ (0.21.3): Der Zwischenstand liegt jetzt auch in der Datenbank (`Printer.lastKnownPrintState`/
   `activeJobName`/`activeJobStartedAt`), nicht mehr nur im Arbeitsspeicher - ein Serverneustart mitten im Druck
   verliert die Kalibrierung nicht mehr. Siehe R7.
-- OP-P7: Mehrere AMS-Einheiten in Reihe an einem Drucker werden nicht unterschieden (nur die erste wird gelesen).
+- OP-P7 ✅ (0.43.0): Mehrere AMS-Einheiten in Reihe werden unterschieden, siehe R9. Wie die uebrige AMS-Auswertung (OP-P1) noch nicht an einem echten Drucker mit mehreren AMS geprueft;
+  AMS HT (eigene Kennung ab 128) wird bewusst nicht ausgewertet, weil sein Aufbau nicht verifiziert ist.
 
 ## 1.2 Anforderungen
 - **R1**: Jeder eingeloggte Nutzer kann die Drucker-Liste und den Live-Status lesen, aber nie den
@@ -80,3 +81,7 @@
   Seiten à max. 50) zeigt den Auftrags-Verlauf mit Anzeigenamen; "all" nur eigene Lager, ein fremder Drucker/Spule-Filter
   404. Auf der Statistik-Seite als "Letzte Druckaufträge" (`PrintJobHistory.tsx`) und in den Drucker-Einstellungen als
   AMS-Zuordnung (`AmsSlotsPanel.tsx`). Test: `tests/security/printJobs.test.ts`
+- **R9**: Ab 0.43.0: `parseAmsSlots` liest alle AMS-Einheiten (`ams.ams[]`, Einheit 0-3 laut `id`, ohne `id` zaehlt die Position). Slot-Index = Einheit * 4 + Kammer (0-15), die externe
+  Spule bleibt 254; die erste Einheit behaelt die Indizes 0-3, bestehende Zuordnungen bleiben gueltig. `isValidAmsSlotIndex` (shared) gilt fuer Live-Status und `PUT /api/printers/:id/ams-slots/:slotIndex`
+  (0-15 oder 254, sonst 400; Rechte unveraendert: EDITOR, Fremder 404, Betrachter 403). `AmsSlotsPanel` zeigt die erste Einheit immer, weitere sobald gemeldet oder zugeordnet, bei mehr als einer
+  Einheit mit "AMS n - Slot m" (`lib/amsUnits.ts`). Test: `tests/unit/bambuConnector.test.ts`, `tests/security/amsSlots.test.ts`, `packages/frontend/tests/unit/amsUnits.test.ts`.

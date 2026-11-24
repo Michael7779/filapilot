@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { assignAmsSlotInputSchema, createPrinterInputSchema, EXTERNAL_AMS_SLOT_INDEX, updatePrinterInputSchema } from "@filapilot/shared";
+import {
+  assignAmsSlotInputSchema,
+  createPrinterInputSchema,
+  isValidAmsSlotIndex,
+  updatePrinterInputSchema,
+  type UpdatePrinterInput
+} from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { printerSnapshot } from "../lib/auditSnapshots.js";
@@ -10,6 +16,7 @@ import { getAuthenticatedUser, requireAuth, requirePasswordAlreadyChanged } from
 import { toPublicPrinter } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
 import { connectPrinter, disconnectPrinter, getLatestStatus } from "../services/printerRuntime.js";
+import { refreshSocketAccess } from "../socket.js";
 import { assignAmsSlot, listAmsSlots } from "../services/amsSlotService.js";
 import {
   accessibleInventoryIds,
@@ -25,7 +32,7 @@ const listQuerySchema = z.object({ inventoryId: z.union([z.literal("all"), z.str
 const slotIndexParamSchema = z.coerce
   .number()
   .int()
-  .refine((value) => (value >= 0 && value <= 3) || value === EXTERNAL_AMS_SLOT_INDEX, "Ungueltiger Slot");
+  .refine(isValidAmsSlotIndex, "Ungueltiger Slot");
 
 async function findPrinterOrThrow(id: string) {
   const printer = await prisma.printer.findUnique({ where: { id }, include: { inventory: true } });
@@ -35,16 +42,45 @@ async function findPrinterOrThrow(id: string) {
   return printer;
 }
 
-function inventoryOf(printer: { inventory: { id: string; name: string } | null }): { id: string; name: string } | null {
+// Beim Verschieben in ein anderes Lager werden die AMS-Zuordnungen im selben Schritt geleert: sie verweisen auf Spulen des alten
+// Lagers (die Pruefung "Spule im Lager des Druckers" wuerde sonst bei der Verbrauchserfassung ins Leere laufen).
+async function updatePrinterRow(
+  id: string,
+  input: UpdatePrinterInput,
+  moveToInventoryId: string | null
+) {
+  const data = omitUndefined(input);
+  if (moveToInventoryId === null) {
+    return prisma.printer.update({ where: { id }, data, include: { inventory: true } });
+  }
+  return prisma.$transaction(async (tx) => {
+    const target = await tx.inventory.findUnique({
+      where: { id: moveToInventoryId },
+      select: { id: true }
+    });
+    if (!target) {
+      throw new AppError("NOT_FOUND", "Lager wurde nicht gefunden.");
+    }
+    await tx.amsSlotAssignment.deleteMany({ where: { printerId: id } });
+    return tx.printer.update({ where: { id }, data, include: { inventory: true } });
+  });
+}
+
+function inventoryOf(printer: {
+  inventory: { id: string; name: string } | null;
+}): { id: string; name: string } | null {
   return printer.inventory ? { id: printer.inventory.id, name: printer.inventory.name } : null;
 }
 
 // Threat-Model: Der Access-Code ist das Passwort des Druckers, und der Server baut zu der angegebenen Adresse eine
 // Verbindung auf - ein Benutzer ohne Recht koennte Drucker fremder Lager sehen, anlegen, aendern oder loeschen und so
 // Netzwerkzugriff auf fremde Hardware bekommen. Serverseitig erzwungen: Lesen (Liste, Status) braucht die Rolle VIEWER im
-// Lager des Druckers, Anlegen/Aendern/Loeschen die Rolle OWNER (Admins gelten ueberall als OWNER); ohne Zugriff 404; das
-// Lager eines Druckers kann nachtraeglich nicht geaendert werden; der accessCode verlaesst den Server nie.
-// Negativ-Tests: kein Cookie -> 401, Fremder -> 404, Betrachter/Bearbeiter beim Schreiben -> 403, accessCode nie in einer Antwort.
+// Lager des Druckers, Anlegen/Aendern/Loeschen die Rolle OWNER (Admins gelten ueberall als OWNER); ohne Zugriff 404; ein
+// Drucker wird nur verschoben, wenn der Nutzer im alten UND im neuen Lager OWNER ist (ein Ziel ohne Zugriff bleibt unsichtbar,
+// ein nicht existierendes Ziel ergibt 404); beim Verschieben werden die AMS-Zuordnungen geleert, weil sie Spulen des alten Lagers
+// meinen; der accessCode verlaesst den Server nie.
+// Negativ-Tests: kein Cookie -> 401, Fremder -> 404, Betrachter/Bearbeiter beim Schreiben -> 403, accessCode nie in einer Antwort,
+// Verschieben ohne Besitzer-Recht im Ziel -> 403/404 (tests/security/printerMove.test.ts).
 // SCOPE: user
 printersRouter.get(
   "/",
@@ -156,16 +192,26 @@ printersRouter.patch(
     const id = idParamSchema.parse(req.params.id);
     const input = updatePrinterInputSchema.parse(req.body);
     const before = await findPrinterOrThrow(id);
-    await requireAccessToObjectInventory(getAuthenticatedUser(req), before.inventoryId, "OWNER");
-    const updated = await prisma.printer
-      .update({ where: { id }, data: omitUndefined(input), include: { inventory: true } })
-      .catch((err: unknown) => {
+    const user = getAuthenticatedUser(req);
+    await requireAccessToObjectInventory(user, before.inventoryId, "OWNER");
+    const targetInventoryId = input.inventoryId;
+    const moving = targetInventoryId !== undefined && targetInventoryId !== before.inventoryId;
+    if (moving) {
+      await requireInventoryRole(user, targetInventoryId, "OWNER");
+    }
+    const updated = await updatePrinterRow(id, input, moving ? targetInventoryId : null).catch(
+      (err: unknown) => {
         if (err instanceof Error && err.message.includes("Record to update not found")) {
           throw new AppError("NOT_FOUND", "Drucker wurde nicht gefunden.");
         }
         throw err;
-      });
+      }
+    );
     connectPrinter(updated);
+    if (moving) {
+      // Die Live-Status-Raeume haengen am Lager: Zuhoerer des alten Lagers verlieren den Drucker sofort.
+      void refreshSocketAccess();
+    }
     // Der Zugangscode ist ein Geheimnis: nie im Protokoll, nur dass er geaendert wurde.
     const accessCodeChanged = input.accessCode !== undefined && input.accessCode !== before.accessCode;
     await recordUpdate({

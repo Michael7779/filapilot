@@ -11,7 +11,13 @@ const SECTION_LABELS: Record<string, string> = {
   Geändert: "Geändert",
   Geaendert: "Geändert",
   Behoben: "Behoben",
-  Sicherheit: "Sicherheit"
+  Sicherheit: "Sicherheit",
+  // Englischer Verlauf (CHANGELOG.en.md): englische Ueberschriften mit englischen Vorsilben. "Note on updating" gibt es dort
+  // nicht - die Hinweise fuer Admins bleiben deutsch und erscheinen nirgends in der App.
+  Added: "New",
+  Changed: "Changed",
+  Fixed: "Fixed",
+  Security: "Security"
 };
 
 const VERSION_HEADING = /^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})\s*$/;
@@ -48,4 +54,18 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
     }
   }
   return entries.filter((entry) => entry.items.length > 0).map((entry) => ({ ...entry, items: entry.items.map((item) => item.replaceAll("`", "")) }));
+}
+
+// Waehlt den Aenderungsverlauf passend zur Sprache der Oberflaeche. Die deutsche Liste gibt Reihenfolge und Versionen vor; bei
+// Englisch wird je Version der englische Text genommen, fehlt er, bleibt der deutsche (nie eine Version weglassen).
+export function localizeChangelog(
+  german: readonly ChangelogEntry[],
+  english: readonly ChangelogEntry[],
+  language: string
+): ChangelogEntry[] {
+  if (!language.toLowerCase().startsWith("en")) {
+    return [...german];
+  }
+  const byVersion = new Map(english.map((entry) => [entry.version, entry]));
+  return german.map((entry) => byVersion.get(entry.version) ?? entry);
 }

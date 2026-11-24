@@ -6,6 +6,7 @@ import { asyncHandler } from "../lib/asyncHandler.js";
 import { requireAuth, requirePasswordAlreadyChanged, requireRole } from "../middleware/auth.js";
 import { getSettings, updateSettings } from "../services/settingsService.js";
 import { createBackup } from "../services/backupService.js";
+import { clearBackupFailure } from "../services/backupStatusService.js";
 import { sendTestEmail } from "../services/mailService.js";
 import { getAuthenticatedUser } from "../middleware/auth.js";
 import { settingsSnapshot } from "../lib/auditSnapshots.js";
@@ -66,6 +67,7 @@ settingsRouter.patch("/", ...requireAdmin, async (req, res, next) => {
 settingsRouter.post("/backup", ...requireAdmin, async (req, res, next) => {
   try {
     const timestamp = await createBackup();
+    await clearBackupFailure();
     await recordAudit({
       actor: actorFromRequest(req),
       action: "EVENT",

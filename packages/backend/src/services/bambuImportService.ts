@@ -21,6 +21,9 @@ const DEFAULT_TOTAL_G = 1000;
 const DEFAULT_TEMPS = { min: 190, max: 230, bed: 60 } as const;
 const UNKNOWN_VENDOR = "Unbekannt";
 
+// So viele Zeichen speichert FilaPilot pro Spulen-Notiz (shared/schemas/spool.ts).
+const MAX_NOTE_LENGTH = 500;
+
 export interface MappedSpool {
   cloudId: string;
   vendor: string;
@@ -33,6 +36,7 @@ export interface MappedSpool {
   status: number | null;
   inPrinter: boolean;
   deviceName: string | null;
+  note: string | null;
 }
 
 // Uebersetzt Fehler der Cloud in verstaendliche Meldungen - nie mit Text aus der Antwort der Cloud.
@@ -108,7 +112,8 @@ export function mapBambuSpool(spool: BambuSpool): MappedSpool {
     totalG: total,
     status: spool.status ?? null,
     inPrinter: spool.inPrinter === true,
-    deviceName: clean(spool.deviceName) || null
+    deviceName: clean(spool.deviceName) || null,
+    note: clean(spool.note).slice(0, MAX_NOTE_LENGTH) || null
   };
 }
 
@@ -139,7 +144,7 @@ export function cloudSpoolSnapshot(inventoryName: string, spool: MappedSpool, ma
     initialWeightG: spool.totalG,
     remainingWeightG,
     location: spool.inPrinter ? spool.deviceName : null,
-    note: null,
+    note: spool.note,
     purchasePriceCents: null
   };
 }
@@ -329,6 +334,8 @@ export async function createSpoolFromCloud(context: ImportContext, spool: Mapped
       initialWeightG: spool.totalG,
       remainingWeightG: spool.remainingG,
       location: spool.inPrinter ? spool.deviceName : null,
+      // Die Notiz aus Bambu wird nur beim Anlegen uebernommen; spaetere Aenderungen in Bambu ueberschreiben nie die Notiz in FilaPilot.
+      note: spool.note,
       bambuCloudId: spool.cloudId,
       openedAt: new Date()
     }

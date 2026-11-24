@@ -13,9 +13,11 @@
 - Der Text kommt nur aus dem eigenen Changelog und wird als Text (nie als HTML) dargestellt.
 
 ## 1.1 Offene Punkte
-- OP-CL1: Der Verlauf ist nur deutsch (das CHANGELOG.md ist deutsch), auch bei englischer Oberflaeche.
+- OP-CL1 ✅ (0.43.0): Der Verlauf gibt es jetzt auch auf Englisch, siehe R4. Die Hinweise fuer Admins ("Hinweis zum Update") bleiben deutsch und erscheinen nirgends in der App.
 - OP-CL2 ✅ (0.21.2): "Gesehen" wird jetzt im Konto gespeichert (`PATCH /api/users/me/preferences`,
   `lastSeenChangelogVersion`), nicht mehr nur im Browser.
+- OP-CL3: Es gibt in der App noch keine Sprachumschaltung (`i18n/index.ts` startet fest mit `de`, nirgends wird `changeLanguage` aufgerufen). Der englische Verlauf (R4) und alle englischen Texte
+  (`en.json`) sind vorbereitet, erscheinen aber erst, wenn die Oberflaeche auf Englisch steht. Im Browser mit per Skript umgestellter Sprache geprueft: der englische Verlauf erscheint korrekt.
 
 ## 1.2 Anforderungen
 - **R1**: Der Parser liest Versionen, Datum und Punkte mit Vorsilbe, fasst Folgezeilen zusammen und laesst Admin-Hinweise
@@ -23,3 +25,7 @@
 - **R2**: Knopf, Dialog und rotes Blinken bei neuer Version - manuell per Browser geprueft (siehe Commit).
 - **R3**: Ab 0.21.2: "Gesehen" ist eine eigene Einstellung des Kontos (wie Ansicht/Seitengroesse der Spulenliste,
   siehe `spools.md` R14), nur fuers eigene Konto aenderbar. Test: `tests/security/preferences.test.ts`
+- **R4**: Ab 0.43.0: Neben `CHANGELOG.md` gibt es `CHANGELOG.en.md` (Ueberschriften Added/Changed/Fixed/Security, gleiche Versionen, nur die fuer Benutzer sichtbaren Punkte). `parseChangelog` liest beide Dateien
+  (englische Vorsilben New/Changed/Fixed/Security), `localizeChangelog` waehlt bei englischer Oberflaeche den englischen Text und faellt je Version auf Deutsch zurueck (die deutsche Liste bestimmt Versionen und
+  Reihenfolge). Release-Gate: Der Test verlangt fuer JEDE Version mit sichtbaren Punkten einen englischen Eintrag mit gleicher Punktzahl, gleichem Datum und gleicher Art je Punkt - ein neuer Eintrag nur auf Deutsch
+  laesst ihn rot werden. Das Frontend-Dockerfile kopiert beide Dateien. Test: `packages/backend/tests/unit/changelog.test.ts`.

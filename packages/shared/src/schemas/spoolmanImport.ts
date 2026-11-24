@@ -32,7 +32,10 @@ export const spoolmanSpoolSchema = z.object({
   initial_weight: z.number().finite().nullish(),
   spool_weight: z.number().finite().nullish(),
   location: z.string().max(120).nullish(),
-  comment: z.string().max(500).nullish(),
+  // Ohne Laengenpruefung: ein zu langer Kommentar soll die Spule nicht verwerfen, sondern wird beim Zuordnen auf 500 Zeichen gekuerzt.
+  comment: z.string().nullish(),
+  // In Spoolman archiviert (z.B. aufgebraucht): wird auch in FilaPilot archiviert angelegt.
+  archived: z.boolean().nullish(),
   filament: spoolmanFilamentSchema
 });
 export type SpoolmanSpool = z.infer<typeof spoolmanSpoolSchema>;

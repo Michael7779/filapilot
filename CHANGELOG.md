@@ -8,6 +8,27 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.43.0] - 2026-11-24
+
+### Hinzugefuegt
+- Dashboard, "Braucht Aufmerksamkeit": Admins sehen jetzt auch, wenn die nächtliche automatische Sicherung fehlgeschlagen ist, mit dem Grund. Der Hinweis verschwindet, sobald wieder eine Sicherung gelingt.
+- Drucker: Ein Drucker lässt sich jetzt in ein anderes Lager verschieben (Knopf „In anderes Lager verschieben“ an der Drucker-Karte, nur für Besitzer beider Lager). Der Auftragsverlauf zieht mit um; die Zuordnung der Spulen zu den AMS-Fächern wird dabei geleert, weil sie zu Spulen des alten Lagers gehört.
+- Drucker, AMS: Hängen mehrere AMS-Einheiten in Reihe an einem Drucker, zeigt FilaPilot jetzt alle (bis zu vier, beschriftet z. B. „AMS 2 · Slot 1“) und bucht den Verbrauch für jedes Fach. Bisher wurde nur die erste AMS gelesen. An einem echten Drucker mit mehreren AMS ist das noch nicht geprüft.
+- Bambu-Import: Die Notiz, die du in der Bambu-App an einer Spule hinterlegt hast, wird beim Anlegen der Spule übernommen. Später in Bambu geänderte Notizen überschreiben nie die Notiz in FilaPilot.
+- Änderungsverlauf: Er gibt es jetzt auch auf Englisch. Bei englischer Oberfläche erscheinen die englischen Texte.
+- Spoolman-Import: Spulen, die in Spoolman archiviert sind (zum Beispiel aufgebraucht), kommen auch in FilaPilot archiviert an und tauchen nicht mehr als „fast leer“ im Bestand auf.
+
+### Geändert
+- Benutzer löschen: Ein Benutzer, der in einem Lager der einzige Besitzer ist, kann nicht mehr gelöscht werden. Die Meldung nennt die betroffenen Lager; zuerst einen anderen Besitzer festlegen oder das Lager löschen. So bleibt nie ein Lager ohne Besitzer zurück.
+
+### Behoben
+- Spoolman-Import: Eine Spule mit einem sehr langen Kommentar (über 500 Zeichen) wurde komplett übersprungen. Der Kommentar wird jetzt gekürzt, die Spule kommt an.
+
+### Hinweis zum Update
+- Schema: `Settings.lastBackupFailedAt` und `Settings.lastBackupFailureReason` (beide optional) kommen neu hinzu; das Update-Skript (`prisma db push`) legt sie ohne Datenverlust an. Neue Route `GET /api/settings/backups/last-failure` (nur Admin).
+- AMS-Slot-Indizes: Fach = Einheit × 4 + Kammer (0–15, extern weiter 254); bestehende Zuordnungen der ersten AMS (0–3) bleiben gültig.
+- `CHANGELOG.en.md` ist neu; das Frontend-Dockerfile kopiert sie mit, und ein Test verlangt für jede Version mit sichtbaren Punkten einen englischen Eintrag.
+
 ## [0.42.1] - 2026-11-23
 
 ### Sicherheit

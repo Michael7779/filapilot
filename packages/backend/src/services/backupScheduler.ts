@@ -2,6 +2,7 @@ import { createBackup } from "./backupService.js";
 import { getSettings } from "./settingsService.js";
 import { pruneAuditLog } from "./auditRetentionService.js";
 import { SYSTEM_ACTOR, recordAudit } from "./auditService.js";
+import { clearBackupFailure, recordBackupFailure } from "./backupStatusService.js";
 import { logger } from "../logger.js";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -18,21 +19,42 @@ function msUntilNextRun(): number {
   return next.getTime() - now.getTime();
 }
 
-async function runIfEnabled(): Promise<void> {
+export interface ScheduledBackupDependencies {
+  createBackup: () => Promise<string>;
+}
+
+// Ein Lauf des taeglichen Jobs. Ein Fehlschlag wird zusaetzlich zum Server-Log gemerkt (Dashboard "Braucht Aufmerksamkeit")
+// und im Aenderungsprotokoll festgehalten; die naechste erfolgreiche Sicherung loescht den Vermerk wieder.
+export async function runScheduledBackup(
+  deps: ScheduledBackupDependencies = { createBackup }
+): Promise<void> {
   try {
     const settings = await getSettings();
     if (settings.backupEnabled) {
-      const timestamp = await createBackup();
-      await recordAudit({
-        actor: SYSTEM_ACTOR,
-        action: "EVENT",
-        area: "BACKUP",
-        entityId: timestamp,
-        description: `Automatische Sicherung erstellt (${timestamp})`
-      });
+      try {
+        const timestamp = await deps.createBackup();
+        await clearBackupFailure();
+        await recordAudit({
+          actor: SYSTEM_ACTOR,
+          action: "EVENT",
+          area: "BACKUP",
+          entityId: timestamp,
+          description: `Automatische Sicherung erstellt (${timestamp})`
+        });
+      } catch (err) {
+        logger.error("Taeglicher Backup-Job fehlgeschlagen", { err });
+        const reason = await recordBackupFailure(err);
+        await recordAudit({
+          actor: SYSTEM_ACTOR,
+          action: "EVENT",
+          area: "BACKUP",
+          entityId: null,
+          description: `Automatische Sicherung fehlgeschlagen: ${reason}`
+        });
+      }
     }
   } catch (err) {
-    logger.error("Taeglicher Backup-Job fehlgeschlagen", { err });
+    logger.error("Taeglicher Backup-Job konnte nicht ausgewertet werden", { err });
   }
   // Protokoll-Aufbewahrung laeuft unabhaengig davon, ob Sicherungen aktiv sind.
   try {
@@ -45,8 +67,8 @@ async function runIfEnabled(): Promise<void> {
 export function startDailyBackupScheduler(): void {
   const schedule = () => {
     setTimeout(() => {
-      void runIfEnabled();
-      setInterval(() => void runIfEnabled(), ONE_DAY_MS);
+      void runScheduledBackup();
+      setInterval(() => void runScheduledBackup(), ONE_DAY_MS);
     }, msUntilNextRun());
   };
   schedule();

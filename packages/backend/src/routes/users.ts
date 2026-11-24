@@ -23,6 +23,7 @@ import { omitUndefined } from "../lib/omitUndefined.js";
 import { userSnapshot } from "../lib/auditSnapshots.js";
 import { actorFromRequest, recordAudit, recordUpdate } from "../services/auditService.js";
 import { toPublicUser } from "../lib/mappers.js";
+import { assertUserOwnsNoInventoryAlone } from "../services/inventoryService.js";
 import { refreshSocketAccess } from "../socket.js";
 
 export const usersRouter = Router();
@@ -284,31 +285,37 @@ usersRouter.patch("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
 }));
 
 // SCOPE: global
-usersRouter.delete("/:id", ...requireAdmin, asyncHandler(async (req, res) => {
-  const id = idParamSchema.parse(req.params.id);
-  if (id === getAuthenticatedUser(req).id) {
-    throw new AppError("CONFLICT", "Das eigene Konto kann nicht geloescht werden.");
-  }
-  const target = await findUserOrThrow(id);
-  assertMayManage(getAuthenticatedUser(req), target);
-  if (target.role === "ADMIN") {
-    await assertAnotherAdminExists(id);
-  }
-  if (target.isSuperAdmin) {
-    await removingSuperAdmin(id, (tx) => tx.user.delete({ where: { id } }));
-  } else {
-    await prisma.user.delete({ where: { id } });
-  }
-  await recordAudit({
-    actor: actorFromRequest(req),
-    action: "DELETE",
-    area: "USER",
-    entityId: id,
-    description: target.username,
-    before: userSnapshot(target)
-  });
-  sendData(res, { deleted: true });
-}));
+usersRouter.delete(
+  "/:id",
+  ...requireAdmin,
+  asyncHandler(async (req, res) => {
+    const id = idParamSchema.parse(req.params.id);
+    if (id === getAuthenticatedUser(req).id) {
+      throw new AppError("CONFLICT", "Das eigene Konto kann nicht geloescht werden.");
+    }
+    const target = await findUserOrThrow(id);
+    assertMayManage(getAuthenticatedUser(req), target);
+    if (target.role === "ADMIN") {
+      await assertAnotherAdminExists(id);
+    }
+    // Mit dem Benutzer verschwinden seine Mitgliedschaften - ein Lager, in dem er der einzige Besitzer ist, bliebe sonst ohne Besitzer.
+    await assertUserOwnsNoInventoryAlone(id);
+    if (target.isSuperAdmin) {
+      await removingSuperAdmin(id, (tx) => tx.user.delete({ where: { id } }));
+    } else {
+      await prisma.user.delete({ where: { id } });
+    }
+    await recordAudit({
+      actor: actorFromRequest(req),
+      action: "DELETE",
+      area: "USER",
+      entityId: id,
+      description: target.username,
+      before: userSnapshot(target)
+    });
+    sendData(res, { deleted: true });
+  })
+);
 
 // SCOPE: global
 usersRouter.post("/:id/reset-password", ...requireAdmin, asyncHandler(async (req, res) => {

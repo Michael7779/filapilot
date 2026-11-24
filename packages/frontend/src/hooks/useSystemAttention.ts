@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import type { BackupInfo, BambuConnectionInfo, Settings } from "@filapilot/shared";
+import type { BackupFailure, BackupInfo, BambuConnectionInfo, Settings } from "@filapilot/shared";
 import { apiRequest } from "../lib/api.js";
 import {
   backupSignal,
@@ -28,10 +28,14 @@ function useBackupSignal(isAdmin: boolean): BackupSignal | null {
       return;
     }
     let cancelled = false;
-    Promise.all([apiRequest<Settings>("/settings"), apiRequest<BackupInfo[]>("/settings/backups")])
-      .then(([settings, backups]) => {
+    Promise.all([
+      apiRequest<Settings>("/settings"),
+      apiRequest<BackupInfo[]>("/settings/backups"),
+      apiRequest<BackupFailure | null>("/settings/backups/last-failure")
+    ])
+      .then(([settings, backups, failure]) => {
         if (!cancelled) {
-          setSignal(backupSignal(settings.backupEnabled, backups, new Date()));
+          setSignal(backupSignal(settings.backupEnabled, backups, new Date(), failure));
         }
       })
       // Das Signal ist ein Zusatzhinweis: kann es nicht ermittelt werden, bleibt es weg, statt eine falsche Warnung zu zeigen.
@@ -79,6 +83,16 @@ function bambuText(t: TFunction, name: string, signal: BambuSignal): string {
   return t("dashboard.attention.bambuTokenExpiresSoon", { name, days: signal.days });
 }
 
+function backupText(t: TFunction, signal: BackupSignal): string {
+  if (signal.kind === "never") {
+    return t("dashboard.attention.backupNever");
+  }
+  if (signal.kind === "failed") {
+    return t("dashboard.attention.backupFailed", { reason: signal.reason });
+  }
+  return t("dashboard.attention.backupStale", { days: signal.days });
+}
+
 // Signale aus dem Betrieb (Sicherung, Bambu-Cloud) als Zeilen fuer "Braucht Aufmerksamkeit" auf dem Dashboard.
 export function useSystemAttention(selectedId: string | null): AttentionItem[] {
   const { t } = useTranslation();
@@ -90,8 +104,8 @@ export function useSystemAttention(selectedId: string | null): AttentionItem[] {
   if (backup) {
     items.push({
       key: "backup",
-      severity: "warning",
-      text: backup.kind === "never" ? t("dashboard.attention.backupNever") : t("dashboard.attention.backupStale", { days: backup.days }),
+      severity: backup.kind === "failed" ? "danger" : "warning",
+      text: backupText(t, backup),
       to: "/settings"
     });
   }

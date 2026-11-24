@@ -57,13 +57,17 @@ export function manufacturerSnapshot(manufacturer: PrismaManufacturer): Snapshot
   return { name: manufacturer.name };
 }
 
-export function printerSnapshot(printer: PrismaPrinter): Snapshot {
+export function printerSnapshot(
+  printer: PrismaPrinter & { inventory?: { name: string } | null }
+): Snapshot {
   return {
     name: printer.name,
     ipAddress: printer.ipAddress,
     serialNumber: printer.serialNumber,
     syncMode: printer.syncMode,
-    syncIntervalSeconds: printer.syncIntervalSeconds
+    syncIntervalSeconds: printer.syncIntervalSeconds,
+    // Mit dem Lagernamen wird auch ein Verschieben in ein anderes Lager als Aenderung im Protokoll sichtbar.
+    ...(printer.inventory ? { lager: printer.inventory.name } : {})
   };
 }
 

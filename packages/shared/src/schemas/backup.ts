@@ -16,6 +16,13 @@ export const backupInfoSchema = z.object({
 });
 export type BackupInfo = z.infer<typeof backupInfoSchema>;
 
+// Letzter Fehlschlag des automatischen Backup-Jobs (Meldung ist serverseitig bereinigt, ohne Zugangsdaten).
+export const backupFailureSchema = z.object({
+  at: z.string(),
+  reason: z.string()
+});
+export type BackupFailure = z.infer<typeof backupFailureSchema>;
+
 // Bewusst ein festes Wort: verhindert, dass ein versehentlicher API-Aufruf die Datenbank ueberschreibt.
 export const RESTORE_CONFIRMATION_WORD = "WIEDERHERSTELLEN";
 export const restoreBackupInputSchema = z.object({
