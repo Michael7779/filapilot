@@ -41,7 +41,9 @@ function parseTray(raw: unknown, slotIndex: number): AmsSlotStatus | null {
     slotIndex,
     reportedMaterial: typeof tray.tray_type === "string" && tray.tray_type !== "" ? tray.tray_type : null,
     reportedColorHex: toColorHex(tray.tray_color),
-    remainingPercent: toRemainPercent(tray.remain)
+    // Die externe Spule hat keinen Chip-Leser: eine 0 heisst dort "unbekannt", nicht "leer".
+    remainingPercent:
+      slotIndex === EXTERNAL_AMS_SLOT_INDEX && tray.remain === 0 ? null : toRemainPercent(tray.remain)
   };
 }
 

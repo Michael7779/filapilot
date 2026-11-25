@@ -7,6 +7,18 @@ German file) are not translated and do not appear in the app.
 Rule: every version with user-visible items in CHANGELOG.md needs a matching entry here with the same number of items (checked by
 `packages/backend/tests/unit/changelog.test.ts`). Headings: Added, Changed, Fixed, Security.
 
+## [0.45.0] - 2026-11-25
+
+### Added
+- Printers, AMS: every slot now shows the material and color reported by the printer, so you can find the matching spool more easily.
+- Printers, AMS: the Bambu sync now assigns spools to the slots automatically (marked "auto") when the Bambu Cloud names the slot and the printer reports the same material and a matching color there. A spool you picked yourself is never overwritten, and nothing changes during a print. After swapping a spool, the assignment follows with the next sync.
+
+### Changed
+- Bambu sync: if a spool in FilaPilot has no note yet, it gets the note from the Bambu app. An existing note is never overwritten. If you delete a note only in FilaPilot, it comes back with the next sync.
+
+### Fixed
+- Printers: the external spool no longer shows "0 %" when the printer does not know the fill level at all.
+
 ## [0.44.0] - 2026-11-25
 
 ### Added

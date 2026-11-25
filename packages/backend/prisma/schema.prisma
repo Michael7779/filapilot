@@ -495,6 +495,8 @@ model AmsSlotAssignment {
   spool     Spool?    @relation(fields: [spoolId], references: [id], onDelete: SetNull)
   // Kalibrierung beim Zuordnen: Restgewicht/AMS-Fuellstand zu diesem Zeitpunkt, Basis der Verbrauchsberechnung
   assignedAt          DateTime?
+  // true: aus der Bambu-Cloud gesetzt (darf der Abgleich wieder aendern); false: von Hand gewaehlt (bleibt).
+  autoAssigned        Boolean   @default(false)
   baselineRemainingG  Int?
   baselineRemainPercent Float?
 

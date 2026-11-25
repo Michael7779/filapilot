@@ -131,7 +131,9 @@ export const amsSlotViewSchema = z.object({
   reportedColorHex: z.string().nullable(),
   remainingPercent: z.number().min(0).max(100).nullable(),
   spoolId: z.string().uuid().nullable(),
-  spoolLabel: z.string().nullable()
+  spoolLabel: z.string().nullable(),
+  // Nur gesetzt (true), wenn die Zuordnung automatisch aus der Bambu-Cloud stammt
+  auto: z.boolean().optional()
 });
 export type AmsSlotView = z.infer<typeof amsSlotViewSchema>;
 

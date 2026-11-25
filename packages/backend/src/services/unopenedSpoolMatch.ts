@@ -8,7 +8,7 @@ type Db = Pick<Prisma.TransactionClient, "spool">;
 // von Hand eingetragenen Hex-Wert und dem von der Bambu-Cloud/AMS gemeldeten (z.B. #FFFFFF vs. #F5F5F0 fuer
 // dasselbe "Weiss") noch zusammenfallen, aber deutlich unterschiedliche benannte Farben (z.B. Weiss vs. Beige,
 // Abstand > 9000) sicher nicht. Entspricht einem euklidischen Abstand von ca. 30.
-const MAX_COLOR_DISTANCE_SQUARED = 900;
+export const MAX_COLOR_DISTANCE_SQUARED = 900;
 
 // Findet EINDEUTIG (genau ein Treffer, sonst null) eine noch ungeoeffnete, noch nicht extern verknuepfte Spule mit
 // gleichem Hersteller/Material und einer sehr aehnlichen Farbe im selben Lager - Grundlage fuer "verknuepfen statt

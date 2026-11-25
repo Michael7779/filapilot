@@ -9,6 +9,7 @@ import {
 } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { visibleAmsUnits } from "../lib/amsUnits.js";
+import { ReportedFilament } from "./ReportedFilament.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 
 interface AmsSlotsPanelProps {
@@ -107,7 +108,8 @@ export function AmsSlotsPanel({ printerId, inventoryId, canEdit }: AmsSlotsPanel
       {shown.map((slot) => (
         <div key={slot.slotIndex} className="flex items-center gap-2 text-xs">
           <span className="w-24 shrink-0 text-[var(--color-text-muted)]">
-            {slotTitle(t, slot.slotIndex, multipleUnits)}
+            <span className="block">{slotTitle(t, slot.slotIndex, multipleUnits)}</span>
+            <ReportedFilament material={slot.reportedMaterial} colorHex={slot.reportedColorHex} />
           </span>
           {canEdit ? (
             <select
@@ -125,6 +127,11 @@ export function AmsSlotsPanel({ printerId, inventoryId, canEdit }: AmsSlotsPanel
             </select>
           ) : (
             <span className="min-w-0 flex-1 truncate">{slot.spoolLabel ?? t("printers.ams.none")}</span>
+          )}
+          {slot.auto && (
+            <span className="shrink-0 text-[var(--color-text-muted)]" title={t("printers.ams.autoHint")}>
+              {t("printers.ams.auto")}
+            </span>
           )}
           {slot.remainingPercent !== null && (
             <span className="shrink-0 text-[var(--color-text-muted)]">{Math.round(slot.remainingPercent)} %</span>

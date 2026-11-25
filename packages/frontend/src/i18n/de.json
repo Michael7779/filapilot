@@ -874,6 +874,8 @@
     "printing": "Druckt",
     "ams": {
       "title": "AMS-Zuordnung",
+      "auto": "auto",
+      "autoHint": "Automatisch aus der Bambu Cloud zugeordnet. Eine selbst gewählte Spule bleibt, „Keine Spule“ gibt das Fach wieder frei.",
       "slot": "Slot {{index}}",
       "slotInUnit": "AMS {{unit}} · Slot {{index}}",
       "external": "Extern",

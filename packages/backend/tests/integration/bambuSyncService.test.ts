@@ -79,6 +79,46 @@ describe("Bambu-Cloud-Abgleich: lastModifiedAt nur bei echter Aenderung (R26)", 
     assert.ok(archived.lastModifiedAt !== null);
   });
 
+  it("fuellt die leere Notiz einer vorhandenen Spule aus der Cloud - auch ohne Gewichtsaenderung, nie in einem anderen Lager", async () => {
+    const { materialId, manufacturerId } = await createCatalogEntries();
+    const other = await createInventoryWithMembers("Anderes Sync-Lager", []);
+    const base = { materialId, manufacturerId, initialWeightG: 1000, remainingWeightG: 500, bambuCloudId: "cloud-fill" };
+    const mine = await prisma.spool.create({ data: { ...base, inventoryId, colorName: "Rot", note: "   " } });
+    const foreign = await prisma.spool.create({ data: { ...base, inventoryId: other.id, colorName: "Rot" } });
+
+    const summary = await syncInventoryFromCloud(
+      inventoryId,
+      [cloudSpool({ id: "cloud-fill", note: "  Trocken lagern  " })],
+      actor,
+      { id: inventoryId, name: inventoryName }
+    );
+
+    const updated = await prisma.spool.findUniqueOrThrow({ where: { id: mine.id } });
+    assert.equal(updated.note, "Trocken lagern");
+    assert.ok(updated.lastModifiedAt !== null);
+    assert.equal(summary.updated, 1);
+    assert.equal(summary.unchanged, 0);
+    assert.equal((await prisma.spool.findUniqueOrThrow({ where: { id: foreign.id } })).note, null);
+  });
+
+  it("gibt auch einer verknuepften ungeoeffneten Spule die Notiz, wenn sie keine hat - eine eigene bleibt", async () => {
+    const { materialId, manufacturerId } = await createCatalogEntries();
+    const material = await prisma.material.findUniqueOrThrow({ where: { id: materialId } });
+    const manufacturer = await prisma.manufacturer.findUniqueOrThrow({ where: { id: manufacturerId } });
+    const inv = { id: inventoryId, name: inventoryName };
+    const cloud = (id: string, color: string): BambuSpool =>
+      cloudSpool({ id, color, note: "Aus Bambu", filamentVendor: manufacturer.name, filamentName: material.name });
+    const unopened = { materialId, manufacturerId, inventoryId, initialWeightG: 1000, remainingWeightG: 1000 };
+    const empty = await prisma.spool.create({ data: { ...unopened, colorName: "Rot", colorHex: "#FF0000" } });
+    const own = await prisma.spool.create({ data: { ...unopened, colorName: "Blau", colorHex: "#0000FF", note: "Eigene" } });
+
+    const summary = await syncInventoryFromCloud(inventoryId, [cloud("link-red", "#FF0000FF"), cloud("link-blue", "#0000FFFF")], actor, inv);
+
+    assert.equal(summary.linked, 2);
+    assert.equal((await prisma.spool.findUniqueOrThrow({ where: { id: empty.id } })).note, "Aus Bambu");
+    assert.equal((await prisma.spool.findUniqueOrThrow({ where: { id: own.id } })).note, "Eigene");
+  });
+
   it("uebernimmt die Notiz einer neuen Cloud-Spule, ueberschreibt aber spaeter nie die Notiz in FilaPilot", async () => {
     await createCatalogEntries();
     const inv = { id: inventoryId, name: inventoryName };

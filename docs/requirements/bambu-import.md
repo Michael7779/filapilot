@@ -113,4 +113,6 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
 
 ## Diagnose der Feldnamen (ab 0.44.0)
 - **R17**: Beim Lesen der Spulenliste protokolliert der Server die Anzahl, die Namen der gelieferten Felder und welche Notiz-artigen Felder Text enthalten - nie Werte (`describeHitFields`). Test: `tests/unit/bambuCloudClient.test.ts`.
-- OP-B8: Auf einer echten Installation kam die Notiz der Bambu-App nicht an (Rueckmeldung 2026-11-25, OP-B4). Der echte Feldname ist offen und wird ueber R17 ermittelt.
+- OP-B8 ✅ (0.45.0): Die echte Cloud liefert die Notiz im Feld `note` (Protokoll einer Installation, 2026-11-25). Sie kam nicht an, weil nur neu angelegte Spulen sie bekamen, siehe R18.
+- **R18**: Ab 0.45.0 (ersetzt in R16 den Satz, die Notiz bestehender Spulen werde nie angefasst): Beim Abgleich und beim Verknuepfen mit einer ungeoeffneten Spule wird eine LEERE Notiz aus der Cloud gefuellt, eine vorhandene nie ueberschrieben. Nur Spulen desselben Lagers; Protokolleintrag je Spule. Der Import von Hand mit "Restgewicht aktualisieren" laesst Notizen unveraendert.
+  Test: `tests/integration/bambuSyncService.test.ts`.

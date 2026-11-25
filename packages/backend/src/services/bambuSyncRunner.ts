@@ -5,6 +5,8 @@ import { deleteConnection, getStoredToken, markSyncFailed, markSynced } from "./
 import { parseBambuHits, toAppError } from "./bambuImportService.js";
 import { describeSync, syncInventoryFromCloud } from "./bambuSyncService.js";
 import { recordAudit, type AuditActor } from "./auditService.js";
+import { autoAssignAmsSlots } from "./amsAutoAssign.js";
+import { logger } from "../logger.js";
 import { getInventoryRow } from "./inventoryService.js";
 import { reconnectCloudPrintersInBackground } from "./printerRuntime.js";
 
@@ -33,6 +35,10 @@ export async function runCloudSync(inventoryId: string, actor: AuditActor, auto:
   const { spools } = parseBambuHits(hits);
   const inventory = await getInventoryRow(inventoryId);
   const summary = await syncInventoryFromCloud(inventoryId, spools, actor, inventory);
+  // Scheitert die AMS-Zuordnung, bleibt der Abgleich der Spulen trotzdem gueltig - der Fehler wird protokolliert.
+  await autoAssignAmsSlots(inventory, spools, actor).catch((err: unknown) => {
+    logger.error("Automatische AMS-Zuordnung fehlgeschlagen", { inventoryId, err: err instanceof Error ? err.message : String(err) });
+  });
   const text = describeSync(summary);
   await markSynced(inventoryId, text, auto);
   await recordAudit({

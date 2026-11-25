@@ -31,7 +31,8 @@ export async function listAmsSlots(printerId: string, liveSlots: readonly AmsSlo
         reportedColorHex: live?.reportedColorHex ?? null,
         remainingPercent: live?.remainingPercent ?? null,
         spoolId: assignment?.spoolId ?? null,
-        spoolLabel: assignment?.spool ? spoolLabel(assignment.spool) : null
+        spoolLabel: assignment?.spool ? spoolLabel(assignment.spool) : null,
+        ...(assignment?.spoolId && assignment.autoAssigned ? { auto: true } : {})
       };
     });
 }
@@ -58,10 +59,12 @@ export async function assignAmsSlot(
   if (spool.archivedAt) {
     throw new AppError("VALIDATION_ERROR", "Eine archivierte Spule kann keinem Slot zugeordnet werden.");
   }
+  // Dieselbe Spule kann nur an einem Ort liegen: eine automatische Zuordnung anderswo ist damit ueberholt.
+  await prisma.amsSlotAssignment.deleteMany({ where: { spoolId, autoAssigned: true, NOT: { printerId, slotIndex } } });
   await prisma.amsSlotAssignment.upsert({
     where: { printerId_slotIndex: { printerId, slotIndex } },
     create: { printerId, slotIndex, spoolId, assignedAt: new Date() },
-    update: { spoolId, baselineRemainPercent: null, baselineRemainingG: null, assignedAt: new Date() }
+    update: { spoolId, autoAssigned: false, baselineRemainPercent: null, baselineRemainingG: null, assignedAt: new Date() }
   });
   // Eine Spule, die im AMS liegt, ist damit nachweislich in Benutzung - auch ohne bisherige Gewichtsaenderung.
   await prisma.spool.updateMany({ where: { id: spoolId, openedAt: null }, data: { openedAt: new Date() } });

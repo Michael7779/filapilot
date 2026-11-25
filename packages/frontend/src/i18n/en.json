@@ -874,6 +874,8 @@
     "printing": "Printing",
     "ams": {
       "title": "AMS assignment",
+      "auto": "auto",
+      "autoHint": "Assigned automatically from the Bambu Cloud. A spool you pick yourself stays, \"No spool\" releases the slot again.",
       "slot": "Slot {{index}}",
       "slotInUnit": "AMS {{unit}} · Slot {{index}}",
       "external": "External",

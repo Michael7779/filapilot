@@ -5,6 +5,7 @@ import {
   createOrAutoLinkSpoolFromCloud,
   flushAuditEvents,
   mapBambuSpool,
+  noteToAdopt,
   type ImportContext,
   type MappedSpool,
   type SpoolAuditEvent
@@ -20,12 +21,41 @@ interface LinkedSpool {
   archivedAt: Date | null;
   archiveReason: "MANUAL" | "CLOUD_REMOVED" | null;
   colorName: string;
+  note: string | null;
   manufacturer: { name: string };
   material: { name: string };
 }
 
 function describeLinked(spool: LinkedSpool): string {
   return `${spool.manufacturer.name} ${spool.material.name} ${spool.colorName}`;
+}
+
+function recordSpoolUpdate(
+  context: ImportContext,
+  spool: LinkedSpool,
+  what: string,
+  values: Pick<SpoolAuditEvent, "before" | "after">
+): void {
+  context.auditEvents.push({
+    spoolId: spool.id,
+    action: "UPDATE",
+    description: `${describeLinked(spool)}: ${what}`,
+    ...values
+  });
+}
+
+// Neue Spule: nur mit Status 0 (oder ohne Status) - die Bedeutung anderer Werte ist nicht dokumentiert.
+async function addNewSpool(context: ImportContext, spool: MappedSpool, summary: BambuSyncSummary): Promise<void> {
+  if (spool.status !== null && spool.status !== 0) {
+    summary.skipped += 1;
+    return;
+  }
+  const outcome = await createOrAutoLinkSpoolFromCloud(context, spool);
+  if (outcome === "linked") {
+    summary.linked += 1;
+  } else {
+    summary.created += 1;
+  }
 }
 
 // Ab dieser Menge (und mehr als die Haelfte der aktiven Cloud-Spulen) gilt "fehlt in der Cloud" als verdaechtig.
@@ -38,17 +68,7 @@ async function syncOne(
   summary: BambuSyncSummary
 ): Promise<void> {
   if (!existing) {
-    // Neue Spule: nur mit Status 0 (oder ohne Status) - die Bedeutung anderer Werte ist nicht dokumentiert.
-    if (spool.status !== null && spool.status !== 0) {
-      summary.skipped += 1;
-      return;
-    }
-    const outcome = await createOrAutoLinkSpoolFromCloud(context, spool);
-    if (outcome === "linked") {
-      summary.linked += 1;
-    } else {
-      summary.created += 1;
-    }
+    await addNewSpool(context, spool, summary);
     return;
   }
   // Von Hand archivierte Spulen bleiben unangetastet.
@@ -59,28 +79,37 @@ async function syncOne(
   const remaining = Math.min(spool.remainingG, existing.initialWeightG);
   const restore = existing.archivedAt !== null;
   const changed = remaining !== existing.remainingWeightG;
-  if (!changed && !restore) {
+  const note = noteToAdopt(existing.note, spool.note);
+  if (!changed && !restore && !note) {
     summary.unchanged += 1;
     return;
   }
   await context.tx.spool.update({
     where: { id: existing.id },
-    data: { remainingWeightG: remaining, lastModifiedAt: new Date(), ...(restore ? { archivedAt: null, archiveReason: null } : {}) }
+    data: {
+      remainingWeightG: remaining,
+      lastModifiedAt: new Date(),
+      ...(restore ? { archivedAt: null, archiveReason: null } : {}),
+      ...(note ? { note } : {})
+    }
   });
   await recordWeightChange(
     { spoolId: existing.id, inventoryId: context.inventoryId, before: existing.remainingWeightG, after: remaining, source: "CLOUD_SYNC" },
     context.tx
   );
   if (changed) {
-    context.auditEvents.push({
-      spoolId: existing.id,
-      action: "UPDATE",
-      description: `${describeLinked(existing)}: Restgewicht aus Bambu-Cloud aktualisiert`,
+    recordSpoolUpdate(context, existing, "Restgewicht aus Bambu-Cloud aktualisiert", {
       before: { remainingWeightG: existing.remainingWeightG },
       after: { remainingWeightG: remaining }
     });
-    summary.updated += 1;
   }
+  if (note) {
+    recordSpoolUpdate(context, existing, "Notiz aus Bambu-Cloud übernommen", {
+      before: { note: existing.note },
+      after: { note }
+    });
+  }
+  summary.updated += changed || note ? 1 : 0;
   if (restore) {
     context.auditEvents.push({
       spoolId: existing.id,
@@ -117,7 +146,7 @@ async function archiveMissing(context: ImportContext, linked: LinkedSpool[], clo
 }
 
 // Gleicht ein Lager mit der (vollstaendig geladenen) Spulenliste der Cloud ab, ohne Auswahl, in EINER Transaktion:
-// bestehende Spulen bekommen das Restgewicht der Cloud (Verlauf wird geschrieben), neue werden angelegt, in der Cloud entfernte
+// bestehende Spulen bekommen das Restgewicht der Cloud (Verlauf wird geschrieben) und, falls ihre Notiz leer ist, die Notiz, neue werden angelegt, in der Cloud entfernte
 // archiviert (und bei Rueckkehr wiederhergestellt). Die Cloud gewinnt bei Spulen aus der Cloud.
 export async function syncInventoryFromCloud(
   inventoryId: string,
@@ -153,6 +182,7 @@ export async function syncInventoryFromCloud(
           archivedAt: true,
           archiveReason: true,
           colorName: true,
+          note: true,
           manufacturer: { select: { name: true } },
           material: { select: { name: true } }
         }

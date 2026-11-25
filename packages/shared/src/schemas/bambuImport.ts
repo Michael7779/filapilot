@@ -51,7 +51,12 @@ export const bambuSpoolSchema = z.object({
   deviceName: z.string().max(120).nullish(),
   // Notiz aus der Bambu-App. Bewusst ohne Laengenpruefung: eine zu lange Notiz soll die Spule nicht verwerfen, sondern wird beim
   // Zuordnen auf die Laenge gekuerzt, die FilaPilot speichert (bambuImportService.mapBambuSpool).
-  note: z.string().nullish()
+  note: z.string().nullish(),
+  // Wo die Spule laut Cloud liegt (Seriennummer des Druckers, AMS, Fach). Nicht dokumentiert, deshalb ohne Typpruefung: unerwartete
+  // Werte duerfen die Spule nicht verwerfen, sie werden bei der AMS-Zuordnung einfach nicht benutzt.
+  devId: z.unknown().optional(),
+  amsId: z.unknown().optional(),
+  slotId: z.unknown().optional()
 });
 export type BambuSpool = z.infer<typeof bambuSpoolSchema>;
 

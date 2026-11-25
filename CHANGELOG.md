@@ -8,6 +8,21 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.45.0] - 2026-11-25
+
+### Hinzugefuegt
+- Drucker, AMS: Bei jedem Fach stehen jetzt Material und Farbe, die der Drucker meldet. So findest du leichter die passende Spule.
+- Drucker, AMS: Beim Bambu-Abgleich werden die Spulen den Fächern jetzt automatisch zugeordnet (Kennzeichen „auto“), wenn die Bambu Cloud das Fach nennt und der Drucker dort dasselbe Material und eine passende Farbe meldet. Eine selbst gewählte Spule wird nie überschrieben, während eines Drucks ändert sich nichts. Nach einem Spulenwechsel passt sich die Zuordnung mit dem nächsten Abgleich an.
+
+### Geändert
+- Bambu-Abgleich: Hat eine Spule in FilaPilot noch keine Notiz, bekommt sie die Notiz aus der Bambu-App. Eine vorhandene Notiz wird nie überschrieben. Löschst du eine Notiz nur in FilaPilot, kommt sie beim nächsten Abgleich zurück.
+
+### Behoben
+- Drucker: Die externe Spule zeigt nicht mehr „0 %“, wenn der Drucker den Füllstand gar nicht kennt.
+
+### Hinweis zum Update
+- Schema: `AmsSlotAssignment.autoAssigned` kommt neu hinzu (vorhandene Zuordnungen gelten als von Hand gewählt); das Update-Skript legt es ohne Datenverlust an.
+
 ## [0.44.0] - 2026-11-25
 
 ### Hinzugefuegt

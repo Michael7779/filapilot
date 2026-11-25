@@ -117,6 +117,11 @@ export function mapBambuSpool(spool: BambuSpool): MappedSpool {
   };
 }
 
+// Die Notiz aus Bambu fuellt nur ein leeres Notizfeld - eine vorhandene Notiz in FilaPilot wird nie ueberschrieben.
+export function noteToAdopt(current: string | null, cloudNote: string | null): string | null {
+  return clean(current) ? null : cloudNote;
+}
+
 function key(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -295,7 +300,7 @@ async function importOne(context: ImportContext, spool: MappedSpool): Promise<vo
 async function linkExistingUnopenedSpool(context: ImportContext, spool: MappedSpool, targetSpoolId: string): Promise<void> {
   const target = await context.tx.spool.findUnique({
     where: { id: targetSpoolId },
-    select: { id: true, inventoryId: true, openedAt: true, bambuCloudId: true, spoolmanId: true, remainingWeightG: true, initialWeightG: true }
+    select: { id: true, inventoryId: true, openedAt: true, bambuCloudId: true, spoolmanId: true, remainingWeightG: true, initialWeightG: true, note: true }
   });
   if (!target || target.inventoryId !== context.inventoryId || target.openedAt || target.bambuCloudId || target.spoolmanId) {
     await createSpoolFromCloud(context, spool);
@@ -303,9 +308,10 @@ async function linkExistingUnopenedSpool(context: ImportContext, spool: MappedSp
     return;
   }
   const remaining = Math.min(spool.remainingG, target.initialWeightG);
+  const note = noteToAdopt(target.note, spool.note);
   await context.tx.spool.update({
     where: { id: target.id },
-    data: { bambuCloudId: spool.cloudId, openedAt: new Date(), remainingWeightG: remaining }
+    data: { bambuCloudId: spool.cloudId, openedAt: new Date(), remainingWeightG: remaining, ...(note ? { note } : {}) }
   });
   await recordWeightChange(
     { spoolId: target.id, inventoryId: context.inventoryId, before: target.remainingWeightG, after: remaining, source: "CLOUD_IMPORT" },

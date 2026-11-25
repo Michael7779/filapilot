@@ -78,6 +78,19 @@ describe("createReportAccumulator (Teil-Reports der P1/A1-Serie)", () => {
     assert.equal(status?.amsSlots.find((slot) => slot.slotIndex === 0)?.reportedMaterial, "ABS");
   });
 
+  it("zeigt bei der externen Spule 0 % als unbekannt (kein Chip), in einem AMS-Fach bleibt 0 % eine Angabe", () => {
+    const status = createReportAccumulator("p1")({
+      print: {
+        ams: { ams: [{ id: "0", tray: [{ id: "0", tray_type: "PLA", remain: 0 }] }] },
+        vt_tray: { tray_type: "TPU", tray_color: "000000FF", remain: 0 }
+      }
+    });
+    assert.equal(status?.amsSlots.find((slot) => slot.slotIndex === 0)?.remainingPercent, 0);
+    const external = status?.amsSlots.find((slot) => slot.slotIndex === 254);
+    assert.equal(external?.remainingPercent, null);
+    assert.equal(external?.reportedMaterial, "TPU");
+  });
+
   it("trennt die Staende zweier Drucker", () => {
     const first = createReportAccumulator("a");
     const second = createReportAccumulator("b");
