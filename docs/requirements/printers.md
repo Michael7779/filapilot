@@ -85,3 +85,16 @@
   Spule bleibt 254; die erste Einheit behaelt die Indizes 0-3, bestehende Zuordnungen bleiben gueltig. `isValidAmsSlotIndex` (shared) gilt fuer Live-Status und `PUT /api/printers/:id/ams-slots/:slotIndex`
   (0-15 oder 254, sonst 400; Rechte unveraendert: EDITOR, Fremder 404, Betrachter 403). `AmsSlotsPanel` zeigt die erste Einheit immer, weitere sobald gemeldet oder zugeordnet, bei mehr als einer
   Einheit mit "AMS n - Slot m" (`lib/amsUnits.ts`). Test: `tests/unit/bambuConnector.test.ts`, `tests/security/amsSlots.test.ts`, `packages/frontend/tests/unit/amsUnits.test.ts`.
+
+## 1.4 Verbindung ueber die Bambu Cloud (ab 0.44.0)
+Threat-Model: (1) Missbrauch koennte ein eingeloggter Benutzer ohne Besitzer-Recht versuchen, um mit der gemerkten Bambu-Anmeldung eines Lagers Drucker auszulesen. (2) Serverseitig erzwungen: Anlegen/Aendern nur als OWNER des Lagers, genutzt wird nur die Bambu-Verbindung des Lagers, in dem der Drucker liegt, Broker und Adressen sind fest je Region, das Token verlaesst den Server nie. (3) Negativ-Tests: `tests/security/printerCloudMode.test.ts`.
+
+- **R10**: Ein Drucker hat eine Verbindungsart `connectionMode` (`LOCAL`, Standard ohne Angabe, oder `CLOUD`). `LOCAL` braucht IP-Adresse und Access-Code, `CLOUD` darf beides nicht haben (400). Beim Aendern auf `CLOUD` werden gespeicherte Werte geleert, zurueck auf `LOCAL` sind beide neu anzugeben.
+  Test: `tests/security/printerCloudMode.test.ts`.
+- **R11**: Bei `CLOUD` kommt der Status ueber den MQTT-Broker der Bambu Cloud (`us.mqtt.bambulab.com` bzw. `cn.mqtt.bambulab.com`, Port 8883, Benutzer `u_<uid>`, Passwort = gemerktes Token, `bambuCloudConnector.ts`). Fehlt die gemerkte Verbindung, meldet der Status `issue: cloud_no_account`; lehnt die Cloud das Token ab, `issue: cloud_rejected` (kein Dauer-Neuversuch). Nach neuer Anmeldung, Trennen oder abgelaufenem Token verbinden die Cloud-Drucker des Lagers neu. Ist die Cloud nur nicht erreichbar, folgt nach 60 Sekunden ein neuer Versuch.
+  Test: `tests/unit/bambuReportStream.test.ts`, `tests/unit/bambuCloudClient.test.ts`, `tests/security/printerCloudMode.test.ts`.
+- **R12**: Lokal und Cloud fordern nach dem Verbinden den vollen Stand an (`pushall`) und fuehren Teil-Reports mit dem letzten Stand zusammen (`bambuReportStream.ts`), damit ein Teil-Report die AMS-Anzeige nicht leert.
+  Test: `tests/unit/bambuReportStream.test.ts`.
+- **R13**: Besitzer aendern die Verbindungsart eines vorhandenen Druckers in der Oberflaeche (`PrinterConnectionModal.tsx`, `PATCH /api/printers/:id`). Der Access-Code wird nie angezeigt; bleibt das Feld bei einem lokalen Drucker leer, behaelt der Server ihn. Rechte und Pruefung wie R10.
+  Test: `tests/security/printerCloudMode.test.ts`.
+- OP-P8: Die Cloud-Verbindung ist nur gegen nachgestellte Antworten getestet, noch nicht gegen die echte Bambu Cloud und keinen echten Drucker. Die Angaben zu Broker, Benutzername und `uid` stammen aus inoffiziellen, von der Community dokumentierten Quellen; die China-Adresse des Brokers ist dort nicht belegt.

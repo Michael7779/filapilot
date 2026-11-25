@@ -54,6 +54,7 @@ function mockClient(): BambuCloudClient {
     },
     loginWithCode: (_region, _account, code) =>
       code === "123456" ? Promise.resolve(SECRET_TOKEN) : Promise.reject(new BambuCloudError("credentials")),
+    getUserId: () => Promise.resolve("1"),
     listFilaments: (_region, token) => (token === SECRET_TOKEN ? Promise.resolve(HITS) : Promise.reject(new BambuCloudError("unauthorized")))
   };
 }

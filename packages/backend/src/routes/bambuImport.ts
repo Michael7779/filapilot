@@ -24,6 +24,7 @@ import {
   type ImportSession
 } from "../services/bambuImportSessions.js";
 import { saveConnection } from "../services/bambuConnectionService.js";
+import { reconnectCloudPrintersInBackground } from "../services/printerRuntime.js";
 import { requireInventoryRole } from "../services/inventoryAccess.js";
 import { getInventoryRow } from "../services/inventoryService.js";
 
@@ -53,6 +54,8 @@ async function storeConnectionIfWanted(session: ImportSession, req: Request): Pr
   }
   const user = getAuthenticatedUser(req);
   await saveConnection({ inventoryId: session.inventoryId, region: session.region, token: session.token, connectedByName: user.username });
+  // Cloud-Drucker dieses Lagers nutzen ab jetzt das neue Token.
+  reconnectCloudPrintersInBackground(session.inventoryId);
   const inventory = await getInventoryRow(session.inventoryId);
   await recordAudit({
     actor: actorFromRequest(req),

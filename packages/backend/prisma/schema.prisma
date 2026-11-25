@@ -38,6 +38,12 @@ enum PrinterSyncMode {
   PERIODIC
 }
 
+// LOCAL: direkt per MQTT zum Drucker (IP + Access-Code). CLOUD: ueber den MQTT-Broker der Bambu Cloud mit der Bambu-Verbindung des Lagers.
+enum PrinterConnectionMode {
+  LOCAL
+  CLOUD
+}
+
 enum CustomFieldKind {
   TEXT
   NUMBER
@@ -456,10 +462,12 @@ model SpoolWeightLog {
 model Printer {
   id                  String              @id @default(uuid())
   name                String
-  ipAddress           String
+  connectionMode      PrinterConnectionMode @default(LOCAL)
+  // Nur im Modus LOCAL gesetzt; ein Cloud-Drucker braucht weder IP noch Access-Code.
+  ipAddress           String?
   serialNumber        String              @unique
-  accessCode          String
-  syncMode            PrinterSyncMode     @default(PERIODIC)
+  accessCode          String?
+  syncMode           PrinterSyncMode     @default(PERIODIC)
   syncIntervalSeconds Int                 @default(60)
   // Pflicht: jeder Drucker gehoert zu genau einem Lager (seit 0.42.0, siehe Spool.inventoryId).
   inventoryId         String

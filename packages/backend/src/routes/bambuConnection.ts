@@ -8,6 +8,7 @@ import { actorFromRequest, recordAudit } from "../services/auditService.js";
 import { deleteConnection, getConnectionInfo, getStoredToken } from "../services/bambuConnectionService.js";
 import { createSession } from "../services/bambuImportSessions.js";
 import { runCloudSync } from "../services/bambuSyncRunner.js";
+import { reconnectCloudPrintersInBackground } from "../services/printerRuntime.js";
 import { requireInventoryRole } from "../services/inventoryAccess.js";
 import { getInventoryRow } from "../services/inventoryService.js";
 
@@ -48,6 +49,7 @@ bambuConnectionRouter.delete(
     await requireInventoryRole(getAuthenticatedUser(req), id, "OWNER");
     const removed = await deleteConnection(id);
     if (removed) {
+      reconnectCloudPrintersInBackground(id);
       const inventory = await getInventoryRow(id);
       await recordAudit({
         actor: actorFromRequest(req),

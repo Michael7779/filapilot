@@ -7,6 +7,16 @@ German file) are not translated and do not appear in the app.
 Rule: every version with user-visible items in CHANGELOG.md needs a matching entry here with the same number of items (checked by
 `packages/backend/tests/unit/changelog.test.ts`). Headings: Added, Changed, Fixed, Security.
 
+## [0.44.0] - 2026-11-25
+
+### Added
+- Printers: a printer can now be connected through the Bambu Cloud, without LAN mode and without IP address and access code. The inventory needs a saved Bambu connection (Spools → Import from Bambu Cloud). The connection to the real Bambu Cloud has not yet been checked with a real printer.
+- Printers: owners can change the connection of an existing printer ("Change connection" button), for example from local to the Bambu Cloud. The assignment of the AMS slots is kept.
+- Printers: if a cloud printer cannot connect, its card shows the reason (no Bambu connection in the inventory or sign-in expired).
+
+### Fixed
+- Printers: after connecting, FilaPilot now requests the full state, and short partial messages from the printer no longer empty the AMS display (mainly affects the P1 and A1 models).
+
 ## [0.43.0] - 2026-11-24
 
 ### Added

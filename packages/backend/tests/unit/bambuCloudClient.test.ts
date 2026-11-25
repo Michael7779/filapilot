@@ -1,6 +1,6 @@
 import { describe, it, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import { BambuCloudError, httpBambuCloudClient } from "../../src/services/bambuCloudClient.js";
+import { BambuCloudError, describeHitFields, httpBambuCloudClient } from "../../src/services/bambuCloudClient.js";
 import { toAppError } from "../../src/services/bambuImportService.js";
 
 interface FakeReply {
@@ -64,6 +64,32 @@ describe("Bambu-Cloud-Client (mit gefaelschten Antworten der Cloud)", () => {
     fakeFetch([{ status: 400, body: '{"code":1,"error":"falsch"}' }]);
     const wrong = await failure(() => httpBambuCloudClient.login("global", "a@b.de", "pw"));
     assert.equal(wrong.kind, "credentials");
+  });
+
+  it("liest die Nutzer-ID (uid) aus den Einstellungen des Kontos - Zahl oder Text, sonst Fehler ohne Inhalte", async () => {
+    const urls = fakeFetch([{ body: '{"uid":4711}' }, { body: '{"uid":"9001"}' }, { body: '{"nickname":"GEHEIM"}' }]);
+    assert.equal(await httpBambuCloudClient.getUserId("global", "tok"), "4711");
+    assert.equal(await httpBambuCloudClient.getUserId("china", "tok"), "9001");
+    assert.equal(urls[0], "https://api.bambulab.com/v1/design-user-service/my/preference");
+    assert.equal(urls[1], "https://api.bambulab.cn/v1/design-user-service/my/preference");
+    const err = await failure(() => httpBambuCloudClient.getUserId("global", "tok"));
+    assert.equal(err.kind, "invalid_response");
+    assert.deepEqual(err.detail, { step: "Nutzer-ID", status: 200, keys: ["nickname"] });
+  });
+
+  it("meldet bei abgelehntem Token (401) beim Lesen der Nutzer-ID 'unauthorized'", async () => {
+    fakeFetch([{ status: 401, body: "{}" }]);
+    assert.equal((await failure(() => httpBambuCloudClient.getUserId("global", "tok"))).kind, "unauthorized");
+  });
+
+  it("beschreibt die Felder der Spulenliste nur mit Namen - und welche Notiz-artigen Felder Text enthalten, nie die Inhalte", () => {
+    const described = describeHitFields([
+      { id: "1", color: "FF0000", note: "", memoText: "GEHEIM-NOTIZ" },
+      { id: "2", note: null, "GEHEIM schluessel mit leerzeichen": 1 },
+      "kein objekt"
+    ]);
+    assert.deepEqual(described, { fields: ["color", "id", "memoText", "note"], noteLikeWithText: ["memoText"] });
+    assert.ok(!JSON.stringify(described).includes("GEHEIM"));
   });
 
   it("nutzt je Region die feste Adresse", async () => {

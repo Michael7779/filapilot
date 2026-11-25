@@ -41,6 +41,8 @@ export interface BambuCloudClient {
   loginWithCode(region: BambuRegion, account: string, code: string): Promise<string>;
   // Roh-Eintraege der Spulenliste (werden vom Aufrufer per Zod geprueft)
   listFilaments(region: BambuRegion, token: string): Promise<unknown[]>;
+  // Numerische Nutzer-ID des Kontos; mit "u_" davor der Benutzername am MQTT-Broker der Cloud (steckt nicht im Token)
+  getUserId(region: BambuRegion, token: string): Promise<string>;
 }
 
 interface RawResponse {
@@ -100,6 +102,26 @@ function invalid(step: string, status: number, json: Record<string, unknown>): B
 
 function tokenFrom(json: Record<string, unknown>): string | null {
   return typeof json.accessToken === "string" && json.accessToken.length > 0 ? json.accessToken : null;
+}
+
+// Welche Felder die (inoffizielle, undokumentierte) Spulenliste wirklich liefert, und welche Notiz-artigen davon Text enthalten -
+// nur die Namen, nie Werte. Hilft herauszufinden, unter welchem Namen z.B. die Notiz kommt. Nur schlichte Feldnamen werden genannt.
+export function describeHitFields(hits: readonly unknown[]): { fields: string[]; noteLikeWithText: string[] } {
+  const fields = new Set<string>();
+  const noteLikeWithText = new Set<string>();
+  for (const hit of hits) {
+    for (const [name, value] of Object.entries(asRecord(hit))) {
+      if (!/^\w{1,40}$/.test(name)) {
+        continue;
+      }
+      fields.add(name);
+      if (/note|remark|comment|memo|desc/i.test(name) && typeof value === "string" && value.trim() !== "") {
+        noteLikeWithText.add(name);
+      }
+    }
+  }
+  const sorted = (names: Set<string>): string[] => [...names].sort((a, b) => a.localeCompare(b)).slice(0, 60);
+  return { fields: sorted(fields), noteLikeWithText: sorted(noteLikeWithText) };
 }
 
 export const httpBambuCloudClient: BambuCloudClient = {
@@ -170,7 +192,24 @@ export const httpBambuCloudClient: BambuCloudClient = {
     if (collected.length < total) {
       throw new BambuCloudError("invalid_response", { step: "Spulenliste (unvollständig)" });
     }
+    logger.info("Bambu-Cloud Spulenliste: Feldnamen", { count: collected.length, ...describeHitFields(collected) });
     return collected;
+  },
+
+  async getUserId(region, token) {
+    const { status, json } = await request("GET", `${BASE_URL[region]}/v1/design-user-service/my/preference`, {
+      step: "Nutzer-ID",
+      token
+    });
+    if (status === 401) {
+      throw new BambuCloudError("unauthorized", { step: "Nutzer-ID", status });
+    }
+    const uid = typeof json.uid === "number" ? String(json.uid) : json.uid;
+    // Nur Ziffern: der Wert wird Teil des MQTT-Benutzernamens.
+    if (status >= 400 || typeof uid !== "string" || !/^\d{1,20}$/.test(uid)) {
+      throw invalid("Nutzer-ID", status, json);
+    }
+    return uid;
   }
 };
 

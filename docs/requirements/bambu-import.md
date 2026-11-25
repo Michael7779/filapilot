@@ -110,3 +110,7 @@ Design: `docs/design/bambu-import.md`. Umgesetzt in Version 0.14.0.
 - **R16**: Ab 0.43.0: `note` der Cloud-Spule wird beim ANLEGEN (Import und automatischer Abgleich) in die Notiz der Spule uebernommen (getrimmt, auf 500 Zeichen gekuerzt - eine zu lange Notiz verwirft die Spule nicht).
   Beim Abgleich bestehender Spulen und beim Verknuepfen mit einer vorhandenen ungeoeffneten Spule wird die Notiz nie angefasst - eine Aenderung in Bambu ueberschreibt nie die Notiz in FilaPilot. Die Notiz
   steht im Protokoll-Eintrag "Angelegt". Test: `tests/unit/bambuMapping.test.ts`, `tests/integration/bambuSyncService.test.ts`.
+
+## Diagnose der Feldnamen (ab 0.44.0)
+- **R17**: Beim Lesen der Spulenliste protokolliert der Server die Anzahl, die Namen der gelieferten Felder und welche Notiz-artigen Felder Text enthalten - nie Werte (`describeHitFields`). Test: `tests/unit/bambuCloudClient.test.ts`.
+- OP-B8: Auf einer echten Installation kam die Notiz der Bambu-App nicht an (Rueckmeldung 2026-11-25, OP-B4). Der echte Feldname ist offen und wird ueber R17 ermittelt.

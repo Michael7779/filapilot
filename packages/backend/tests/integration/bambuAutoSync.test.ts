@@ -15,6 +15,7 @@ const client: BambuCloudClient = {
   login: () => Promise.reject(new Error("nicht erwartet")),
   sendCode: () => Promise.resolve(),
   loginWithCode: () => Promise.reject(new Error("nicht erwartet")),
+  getUserId: () => Promise.resolve("1"),
   listFilaments() {
     listCalls += 1;
     if (failWith) {

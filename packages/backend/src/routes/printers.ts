@@ -4,6 +4,7 @@ import {
   assignAmsSlotInputSchema,
   createPrinterInputSchema,
   isValidAmsSlotIndex,
+  printerConnectionProblem,
   updatePrinterInputSchema,
   type UpdatePrinterInput
 } from "@filapilot/shared";
@@ -15,7 +16,12 @@ import { sendData, AppError } from "../lib/apiResult.js";
 import { getAuthenticatedUser, requireAuth, requirePasswordAlreadyChanged } from "../middleware/auth.js";
 import { toPublicPrinter } from "../lib/mappers.js";
 import { omitUndefined } from "../lib/omitUndefined.js";
-import { connectPrinter, disconnectPrinter, getLatestStatus } from "../services/printerRuntime.js";
+import {
+  connectPrinter,
+  disconnectPrinter,
+  getLatestStatus,
+  whenPrinterConnectStarted
+} from "../services/printerRuntime.js";
 import { refreshSocketAccess } from "../socket.js";
 import { assignAmsSlot, listAmsSlots } from "../services/amsSlotService.js";
 import {
@@ -27,6 +33,7 @@ import {
 export const printersRouter = Router();
 
 const requireActiveUser = [requireAuth, requirePasswordAlreadyChanged] as const;
+const CONNECT_START_WAIT_MS = 3000;
 const idParamSchema = z.string().uuid();
 const listQuerySchema = z.object({ inventoryId: z.union([z.literal("all"), z.string().uuid()]) });
 const slotIndexParamSchema = z.coerce
@@ -66,6 +73,33 @@ async function updatePrinterRow(
   });
 }
 
+interface ConnectionFields {
+  connectionMode: "LOCAL" | "CLOUD";
+  ipAddress: string | null;
+  accessCode: string | null;
+}
+
+// Fuehrt die Verbindungsfelder einer Aenderung mit dem bisherigen Stand zusammen und prueft sie wie beim Anlegen: LOCAL braucht IP und
+// Access-Code, CLOUD hat keins von beidem (beim Wechsel nach CLOUD werden alte Werte geleert; neu mitgeschickte sind ein Fehler).
+function resolveConnectionFields(
+  before: ConnectionFields,
+  input: { connectionMode?: "LOCAL" | "CLOUD" | undefined; ipAddress?: string | null | undefined; accessCode?: string | null | undefined }
+): ConnectionFields {
+  const connectionMode = input.connectionMode ?? before.connectionMode;
+  if (connectionMode === "CLOUD") {
+    if (printerConnectionProblem("CLOUD", input.ipAddress, input.accessCode)) {
+      throw new AppError("VALIDATION_ERROR", "Bei der Verbindung über die Bambu Cloud gibt es keine IP-Adresse und keinen Access-Code.");
+    }
+    return { connectionMode, ipAddress: null, accessCode: null };
+  }
+  const ipAddress = input.ipAddress ?? before.ipAddress;
+  const accessCode = input.accessCode ?? before.accessCode;
+  if (printerConnectionProblem("LOCAL", ipAddress, accessCode)) {
+    throw new AppError("VALIDATION_ERROR", "Für die lokale Verbindung sind IP-Adresse und Access-Code nötig.");
+  }
+  return { connectionMode, ipAddress, accessCode };
+}
+
 function inventoryOf(printer: {
   inventory: { id: string; name: string } | null;
 }): { id: string; name: string } | null {
@@ -78,7 +112,11 @@ function inventoryOf(printer: {
 // Lager des Druckers, Anlegen/Aendern/Loeschen die Rolle OWNER (Admins gelten ueberall als OWNER); ohne Zugriff 404; ein
 // Drucker wird nur verschoben, wenn der Nutzer im alten UND im neuen Lager OWNER ist (ein Ziel ohne Zugriff bleibt unsichtbar,
 // ein nicht existierendes Ziel ergibt 404); beim Verschieben werden die AMS-Zuordnungen geleert, weil sie Spulen des alten Lagers
-// meinen; der accessCode verlaesst den Server nie.
+// meinen; der accessCode verlaesst den Server nie. Verbindung ueber die Bambu Cloud (CLOUD): der Server nutzt dabei nur die
+// Bambu-Verbindung des Lagers, in dem der Drucker liegt (nie die eines anderen Lagers), und der MQTT-Broker ist fest je Region -
+// weder Adresse noch Token kommen vom Client; die Seriennummer darf nur Geraete des verbundenen Kontos abonnieren (Broker-Regel).
+// Negativ-Tests dazu: Cloud-Drucker ohne Zugriff -> 404/403, IP/Access-Code bei CLOUD -> 400, LOCAL ohne beides -> 400, Token nie in
+// Antwort oder Protokoll (tests/security/printerCloudMode.test.ts).
 // Negativ-Tests: kein Cookie -> 401, Fremder -> 404, Betrachter/Bearbeiter beim Schreiben -> 403, accessCode nie in einer Antwort,
 // Verschieben ohne Besitzer-Recht im Ziel -> 403/404 (tests/security/printerMove.test.ts).
 // SCOPE: user
@@ -171,6 +209,8 @@ printersRouter.post(
         throw err;
       });
     connectPrinter(created);
+    // Kurz abwarten, damit die Oberflaeche direkt nach dem Anlegen schon den Grund zeigen kann (z.B. keine Bambu-Verbindung im Lager).
+    await whenPrinterConnectStarted(created.id, CONNECT_START_WAIT_MS);
     await recordAudit({
       actor: actorFromRequest(req),
       action: "CREATE",
@@ -194,12 +234,13 @@ printersRouter.patch(
     const before = await findPrinterOrThrow(id);
     const user = getAuthenticatedUser(req);
     await requireAccessToObjectInventory(user, before.inventoryId, "OWNER");
+    const connection = resolveConnectionFields(before, input);
     const targetInventoryId = input.inventoryId;
     const moving = targetInventoryId !== undefined && targetInventoryId !== before.inventoryId;
     if (moving) {
       await requireInventoryRole(user, targetInventoryId, "OWNER");
     }
-    const updated = await updatePrinterRow(id, input, moving ? targetInventoryId : null).catch(
+    const updated = await updatePrinterRow(id, { ...input, ...connection }, moving ? targetInventoryId : null).catch(
       (err: unknown) => {
         if (err instanceof Error && err.message.includes("Record to update not found")) {
           throw new AppError("NOT_FOUND", "Drucker wurde nicht gefunden.");
@@ -213,7 +254,7 @@ printersRouter.patch(
       void refreshSocketAccess();
     }
     // Der Zugangscode ist ein Geheimnis: nie im Protokoll, nur dass er geaendert wurde.
-    const accessCodeChanged = input.accessCode !== undefined && input.accessCode !== before.accessCode;
+    const accessCodeChanged = connection.accessCode !== before.accessCode;
     await recordUpdate({
       actor: actorFromRequest(req),
       area: "PRINTER",

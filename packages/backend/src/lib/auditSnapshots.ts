@@ -62,6 +62,7 @@ export function printerSnapshot(
 ): Snapshot {
   return {
     name: printer.name,
+    connectionMode: printer.connectionMode,
     ipAddress: printer.ipAddress,
     serialNumber: printer.serialNumber,
     syncMode: printer.syncMode,

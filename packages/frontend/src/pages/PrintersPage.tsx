@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { sortAlphabetically } from "../lib/sortAlphabetically.js";
-import type { CreatePrinterInput, PrinterLiveStatus, PrinterPublic } from "@filapilot/shared";
+import type { PrinterLiveStatus, PrinterPublic } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { getSocket } from "../lib/socket.js";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
 import { AmsSlotsPanel } from "../components/AmsSlotsPanel.js";
+import { NewPrinterModal } from "../components/NewPrinterModal.js";
 import { PrinterMoveModal } from "../components/PrinterMoveModal.js";
+import { PrinterConnectionModal } from "../components/PrinterConnectionModal.js";
 import { useInventoryStore } from "../stores/useInventoryStore.js";
 
 function MqttSetupGuide(): React.JSX.Element {
@@ -22,6 +23,7 @@ function MqttSetupGuide(): React.JSX.Element {
       >
         {open ? t("printers.hideGuide") : t("printers.showGuide")}
       </button>
+      {open && <p className="mt-3 text-sm text-[var(--color-text-secondary)]">{t("printers.guideCloudNote")}</p>}
       {open && (
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[var(--color-text-secondary)]">
           <li>{t("printers.guideStep1")}</li>
@@ -35,176 +37,19 @@ function MqttSetupGuide(): React.JSX.Element {
   );
 }
 
-function NewPrinterModal({
-  inventoryId,
-  onClose,
-  onCreated
-}: {
-  inventoryId: string;
-  onClose: () => void;
-  onCreated: (printer: PrinterPublic) => void;
-}): React.JSX.Element {
-  const { t, i18n } = useTranslation();
-  const [name, setName] = useState("");
-  const [ipAddress, setIpAddress] = useState("");
-  const [serialNumber, setSerialNumber] = useState("");
-  const [accessCode, setAccessCode] = useState("");
-  const [syncMode, setSyncMode] = useState<"LIVE" | "PERIODIC">("LIVE");
-  const [syncIntervalSeconds, setSyncIntervalSeconds] = useState("60");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    setError(null);
-    if (!name.trim() || !ipAddress.trim() || !serialNumber.trim() || !accessCode.trim()) {
-      setError(t("printers.fieldsRequired"));
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const input: CreatePrinterInput = {
-        name: name.trim(),
-        ipAddress: ipAddress.trim(),
-        serialNumber: serialNumber.trim(),
-        accessCode: accessCode.trim(),
-        syncMode,
-        syncIntervalSeconds: Number(syncIntervalSeconds),
-        inventoryId
-      };
-      const created = await apiRequest<PrinterPublic>("/printers", {
-        method: "POST",
-        body: JSON.stringify(input)
-      });
-      onCreated(created);
-    } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : t("printers.createFailed"));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const inputClass =
-    "rounded-lg border border-[var(--color-border)] px-3 py-2 text-[var(--color-text-primary)]";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
-      <form
-        onSubmit={(event) => void handleSubmit(event)}
-        className="flex max-h-[90dvh] w-full max-w-[380px] flex-col gap-3 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white p-6"
-      >
-        <h2 className="text-lg font-bold">{t("printers.newPrinter")}</h2>
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
-          {t("printers.name")}
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
-          {t("printers.ipAddress")}
-          <input
-            type="text"
-            // eslint-disable-next-line sonarjs/no-hardcoded-ip -- Beispiel-Platzhalter im Eingabefeld, kein echtes Ziel
-            placeholder="192.168.1.42"
-            value={ipAddress}
-            onChange={(e) => setIpAddress(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
-          {t("printers.serialNumber")}
-          <input
-            type="text"
-            value={serialNumber}
-            onChange={(e) => setSerialNumber(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
-          {t("printers.accessCode")}
-          <input
-            type="text"
-            value={accessCode}
-            onChange={(e) => setAccessCode(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
-          {t("printers.syncMode")}
-          <select
-            value={syncMode}
-            onChange={(e) => setSyncMode(e.target.value as "LIVE" | "PERIODIC")}
-            className={inputClass}
-          >
-            {sortAlphabetically(
-              [
-                { value: "LIVE", label: t("printers.syncModeLive") },
-                { value: "PERIODIC", label: t("printers.syncModePeriodic") }
-              ],
-              (option) => option.label,
-              i18n.language
-            ).map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {syncMode === "PERIODIC" && (
-          <label className="flex flex-col gap-1 text-sm font-medium text-[var(--color-text-secondary)]">
-            {t("printers.syncInterval")}
-            <input
-              type="number"
-              min={10}
-              max={3600}
-              value={syncIntervalSeconds}
-              onChange={(e) => setSyncIntervalSeconds(e.target.value)}
-              className={inputClass}
-            />
-          </label>
-        )}
-        {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
-        <div className="mt-2 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
-          >
-            {t("common.cancel")}
-          </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            style={{ backgroundColor: "var(--accent)" }}
-          >
-            {t("common.save")}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 function PrinterCard({
   printer,
   status,
   canEdit,
-  onMove
+  onMove,
+  onChangeConnection
 }: {
   printer: PrinterPublic;
   status: PrinterLiveStatus | null;
   canEdit: boolean;
   // Nur gesetzt, wenn der Nutzer im Lager des Druckers Besitzer ist
   onMove?: () => void;
+  onChangeConnection?: () => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
   const connected = status?.connected ?? false;
@@ -214,7 +59,9 @@ function PrinterCard({
       <div className="mb-2 flex items-center justify-between">
         <div>
           <div className="text-sm font-semibold">{printer.name}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">{printer.ipAddress}</div>
+          <div className="text-xs text-[var(--color-text-muted)]">
+            {printer.ipAddress ?? t("printers.viaCloud")}
+          </div>
         </div>
         <span
           className="rounded-full px-2 py-0.5 text-xs font-medium"
@@ -227,6 +74,13 @@ function PrinterCard({
           {connected ? t("printers.connected") : t("printers.disconnected")}
         </span>
       </div>
+      {!connected && status?.issue && (
+        <p className="mb-2 text-xs text-[var(--color-danger)]">
+          {status.issue === "cloud_no_account"
+            ? t("printers.issueCloudNoAccount")
+            : t("printers.issueCloudRejected")}
+        </p>
+      )}
       {status?.printing && (
         <div className="mb-2">
           <div className="mb-1 text-xs text-[var(--color-text-secondary)]">
@@ -249,6 +103,15 @@ function PrinterCard({
       </div>
       {printer.inventoryId && (
         <AmsSlotsPanel printerId={printer.id} inventoryId={printer.inventoryId} canEdit={canEdit} />
+      )}
+      {onChangeConnection && (
+        <button
+          type="button"
+          onClick={onChangeConnection}
+          className="mt-3 mr-2 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)]"
+        >
+          {t("printers.changeConnection")}
+        </button>
       )}
       {onMove && (
         <button
@@ -273,6 +136,7 @@ export function PrintersPage(): React.JSX.Element {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [movingPrinter, setMovingPrinter] = useState<PrinterPublic | null>(null);
+  const [connectionPrinter, setConnectionPrinter] = useState<PrinterPublic | null>(null);
 
   const load = useCallback(async () => {
     if (!selectedId) {
@@ -312,6 +176,10 @@ export function PrintersPage(): React.JSX.Element {
   function handleCreated(printer: PrinterPublic): void {
     setModalOpen(false);
     setPrinters((current) => [...current, printer]);
+    // Status gleich holen: ein Cloud-Drucker zeigt so sofort, wenn z.B. die Bambu-Verbindung des Lagers fehlt.
+    apiRequest<PrinterLiveStatus>(`/printers/${printer.id}/status`)
+      .then((status) => setStatusByPrinter((current) => ({ ...current, [status.printerId]: status })))
+      .catch(() => undefined);
   }
 
   if (loading) {
@@ -368,12 +236,26 @@ export function PrintersPage(): React.JSX.Element {
                 canEdit={canEdit}
                 {...(inventories.find((inventory) => inventory.id === printer.inventoryId)?.role ===
                 "OWNER"
-                  ? { onMove: () => setMovingPrinter(printer) }
+                  ? {
+                      onMove: () => setMovingPrinter(printer),
+                      onChangeConnection: () => setConnectionPrinter(printer)
+                    }
                   : {})}
               />
             </div>
           ))}
         </div>
+      )}
+
+      {connectionPrinter && (
+        <PrinterConnectionModal
+          printer={connectionPrinter}
+          onClose={() => setConnectionPrinter(null)}
+          onChanged={() => {
+            setConnectionPrinter(null);
+            void load();
+          }}
+        />
       )}
 
       {movingPrinter && (

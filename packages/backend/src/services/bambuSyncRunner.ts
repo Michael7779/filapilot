@@ -6,6 +6,7 @@ import { parseBambuHits, toAppError } from "./bambuImportService.js";
 import { describeSync, syncInventoryFromCloud } from "./bambuSyncService.js";
 import { recordAudit, type AuditActor } from "./auditService.js";
 import { getInventoryRow } from "./inventoryService.js";
+import { reconnectCloudPrintersInBackground } from "./printerRuntime.js";
 
 // Ein kompletter Abgleich eines Lagers mit der Bambu-Cloud ueber das gemerkte Token (von Hand oder per Zeitplan).
 // Bei Fehlern wird der Grund am Lager vermerkt; ein abgelaufenes Token (401) verwirft die Verbindung.
@@ -22,6 +23,7 @@ export async function runCloudSync(inventoryId: string, actor: AuditActor, auto:
     if (err instanceof BambuCloudError && err.kind === "unauthorized") {
       // Das Token ist abgelaufen: die Verbindung verwerfen, damit sich der Benutzer neu anmeldet.
       await deleteConnection(inventoryId);
+      reconnectCloudPrintersInBackground(inventoryId);
       throw new AppError("VALIDATION_ERROR", "Die gemerkte Bambu-Verbindung ist abgelaufen. Bitte neu anmelden (Aus Bambu-Cloud importieren).");
     }
     const appError = toAppError(err);

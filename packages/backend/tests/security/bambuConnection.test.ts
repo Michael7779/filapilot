@@ -28,6 +28,7 @@ function mockClient(): BambuCloudClient {
     },
     sendCode: () => Promise.resolve(),
     loginWithCode: (_region, account) => Promise.resolve("TOKEN-" + account),
+    getUserId: () => Promise.resolve("1"),
     listFilaments(_region, token) {
       lastToken = token;
       return expireTokens ? Promise.reject(new BambuCloudError("unauthorized")) : Promise.resolve(cloudHits);

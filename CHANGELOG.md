@@ -8,6 +8,21 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.44.0] - 2026-11-25
+
+### Hinzugefuegt
+- Drucker: Ein Drucker lässt sich jetzt über die Bambu Cloud verbinden, ohne den LAN-Modus und ohne IP-Adresse und Access Code. Dafür braucht das Lager eine gemerkte Bambu-Verbindung (Spulen → Aus Bambu-Cloud importieren). Die Verbindung zur echten Bambu Cloud ist noch nicht mit einem echten Drucker geprüft.
+- Drucker: Besitzer können bei einem vorhandenen Drucker die Verbindung ändern (Knopf „Verbindung ändern“), zum Beispiel von lokal auf die Bambu Cloud. Die Zuordnung der AMS-Fächer bleibt erhalten.
+- Drucker: Kann ein Cloud-Drucker nicht verbinden, zeigt die Karte den Grund (keine Bambu-Verbindung im Lager oder Anmeldung abgelaufen).
+
+### Behoben
+- Drucker: Nach dem Verbinden fragt FilaPilot jetzt den vollständigen Stand ab, und kurze Teil-Meldungen des Druckers leeren die AMS-Anzeige nicht mehr (betrifft vor allem die Modelle P1 und A1).
+
+### Hinweis zum Update
+- Schema: `Printer.connectionMode` kommt neu hinzu, `Printer.ipAddress` und `Printer.accessCode` werden optional; das Update-Skript (`prisma db push`) ändert das ohne Datenverlust. Bestehende Drucker bleiben lokal verbunden.
+- Der Server braucht für Cloud-Drucker ausgehende Verbindungen zu Port 8883 (us.mqtt.bambulab.com).
+- Zur Fehlersuche protokolliert der Server beim Bambu-Abgleich die Feldnamen der Spulenliste (keine Inhalte).
+
 ## [0.43.0] - 2026-11-24
 
 ### Hinzugefuegt

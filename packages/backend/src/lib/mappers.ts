@@ -110,6 +110,7 @@ export function toPublicPrinter(printer: PrismaPrinter): PrinterPublic {
   return {
     id: printer.id,
     name: printer.name,
+    connectionMode: printer.connectionMode,
     ipAddress: printer.ipAddress,
     serialNumber: printer.serialNumber,
     syncMode: printer.syncMode,
