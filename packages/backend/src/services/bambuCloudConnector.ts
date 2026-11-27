@@ -32,7 +32,8 @@ export interface BambuCloudMqttParams {
 export function connectToBambuCloud(
   params: BambuCloudMqttParams,
   onStatus: (status: PrinterLiveStatus) => void,
-  onAuthRejected: () => void
+  onAuthRejected: () => void,
+  onConnectionLost: () => void
 ): MqttClient {
   const broker = bambuCloudBroker(params.region, params.userId);
   const client = mqtt.connect(broker.url, {
@@ -41,6 +42,6 @@ export function connectToBambuCloud(
     reconnectPeriod: 10_000,
     connectTimeout: 10_000
   });
-  wireReportClient(client, { printerId: params.printerId, serialNumber: params.serialNumber }, onStatus, onAuthRejected);
+  wireReportClient(client, { printerId: params.printerId, serialNumber: params.serialNumber }, onStatus, onAuthRejected, onConnectionLost);
   return client;
 }

@@ -5,10 +5,13 @@ import {
   AMS_SLOTS_PER_UNIT,
   EXTERNAL_AMS_SLOT_INDEX,
   type AmsSlotView,
+  type PrinterLiveStatus,
   type SpoolWithRelations
 } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
 import { visibleAmsUnits } from "../lib/amsUnits.js";
+import { mergeLiveSlots } from "../lib/mergeLiveSlots.js";
+import { getSocket } from "../lib/socket.js";
 import { ReportedFilament } from "./ReportedFilament.js";
 import { sortAlphabetically } from "../lib/sortAlphabetically.js";
 
@@ -16,6 +19,12 @@ interface AmsSlotsPanelProps {
   printerId: string;
   inventoryId: string;
   canEdit: boolean;
+  // Aktueller Stand vom Drucker; ueberschreibt Material, Farbe und Fuellstand der geladenen Faecher
+  liveStatus: PrinterLiveStatus | undefined;
+}
+
+function concernsInventory(change: unknown, inventoryId: string): boolean {
+  return typeof change === "object" && change !== null && "inventoryId" in change && change.inventoryId === inventoryId;
 }
 
 function slotTitle(t: TFunction, slotIndex: number, multipleUnits: boolean): string {
@@ -29,7 +38,7 @@ function slotTitle(t: TFunction, slotIndex: number, multipleUnits: boolean): str
 }
 
 // Zuordnung "welche Spule liegt in welchem AMS-Slot (bzw. extern)" - Grundlage der automatischen Verbrauchsbuchung.
-export function AmsSlotsPanel({ printerId, inventoryId, canEdit }: AmsSlotsPanelProps): React.JSX.Element | null {
+export function AmsSlotsPanel({ printerId, inventoryId, canEdit, liveStatus }: AmsSlotsPanelProps): React.JSX.Element | null {
   const { t, i18n } = useTranslation();
   const [slots, setSlots] = useState<AmsSlotView[] | null>(null);
   const [spools, setSpools] = useState<SpoolWithRelations[]>([]);
@@ -44,6 +53,7 @@ export function AmsSlotsPanel({ printerId, inventoryId, canEdit }: AmsSlotsPanel
       ]);
       setSlots(slotData);
       setSpools(spoolData);
+      setError(null);
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : t("printers.ams.loadFailed"));
     }
@@ -52,6 +62,26 @@ export function AmsSlotsPanel({ printerId, inventoryId, canEdit }: AmsSlotsPanel
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Zuordnungen aendern sich auch ohne diese Seite (Bambu-Abgleich, andere Benutzer): dann neu laden - ebenso nach einer
+  // Wiederverbindung, weil Meldungen waehrend der Unterbrechung verloren sind.
+  useEffect(() => {
+    const socket = getSocket();
+    function reload(): void {
+      void load();
+    }
+    function handleChanged(change: unknown): void {
+      if (concernsInventory(change, inventoryId)) {
+        reload();
+      }
+    }
+    socket.on("ams:changed", handleChanged);
+    socket.on("connect", reload);
+    return () => {
+      socket.off("ams:changed", handleChanged);
+      socket.off("connect", reload);
+    };
+  }, [load, inventoryId]);
 
   async function assign(slotIndex: number, spoolId: string): Promise<void> {
     setBusySlot(slotIndex);
@@ -68,16 +98,14 @@ export function AmsSlotsPanel({ printerId, inventoryId, canEdit }: AmsSlotsPanel
     }
   }
 
-  if (error) {
-    return <p className="text-xs text-[var(--color-danger)]">{error}</p>;
-  }
   if (!slots) {
-    return null;
+    return error ? <p className="text-xs text-[var(--color-danger)]">{error}</p> : null;
   }
 
   // Immer alle vier Faecher der ersten AMS plus die externe Spule anzeigen, auch ohne Live-Meldung vom Drucker; weitere
   // AMS-Einheiten erscheinen, sobald der Drucker sie meldet.
-  const units = visibleAmsUnits(slots.map((slot) => slot.slotIndex));
+  const views = mergeLiveSlots(slots, liveStatus);
+  const units = visibleAmsUnits(views.map((slot) => slot.slotIndex));
   const multipleUnits = units.length > 1;
   const slotIndexes = [
     ...units.flatMap((unit) =>
@@ -87,7 +115,7 @@ export function AmsSlotsPanel({ printerId, inventoryId, canEdit }: AmsSlotsPanel
   ];
   const shown = slotIndexes.map(
     (slotIndex) =>
-      slots.find((slot) => slot.slotIndex === slotIndex) ?? {
+      views.find((slot) => slot.slotIndex === slotIndex) ?? {
         slotIndex,
         reportedMaterial: null,
         reportedColorHex: null,
@@ -105,6 +133,7 @@ export function AmsSlotsPanel({ printerId, inventoryId, canEdit }: AmsSlotsPanel
   return (
     <div className="mt-2 flex flex-col gap-1.5 border-t border-[var(--color-border)] pt-2">
       <div className="text-xs font-semibold text-[var(--color-text-secondary)]">{t("printers.ams.title")}</div>
+      {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
       {shown.map((slot) => (
         <div key={slot.slotIndex} className="flex items-center gap-2 text-xs">
           <span className="w-24 shrink-0 text-[var(--color-text-muted)]">

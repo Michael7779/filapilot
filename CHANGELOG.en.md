@@ -7,6 +7,13 @@ German file) are not translated and do not appear in the app.
 Rule: every version with user-visible items in CHANGELOG.md needs a matching entry here with the same number of items (checked by
 `packages/backend/tests/unit/changelog.test.ts`). Headings: Added, Changed, Fixed, Security.
 
+## [0.45.1] - 2026-11-27
+
+### Fixed
+- Printers: the page now updates by itself. Fill level, material and color of the AMS slots, the automatic assignment and changes by other users appear without reloading; during a print the progress is also shown in percent.
+- Printers: if the connection to a printer drops, the page now shows it instead of still reporting "Connected".
+- After signing out and in again, live updates arrive again without reloading the page.
+
 ## [0.45.0] - 2026-11-25
 
 ### Added

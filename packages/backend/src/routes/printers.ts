@@ -22,7 +22,7 @@ import {
   getLatestStatus,
   whenPrinterConnectStarted
 } from "../services/printerRuntime.js";
-import { refreshSocketAccess } from "../socket.js";
+import { broadcastAmsChanged, refreshSocketAccess } from "../socket.js";
 import { assignAmsSlot, listAmsSlots } from "../services/amsSlotService.js";
 import {
   accessibleInventoryIds,
@@ -181,6 +181,7 @@ printersRouter.put(
     const printer = await findPrinterOrThrow(id);
     await requireAccessToObjectInventory(getAuthenticatedUser(req), printer.inventoryId, "EDITOR");
     await assignAmsSlot(id, printer.inventoryId, slotIndex, input.spoolId);
+    broadcastAmsChanged(printer.inventoryId);
     await recordAudit({
       actor: actorFromRequest(req),
       action: "EVENT",

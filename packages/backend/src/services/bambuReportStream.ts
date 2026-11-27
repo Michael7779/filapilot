@@ -9,6 +9,7 @@ export interface ReportTransport {
   on(event: "connect", listener: () => void): unknown;
   on(event: "message", listener: (topic: string, payload: Buffer) => void): unknown;
   on(event: "error", listener: (err: Error) => void): unknown;
+  on(event: "close", listener: () => void): unknown;
   subscribe(topic: string): unknown;
   publish(topic: string, message: string): unknown;
   end(force?: boolean): unknown;
@@ -87,7 +88,8 @@ export function wireReportClient(
   client: ReportTransport,
   target: ReportTarget,
   onStatus: (status: PrinterLiveStatus) => void,
-  onAuthRejected?: () => void
+  onAuthRejected?: () => void,
+  onConnectionLost?: () => void
 ): void {
   const accumulate = createReportAccumulator(target.printerId);
 
@@ -108,6 +110,8 @@ export function wireReportClient(
       logger.warn("Konnte Bambu-Report nicht parsen", { printerId: target.printerId, err });
     }
   });
+
+  client.on("close", () => onConnectionLost?.());
 
   client.on("error", (err) => {
     // Die Meldung des Fehlers steht ausdruecklich im Protokoll (ein Error-Objekt allein wird sonst leer ausgegeben) - sie

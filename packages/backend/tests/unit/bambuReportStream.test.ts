@@ -156,6 +156,16 @@ describe("wireReportClient", () => {
     assert.equal(rejected, 0);
     assert.equal(transport.ended, false);
   });
+
+  it("meldet, wenn die Verbindung zum Broker abreisst", () => {
+    const transport = new FakeTransport();
+    let lost = 0;
+    wireReportClient(transport, { printerId: "p1", serialNumber: "SER123" }, () => undefined, undefined, () => {
+      lost += 1;
+    });
+    transport.emit("close");
+    assert.equal(lost, 1);
+  });
 });
 
 describe("bambuCloudBroker", () => {

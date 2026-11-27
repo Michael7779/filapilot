@@ -8,6 +8,13 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.45.1] - 2026-11-27
+
+### Behoben
+- Drucker: Die Seite aktualisiert sich jetzt von selbst. Füllstand, Material und Farbe der AMS-Fächer, die automatische Zuordnung und Änderungen anderer Benutzer erscheinen ohne Neuladen; beim Druck steht auch der Fortschritt in Prozent dabei.
+- Drucker: Reißt die Verbindung zu einem Drucker ab, zeigt die Seite das jetzt an, statt weiter „Verbunden“ zu melden.
+- Nach Abmelden und erneutem Anmelden kommen die Live-Meldungen wieder an, ohne die Seite neu zu laden.
+
 ## [0.45.0] - 2026-11-25
 
 ### Hinzugefuegt

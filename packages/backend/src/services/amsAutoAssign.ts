@@ -12,6 +12,7 @@ import { prisma } from "../prisma.js";
 import { logger } from "../logger.js";
 import { recordAudit, type AuditActor } from "./auditService.js";
 import { getLatestStatus } from "./printerRuntime.js";
+import { broadcastAmsChanged } from "../socket.js";
 import { MAX_COLOR_DISTANCE_SQUARED } from "./unopenedSpoolMatch.js";
 
 // Ordnet nach einem Cloud-Abgleich die Spulen den AMS-Faechern zu, so wie die Bambu-Cloud sie meldet (Drucker, AMS, Fach).
@@ -198,6 +199,9 @@ export async function autoAssignAmsSlots(
   });
   if (printers.length > 0) {
     await assignForPrinters(inventory, printers, cloud, actor, deps, result);
+  }
+  if (result.assigned + result.cleared > 0) {
+    broadcastAmsChanged(inventory.id);
   }
   return result;
 }

@@ -48,16 +48,31 @@ export function getLatestStatus(printerId: string): PrinterLiveStatus {
   return latestStatus.get(printerId) ?? disconnectedStatus(printerId);
 }
 
-function statusHandler(printer: Printer): (status: PrinterLiveStatus) => void {
-  return (status) => {
-    connectionIssues.delete(printer.id);
-    latestStatus.set(printer.id, status);
-    if (printer.syncMode === "LIVE") {
-      broadcastPrinterStatus(status, printer.inventoryId);
-    }
-    // Verbrauchserkennung laeuft unabhaengig vom Sync-Modus - der Server bekommt bei beiden laufend Reports.
-    void processPrinterStatus({ id: printer.id, inventoryId: printer.inventoryId }, status);
-  };
+type RuntimePrinter = Pick<Printer, "id" | "inventoryId" | "syncMode">;
+
+export function reportPrinterStatus(printer: RuntimePrinter, status: PrinterLiveStatus): void {
+  connectionIssues.delete(printer.id);
+  latestStatus.set(printer.id, status);
+  if (printer.syncMode === "LIVE") {
+    broadcastPrinterStatus(status, printer.inventoryId);
+  }
+  // Verbrauchserkennung laeuft unabhaengig vom Sync-Modus - der Server bekommt bei beiden laufend Reports.
+  void processPrinterStatus({ id: printer.id, inventoryId: printer.inventoryId }, status);
+}
+
+// Verbindung abgerissen: offene Seiten sollen nicht weiter "Verbunden" zeigen. Bewusst ohne Verbrauchserkennung - ein
+// Netzwerk-Aussetzer ist kein Druckende. Weitere Abbrueche derselben Stoerung (Neuversuche) werden nicht erneut gemeldet.
+export function reportConnectionLost(printer: RuntimePrinter): void {
+  if (latestStatus.delete(printer.id)) {
+    broadcastPrinterStatus(disconnectedStatus(printer.id), printer.inventoryId);
+  }
+}
+
+// Der Grund, warum ein Cloud-Drucker nicht verbindet - geht sofort an offene Seiten.
+function reportIssue(printer: RuntimePrinter, issue: ConnectionIssue): void {
+  connectionIssues.set(printer.id, issue);
+  latestStatus.delete(printer.id);
+  broadcastPrinterStatus(disconnectedStatus(printer.id), printer.inventoryId);
 }
 
 function connectLocal(printer: Printer): ActiveConnection | null {
@@ -65,6 +80,8 @@ function connectLocal(printer: Printer): ActiveConnection | null {
     logger.warn("Lokaler Drucker ohne IP-Adresse oder Access-Code, keine Verbindung", { printerId: printer.id });
     return null;
   }
+  // Nach einem gewollten Trennen meldet der alte Client nichts mehr (er koennte sonst den Nachfolger "trennen").
+  let ended = false;
   const client = connectToBambuPrinter(
     {
       printerId: printer.id,
@@ -72,9 +89,19 @@ function connectLocal(printer: Printer): ActiveConnection | null {
       serialNumber: printer.serialNumber,
       accessCode: printer.accessCode
     },
-    statusHandler(printer)
+    (status) => reportPrinterStatus(printer, status),
+    () => {
+      if (!ended) {
+        reportConnectionLost(printer);
+      }
+    }
   );
-  return { end: () => client.end(true) };
+  return {
+    end: () => {
+      ended = true;
+      client.end(true);
+    }
+  };
 }
 
 async function cloudUserId(inventoryId: string, stored: { region: BambuRegion; token: string }): Promise<string> {
@@ -95,10 +122,6 @@ function connectCloud(printer: Printer): ActiveConnection {
   let end: () => void = () => undefined;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function setIssue(issue: ConnectionIssue): void {
-    connectionIssues.set(printer.id, issue);
-  }
-
   async function start(): Promise<void> {
     try {
       const stored = await getStoredToken(printer.inventoryId);
@@ -106,7 +129,7 @@ function connectCloud(printer: Printer): ActiveConnection {
         return;
       }
       if (!stored) {
-        setIssue("cloud_no_account");
+        reportIssue(printer, "cloud_no_account");
         return;
       }
       const userId = await cloudUserId(printer.inventoryId, stored);
@@ -115,13 +138,18 @@ function connectCloud(printer: Printer): ActiveConnection {
       }
       const client = connectToBambuCloud(
         { printerId: printer.id, serialNumber: printer.serialNumber, region: stored.region, userId, token: stored.token },
-        statusHandler(printer),
-        () => setIssue("cloud_rejected")
+        (status) => reportPrinterStatus(printer, status),
+        () => reportIssue(printer, "cloud_rejected"),
+        () => {
+          if (!ended) {
+            reportConnectionLost(printer);
+          }
+        }
       );
       end = () => client.end(true);
     } catch (err) {
       if (err instanceof BambuCloudError && err.kind === "unauthorized") {
-        setIssue("cloud_rejected");
+        reportIssue(printer, "cloud_rejected");
         return;
       }
       logger.warn("Cloud-Verbindung des Druckers konnte nicht aufgebaut werden, neuer Versuch folgt", {

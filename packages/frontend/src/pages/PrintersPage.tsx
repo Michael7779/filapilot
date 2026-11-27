@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { PrinterLiveStatus, PrinterPublic } from "@filapilot/shared";
+import type { PrinterPublic } from "@filapilot/shared";
 import { apiRequest, ApiRequestError } from "../lib/api.js";
-import { getSocket } from "../lib/socket.js";
+import { usePrinterStatuses } from "../hooks/usePrinterStatuses.js";
 import { useCurrentInventory } from "../hooks/useCurrentInventory.js";
-import { AmsSlotsPanel } from "../components/AmsSlotsPanel.js";
+import { PrinterCard } from "../components/PrinterCard.js";
 import { NewPrinterModal } from "../components/NewPrinterModal.js";
 import { PrinterMoveModal } from "../components/PrinterMoveModal.js";
 import { PrinterConnectionModal } from "../components/PrinterConnectionModal.js";
@@ -37,101 +37,12 @@ function MqttSetupGuide(): React.JSX.Element {
   );
 }
 
-function PrinterCard({
-  printer,
-  status,
-  canEdit,
-  onMove,
-  onChangeConnection
-}: {
-  printer: PrinterPublic;
-  status: PrinterLiveStatus | null;
-  canEdit: boolean;
-  // Nur gesetzt, wenn der Nutzer im Lager des Druckers Besitzer ist
-  onMove?: () => void;
-  onChangeConnection?: () => void;
-}): React.JSX.Element {
-  const { t } = useTranslation();
-  const connected = status?.connected ?? false;
-
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-white p-4">
-      <div className="mb-2 flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">{printer.name}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">
-            {printer.ipAddress ?? t("printers.viaCloud")}
-          </div>
-        </div>
-        <span
-          className="rounded-full px-2 py-0.5 text-xs font-medium"
-          style={
-            connected
-              ? { backgroundColor: "var(--color-success)", color: "#fff" }
-              : { backgroundColor: "var(--color-bg)", color: "var(--color-text-muted)" }
-          }
-        >
-          {connected ? t("printers.connected") : t("printers.disconnected")}
-        </span>
-      </div>
-      {!connected && status?.issue && (
-        <p className="mb-2 text-xs text-[var(--color-danger)]">
-          {status.issue === "cloud_no_account"
-            ? t("printers.issueCloudNoAccount")
-            : t("printers.issueCloudRejected")}
-        </p>
-      )}
-      {status?.printing && (
-        <div className="mb-2">
-          <div className="mb-1 text-xs text-[var(--color-text-secondary)]">
-            {status.currentJobName ?? t("printers.printing")}
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--color-bg)]">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${status.progressPercent ?? 0}%`,
-                backgroundColor: "var(--accent)"
-              }}
-            />
-          </div>
-        </div>
-      )}
-      <div className="text-xs text-[var(--color-text-muted)]">
-        {t("printers.syncMode")}:{" "}
-        {printer.syncMode === "LIVE" ? t("printers.syncModeLive") : t("printers.syncModePeriodic")}
-      </div>
-      {printer.inventoryId && (
-        <AmsSlotsPanel printerId={printer.id} inventoryId={printer.inventoryId} canEdit={canEdit} />
-      )}
-      {onChangeConnection && (
-        <button
-          type="button"
-          onClick={onChangeConnection}
-          className="mt-3 mr-2 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)]"
-        >
-          {t("printers.changeConnection")}
-        </button>
-      )}
-      {onMove && (
-        <button
-          type="button"
-          onClick={onMove}
-          className="mt-3 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)]"
-        >
-          {t("printers.move")}
-        </button>
-      )}
-    </div>
-  );
-}
-
 export function PrintersPage(): React.JSX.Element {
   const { t } = useTranslation();
   const { selectedId, isAll, isOwner, canEdit } = useCurrentInventory();
   const inventories = useInventoryStore((state) => state.inventories);
   const [printers, setPrinters] = useState<PrinterPublic[]>([]);
-  const [statusByPrinter, setStatusByPrinter] = useState<Record<string, PrinterLiveStatus>>({});
+  const { statusByPrinter, refreshStatuses } = usePrinterStatuses(printers);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -147,39 +58,25 @@ export function PrintersPage(): React.JSX.Element {
     try {
       const data = await apiRequest<PrinterPublic[]>(`/printers?inventoryId=${selectedId}`);
       setPrinters(data);
-      const statuses = await Promise.all(
-        data.map((printer) => apiRequest<PrinterLiveStatus>(`/printers/${printer.id}/status`))
-      );
-      setStatusByPrinter(Object.fromEntries(statuses.map((s) => [s.printerId, s])));
+      await refreshStatuses(data);
     } catch (err) {
       setLoadError(err instanceof ApiRequestError ? err.message : t("printers.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [t, selectedId]);
+  }, [t, selectedId, refreshStatuses]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    const socket = getSocket();
-    function handleStatus(status: PrinterLiveStatus): void {
-      setStatusByPrinter((current) => ({ ...current, [status.printerId]: status }));
-    }
-    socket.on("printer:status", handleStatus);
-    return () => {
-      socket.off("printer:status", handleStatus);
-    };
-  }, []);
-
   function handleCreated(printer: PrinterPublic): void {
     setModalOpen(false);
     setPrinters((current) => [...current, printer]);
     // Status gleich holen: ein Cloud-Drucker zeigt so sofort, wenn z.B. die Bambu-Verbindung des Lagers fehlt.
-    apiRequest<PrinterLiveStatus>(`/printers/${printer.id}/status`)
-      .then((status) => setStatusByPrinter((current) => ({ ...current, [status.printerId]: status })))
-      .catch(() => undefined);
+    refreshStatuses([printer]).catch((error: unknown) => {
+      console.error("Druckerstatus konnte nicht geladen werden", error);
+    });
   }
 
   if (loading) {
@@ -232,7 +129,7 @@ export function PrintersPage(): React.JSX.Element {
               )}
               <PrinterCard
                 printer={printer}
-                status={statusByPrinter[printer.id] ?? null}
+                status={statusByPrinter[printer.id]}
                 canEdit={canEdit}
                 {...(inventories.find((inventory) => inventory.id === printer.inventoryId)?.role ===
                 "OWNER"

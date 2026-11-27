@@ -13,7 +13,9 @@ import { accessibleInventoryIds } from "./services/inventoryAccess.js";
 // kein ausstehender Pflicht-Passwortwechsel); der Status eines Druckers geht nur in den Raum seines Lagers, dem eine
 // Verbindung nur beitritt, wenn der Benutzer dort Mitglied (oder Admin) ist; jede Minute und nach jeder Aenderung der
 // Mitglieder werden Verbindungen und Raeume neu abgeglichen. Negativ-Tests: kein Cookie, falsches Token, Passwortwechsel
-// offen -> abgelehnt; Raeume folgen der Mitgliedschaft.
+// offen -> abgelehnt; Raeume folgen der Mitgliedschaft. "ams:changed" traegt nur die Lager-ID (die Faecher selbst holt die
+// Seite ueber die geprueften Routen) und geht nur in den Raum dieses Lagers; abgelehnte Aenderungen loesen nichts aus
+// (tests/security/amsChangedEvent.test.ts).
 
 const REVALIDATE_INTERVAL_MS = 60_000;
 const ROOM_PREFIX = "inventory:";
@@ -132,6 +134,13 @@ export function attachSocketServer(httpServer: HttpServer): SocketIoServer {
   });
   setInterval(() => void refreshSocketAccess(), REVALIDATE_INTERVAL_MS).unref();
   return server;
+}
+
+// Die Zuordnung der AMS-Faecher eines Lagers hat sich geaendert - offene Drucker-Seiten laden sie neu.
+export function broadcastAmsChanged(inventoryId: string | null): void {
+  if (inventoryId) {
+    io?.to(inventoryRoom(inventoryId)).emit("ams:changed", { inventoryId });
+  }
 }
 
 // Der Status geht nur an Verbindungen, die dem Lager des Druckers angehoeren.

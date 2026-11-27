@@ -15,7 +15,11 @@ export interface BambuConnectionParams {
 
 export type LiveStatusListener = (status: PrinterLiveStatus) => void;
 
-export function connectToBambuPrinter(params: BambuConnectionParams, onStatus: LiveStatusListener): MqttClient {
+export function connectToBambuPrinter(
+  params: BambuConnectionParams,
+  onStatus: LiveStatusListener,
+  onConnectionLost: () => void
+): MqttClient {
   const client = mqtt.connect(`mqtts://${params.ipAddress}:8883`, {
     username: "bblp",
     password: params.accessCode,
@@ -23,6 +27,6 @@ export function connectToBambuPrinter(params: BambuConnectionParams, onStatus: L
     reconnectPeriod: 5000,
     connectTimeout: 5000
   });
-  wireReportClient(client, { printerId: params.printerId, serialNumber: params.serialNumber }, onStatus);
+  wireReportClient(client, { printerId: params.printerId, serialNumber: params.serialNumber }, onStatus, undefined, onConnectionLost);
   return client;
 }
