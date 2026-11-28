@@ -8,6 +8,20 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.46.0] - 2026-11-28
+
+### Hinzugefuegt
+- Drucke eines Druckers, der über die Bambu Cloud verbunden ist, erscheinen jetzt in der Statistik unter den Druckaufträgen, mit Name, Gramm und Kosten. FilaPilot sieht dafür kurz nach jedem Druck nach und beim Klick auf „Aus Cloud aktualisieren“. Erfasst werden erfolgreiche Drucke ab diesem Update; im AMS-Fach muss eine passende Spule zugeordnet sein.
+
+### Geändert
+- Cloud-Drucker: Der Verbrauch kommt jetzt aus dem Druckverlauf von Bambu statt aus dem AMS-Füllstand, der sich dafür zu ungenau ändert. Bei Spulen aus der Bambu Cloud wird dabei nichts zusätzlich abgezogen, weil ihr Restgewicht schon aus der Cloud kommt.
+
+### Behoben
+- Statistik: Schwankt das Restgewicht aus der Bambu Cloud, zählt das nicht mehr als Verbrauch. Eine spätere Zunahme hebt die frühere Abnahme derselben Spule wieder auf.
+
+### Hinweis zum Update
+- Die Datenbank bekommt zwei neue Spalten (Beginn der Druckerfassung je Drucker, Kennung je Druckauftrag); das Update-Skript spielt sie ohne Datenverlust ein. Die Diagnose aus 0.45.2 ist entfernt; die Protokollzeile heißt jetzt "Druckhistorie: ausgewertet" und nennt nur Anzahlen.
+
 ## [0.45.2] - 2026-11-28
 
 ### Hinweis zum Update

@@ -24,23 +24,31 @@ mkdir -p /tmp/p && cd /tmp/p && npm init -y >/dev/null 2>&1 && npm i prisma@6 >/
 psql -h filapilot-test-db -U filapilot -d postgres -q -c "DROP DATABASE IF EXISTS fp_upgrade_check" -c "CREATE DATABASE fp_upgrade_check"
 export DATABASE_URL=postgresql://filapilot:filapilot@filapilot-test-db:5432/fp_upgrade_check
 npx prisma db push --schema=/w/old.prisma --skip-generate >/dev/null 2>&1 || { echo "FEHLER: altes Schema liess sich nicht einspielen"; exit 2; }
-# Beispieldaten in den Tabellen, die es im alten Stand sicher gibt (Benutzer, Hersteller, Material, Spule, Drucker)
-psql -h filapilot-test-db -U filapilot -d fp_upgrade_check -q <<SQL
+# Beispieldaten in den Tabellen, die es im alten Stand sicher gibt (Benutzer, Hersteller, Material, Spule, Drucker). Ab dem
+# Stand mit Lagern gehoeren Spulen und Drucker immer zu einem Lager - dann werden sie gleich mit Lager angelegt. Jeder Fehler
+# bricht ab: ohne Zeilen in den Tabellen wuerde das Gate "OK" melden, ohne etwas geprueft zu haben.
+psql -h filapilot-test-db -U filapilot -d fp_upgrade_check -q -v ON_ERROR_STOP=1 <<SQL || { echo "FEHLER: Beispieldaten liessen sich nicht anlegen"; exit 2; }
 INSERT INTO users (id, username, email, "passwordHash", role, "mustChangePassword", "updatedAt") VALUES (gen_random_uuid(), 'gate', 'gate@x.test', 'h', 'ADMIN', false, now());
 INSERT INTO manufacturers (id, name) VALUES (gen_random_uuid(), 'GateHersteller');
-INSERT INTO materials (id, name, "printTempMinC", "printTempMaxC") VALUES (gen_random_uuid(), 'GatePLA', 190, 220);
-INSERT INTO spools (id, "materialId", "manufacturerId", "colorName", "initialWeightG", "remainingWeightG", "updatedAt")
-  SELECT gen_random_uuid(), m.id, f.id, 'Rot', 1000, 500, now() FROM materials m, manufacturers f;
-INSERT INTO printers (id, name, "ipAddress", "serialNumber", "accessCode") VALUES (gen_random_uuid(), 'Gate', '192.0.2.1', 'GATE-1', 'x');
-SQL
-# Ab dem Stand mit Lagern (0.13.0) gehoeren Spulen und Drucker immer zu einem Lager (ensureDefaultInventory beim Start). Das nachbilden,
-# damit das Gate den echten Updatefall prueft und nicht eine Datenbank mit lagerlosen Zeilen, die es in Betrieb nicht gibt.
-psql -h filapilot-test-db -U filapilot -d fp_upgrade_check -q <<SQL
 DO \$\$ BEGIN
-  IF to_regclass('public.inventories') IS NOT NULL THEN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'materials' AND column_name = 'manufacturerId') THEN
+    INSERT INTO materials (id, name, "manufacturerId", "printTempMinC", "printTempMaxC") SELECT gen_random_uuid(), 'GatePLA', f.id, 190, 220 FROM manufacturers f;
+  ELSE
+    INSERT INTO materials (id, name, "printTempMinC", "printTempMaxC") VALUES (gen_random_uuid(), 'GatePLA', 190, 220);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'spools' AND column_name = 'inventoryId') THEN
     INSERT INTO inventories (id, name) VALUES ('gate-lager', 'Gate-Lager');
-    UPDATE spools SET "inventoryId" = 'gate-lager';
-    UPDATE printers SET "inventoryId" = 'gate-lager';
+    INSERT INTO spools (id, "materialId", "manufacturerId", "colorName", "initialWeightG", "remainingWeightG", "updatedAt", "inventoryId")
+      SELECT gen_random_uuid(), m.id, f.id, 'Rot', 1000, 500, now(), 'gate-lager' FROM materials m, manufacturers f;
+    INSERT INTO printers (id, name, "ipAddress", "serialNumber", "accessCode", "inventoryId") VALUES (gen_random_uuid(), 'Gate', '192.0.2.1', 'GATE-1', 'x', 'gate-lager');
+  ELSE
+    INSERT INTO spools (id, "materialId", "manufacturerId", "colorName", "initialWeightG", "remainingWeightG", "updatedAt")
+      SELECT gen_random_uuid(), m.id, f.id, 'Rot', 1000, 500, now() FROM materials m, manufacturers f;
+    INSERT INTO printers (id, name, "ipAddress", "serialNumber", "accessCode") VALUES (gen_random_uuid(), 'Gate', '192.0.2.1', 'GATE-1', 'x');
+  END IF;
+  IF to_regclass('public.print_jobs') IS NOT NULL THEN
+    INSERT INTO print_jobs (id, "printerId", "spoolId", name, "filamentUsedG", "startedAt")
+      SELECT gen_random_uuid(), p.id, s.id, 'Gate-Druck', 10, now() FROM printers p, spools s;
   END IF;
 END \$\$;
 SQL

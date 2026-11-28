@@ -48,7 +48,7 @@ export function getLatestStatus(printerId: string): PrinterLiveStatus {
   return latestStatus.get(printerId) ?? disconnectedStatus(printerId);
 }
 
-type RuntimePrinter = Pick<Printer, "id" | "inventoryId" | "syncMode">;
+type RuntimePrinter = Pick<Printer, "id" | "inventoryId" | "syncMode" | "connectionMode">;
 
 export function reportPrinterStatus(printer: RuntimePrinter, status: PrinterLiveStatus): void {
   connectionIssues.delete(printer.id);
@@ -57,7 +57,7 @@ export function reportPrinterStatus(printer: RuntimePrinter, status: PrinterLive
     broadcastPrinterStatus(status, printer.inventoryId);
   }
   // Verbrauchserkennung laeuft unabhaengig vom Sync-Modus - der Server bekommt bei beiden laufend Reports.
-  void processPrinterStatus({ id: printer.id, inventoryId: printer.inventoryId }, status);
+  void processPrinterStatus({ id: printer.id, inventoryId: printer.inventoryId, connectionMode: printer.connectionMode }, status);
 }
 
 // Verbindung abgerissen: offene Seiten sollen nicht weiter "Verbunden" zeigen. Bewusst ohne Verbrauchserkennung - ein

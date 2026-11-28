@@ -56,6 +56,22 @@ describe("Automatische Verbrauchsbuchung aus dem Druckstatus", () => {
 
   const printer = () => ({ id: printerId, inventoryId });
 
+  it("bucht bei Cloud-Druckern nichts aus den AMS-Prozenten, sondern stoesst am Druckende die Druckhistorie an", async () => {
+    await prisma.amsSlotAssignment.create({ data: { printerId, slotIndex: 0, spoolId } });
+    const ended: string[] = [];
+    const cloud = { ...printer(), connectionMode: "CLOUD" as const };
+    const deps = { onCloudPrintEnd: (id: string) => ended.push(id) };
+    const slot = (remainingPercent: number) => [{ slotIndex: 0, reportedMaterial: "PLA", reportedColorHex: null, remainingPercent }];
+
+    await processPrinterStatus(cloud, status({ printState: "running", amsSlots: slot(80) }), deps);
+    assert.deepEqual(ended, []);
+    await processPrinterStatus(cloud, status({ printState: "finished", amsSlots: slot(60) }), deps);
+
+    assert.deepEqual(ended, [inventoryId]);
+    assert.equal(await prisma.printJob.count(), 0);
+    assert.equal((await prisma.spool.findUniqueOrThrow({ where: { id: spoolId } })).remainingWeightG, 500);
+  });
+
   it("bucht Verbrauch, Kosten und einen Druckauftrag beim Wechsel von laufend auf fertig", async () => {
     await prisma.amsSlotAssignment.create({ data: { printerId, slotIndex: 0, spoolId } });
 

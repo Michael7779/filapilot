@@ -10,6 +10,7 @@ import {
 } from "@filapilot/shared";
 import { AppError } from "../lib/apiResult.js";
 import { prisma } from "../prisma.js";
+import { netCloudFluctuations } from "./cloudNetting.js";
 
 // Obergrenze der gelesenen Verlaufs-Eintraege (Schutz vor riesigen Abfragen).
 const MAX_LOG_ROWS = 100_000;
@@ -24,13 +25,33 @@ function add(map: Map<string, number>, key: string, value: number): void {
   map.set(key, (map.get(key) ?? 0) + value);
 }
 
-// Summe von Verbrauch und Kosten in einem Zeitraum, ohne Aufschluesselung - fuer den Vergleich mit dem Vorzeitraum.
-async function sumConsumption(scope: { inventoryId: { in: string[] } }, from: Date, to: Date): Promise<{ consumedG: number; costCents: number }> {
+// Verbrauch ab "since" mit verrechneten Cloud-Schwankungen. Bewusst ohne Obergrenze der Zeit: eine spaetere Zunahme hebt
+// auch eine Abnahme im Zeitraum auf.
+async function loadConsumption(scope: { inventoryId: { in: string[] } }, since: Date) {
   const logs = await prisma.spoolWeightLog.findMany({
-    where: { ...scope, at: { gte: from, lt: to }, deltaG: { gt: 0 } },
-    select: { deltaG: true, spool: { select: { initialWeightG: true, purchasePriceCents: true } } },
+    where: { ...scope, at: { gte: since }, OR: [{ deltaG: { gt: 0 } }, { source: { in: ["CLOUD_SYNC", "CLOUD_IMPORT"] } }] },
+    select: {
+      spoolId: true,
+      at: true,
+      deltaG: true,
+      source: true,
+      spool: {
+        select: {
+          initialWeightG: true,
+          purchasePriceCents: true,
+          material: { select: { name: true } },
+          manufacturer: { select: { name: true } }
+        }
+      }
+    },
+    orderBy: { at: "asc" },
     take: MAX_LOG_ROWS
   });
+  return netCloudFluctuations(logs);
+}
+
+// Summe von Verbrauch und Kosten, ohne Aufschluesselung - fuer den Vergleich mit dem Vorzeitraum.
+function sumConsumption(logs: Awaited<ReturnType<typeof loadConsumption>>): { consumedG: number; costCents: number } {
   let consumedG = 0;
   let costCents = 0;
   for (const log of logs) {
@@ -58,32 +79,18 @@ export async function computeConsumption(
   const previousFrom = new Date(from.getTime() - (to.getTime() - from.getTime()));
 
   const scope = { inventoryId: { in: inventoryIds } };
-  const [logs, first, previousTotals, printJobs] = await Promise.all([
-    prisma.spoolWeightLog.findMany({
-      where: { ...scope, at: { gte: from, lte: to }, deltaG: { gt: 0 } },
-      select: {
-        at: true,
-        deltaG: true,
-        spool: {
-          select: {
-            initialWeightG: true,
-            purchasePriceCents: true,
-            material: { select: { name: true } },
-            manufacturer: { select: { name: true } }
-          }
-        }
-      },
-      orderBy: { at: "asc" },
-      take: MAX_LOG_ROWS
-    }),
+  const [consumption, first, printJobs] = await Promise.all([
+    loadConsumption(scope, previousFrom),
     prisma.spoolWeightLog.aggregate({ where: scope, _min: { at: true } }),
-    sumConsumption(scope, previousFrom, from),
     prisma.printJob.findMany({
       where: { printer: { inventoryId: { in: inventoryIds } }, startedAt: { gte: from, lte: to } },
       select: { filamentUsedG: true, printer: { select: { name: true } } },
       take: MAX_LOG_ROWS
     })
   ]);
+
+  const logs = consumption.filter((log) => log.at >= from && log.at <= to);
+  const previousTotals = sumConsumption(consumption.filter((log) => log.at < from));
 
   const buckets = new Map(keys.map((key) => [key, { key, consumedG: 0, costCents: 0 }]));
   const byType = new Map<string, number>();

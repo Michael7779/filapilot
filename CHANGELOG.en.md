@@ -7,6 +7,17 @@ German file) are not translated and do not appear in the app.
 Rule: every version with user-visible items in CHANGELOG.md needs a matching entry here with the same number of items (checked by
 `packages/backend/tests/unit/changelog.test.ts`). Headings: Added, Changed, Fixed, Security.
 
+## [0.46.0] - 2026-11-28
+
+### Added
+- Prints of a printer connected through the Bambu Cloud now appear in the statistics under print jobs, with name, grams and cost. FilaPilot checks shortly after each print and when you click "Update from cloud". Successful prints from this update on are recorded; a matching spool has to be assigned to the AMS slot.
+
+### Changed
+- Cloud printers: consumption now comes from Bambu's print history instead of the AMS fill level, which changes too imprecisely for this. Nothing is deducted a second time from spools that come from the Bambu Cloud, because their remaining weight already comes from there.
+
+### Fixed
+- Statistics: fluctuations of the remaining weight from the Bambu Cloud no longer count as consumption. A later increase cancels the earlier decrease of the same spool.
+
 ## [0.45.1] - 2026-11-27
 
 ### Fixed

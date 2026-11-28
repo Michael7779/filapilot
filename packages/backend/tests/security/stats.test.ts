@@ -108,6 +108,19 @@ describe("Verbrauchs-Statistik - Negativ-Tests und Rechnung", () => {
     assert.deepEqual([cost["2026-09-24"], cost["2026-09-25"], cost["2026-09-26"]], [375, 0, 525]);
   });
 
+  it("zaehlt Schwankungen des Cloud-Gewichts nicht als Verbrauch", async () => {
+    // Eigener Benutzer, damit dieses Lager nicht in die "all"-Summen der anderen Tests einfliesst.
+    const own = await createLoggedInUser(app, "statscloud");
+    const lager = await createInventoryWithMembers("Stats Cloud", [{ userId: own.id, role: "EDITOR" }]);
+    const spool = await createSpoolIn(lager.id, "Cloud-Spule");
+    for (const [at, deltaG] of [["2026-09-23T10:00:00Z", 30], ["2026-09-23T11:00:00Z", -30], ["2026-09-24T10:00:00Z", 50], ["2026-09-25T10:00:00Z", -20]] as const) {
+      await prisma.spoolWeightLog.create({ data: { spoolId: spool.id, inventoryId: lager.id, at: new Date(at), deltaG, remainingG: 500, source: "CLOUD_SYNC" } });
+    }
+    const res = await stats(own, "inventoryId=" + lager.id + "&period=day&" + BASE_RANGE);
+    assert.equal(res.body.data.totals.consumedG, 30);
+    assert.deepEqual([dayMap(res)["2026-09-23"], dayMap(res)["2026-09-24"]], [0, 30]);
+  });
+
   it("fasst nach Woche, Monat und Jahr zusammen", async () => {
     const q = "inventoryId=" + lagerA + "&" + BASE_RANGE;
     assert.deepEqual(dayMap(await stats(editor, q + "&period=week")), { "2026-09-21": 760 });

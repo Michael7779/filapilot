@@ -1,8 +1,5 @@
 import {
-  AMS_SLOTS_PER_UNIT,
   colorDistanceSquared,
-  EXTERNAL_AMS_SLOT_INDEX,
-  MAX_AMS_UNITS,
   normalizeHexColor,
   type AmsSlotStatus,
   type BambuSpool,
@@ -14,6 +11,9 @@ import { recordAudit, type AuditActor } from "./auditService.js";
 import { getLatestStatus } from "./printerRuntime.js";
 import { broadcastAmsChanged } from "../socket.js";
 import { MAX_COLOR_DISTANCE_SQUARED } from "./unopenedSpoolMatch.js";
+import { cloudSlotIndex, toSlotNumber } from "./cloudSlot.js";
+
+export { cloudSlotIndex };
 
 // Ordnet nach einem Cloud-Abgleich die Spulen den AMS-Faechern zu, so wie die Bambu-Cloud sie meldet (Drucker, AMS, Fach).
 //
@@ -29,26 +29,6 @@ export interface AutoAssignDeps {
 export interface AutoAssignResult {
   assigned: number;
   cleared: number;
-}
-
-// Cloud-Kennungen fuer die externe Spule (statt einer AMS-Einheit).
-const EXTERNAL_UNIT_IDS = new Set([254, 255]);
-
-function toIndex(value: unknown): number | null {
-  const text = typeof value === "number" || typeof value === "string" ? String(value).trim() : "";
-  return /^\d{1,3}$/.test(text) ? Number(text) : null;
-}
-
-export function cloudSlotIndex(amsId: unknown, slotId: unknown): number | null {
-  const unit = toIndex(amsId);
-  if (unit !== null && EXTERNAL_UNIT_IDS.has(unit)) {
-    return EXTERNAL_AMS_SLOT_INDEX;
-  }
-  const tray = toIndex(slotId);
-  if (unit === null || tray === null || unit >= MAX_AMS_UNITS || tray >= AMS_SLOTS_PER_UNIT) {
-    return null;
-  }
-  return unit * AMS_SLOTS_PER_UNIT + tray;
 }
 
 function matchesLive(spool: BambuSpool, live: AmsSlotStatus): boolean {
@@ -153,8 +133,8 @@ function logPlacements(cloud: BambuSpool[], printers: PrinterRow[]): void {
     .filter((spool) => spool.inPrinter === true)
     .slice(0, 20)
     .map((spool) => ({
-      ams: toIndex(spool.amsId),
-      slot: toIndex(spool.slotId),
+      ams: toSlotNumber(spool.amsId),
+      slot: toSlotNumber(spool.slotId),
       knownPrinter: printers.some((printer) => isOnPrinter(spool, printer.serialNumber))
     }));
   logger.info("Bambu-Cloud: Lage der Spulen im Drucker", { placements });

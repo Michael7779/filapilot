@@ -54,9 +54,11 @@ async function findPrinterOrThrow(id: string) {
 async function updatePrinterRow(
   id: string,
   input: UpdatePrinterInput,
-  moveToInventoryId: string | null
+  moveToInventoryId: string | null,
+  restartHistory: boolean
 ) {
-  const data = omitUndefined(input);
+  // Frueheres aus der Druckhistorie gehoert zum bisherigen Lager/Geraet und wird nicht mehr uebernommen.
+  const data = { ...omitUndefined(input), ...(restartHistory ? { historyFrom: new Date() } : {}) };
   if (moveToInventoryId === null) {
     return prisma.printer.update({ where: { id }, data, include: { inventory: true } });
   }
@@ -241,7 +243,12 @@ printersRouter.patch(
     if (moving) {
       await requireInventoryRole(user, targetInventoryId, "OWNER");
     }
-    const updated = await updatePrinterRow(id, { ...input, ...connection }, moving ? targetInventoryId : null).catch(
+    const restartHistory =
+      moving ||
+      (input.connectionMode !== undefined && input.connectionMode !== before.connectionMode) ||
+      (input.serialNumber !== undefined && input.serialNumber !== before.serialNumber);
+    const target = moving ? targetInventoryId : null;
+    const updated = await updatePrinterRow(id, { ...input, ...connection }, target, restartHistory).catch(
       (err: unknown) => {
         if (err instanceof Error && err.message.includes("Record to update not found")) {
           throw new AppError("NOT_FOUND", "Drucker wurde nicht gefunden.");

@@ -2,6 +2,7 @@ import type { PrinterLiveStatus, PrintState } from "@filapilot/shared";
 import { prisma } from "../prisma.js";
 import { logger } from "../logger.js";
 import { recordWeightChange } from "./spoolWeightLog.js";
+import { schedulePrintHistoryCheck } from "./printHistory.js";
 
 // Ein Druckauftrag ist "in Gang" bei RUNNING und PAUSE (Pause/Fortsetzen beginnt keinen neuen Auftrag und
 // wirft die Kalibrierung nicht weg). Ein Auftrag endet, sobald er das verlaesst (fertig, fehlgeschlagen, IDLE).
@@ -69,10 +70,13 @@ async function hydrate(printerId: string): Promise<void> {
 interface TrackedPrinter {
   id: string;
   inventoryId: string | null;
+  // Cloud-Drucker: der Verbrauch kommt aus der Druckhistorie (printHistory.ts), nicht aus den AMS-Prozenten.
+  connectionMode?: "LOCAL" | "CLOUD";
 }
 
 export interface PrintJobTrackerDeps {
   now?: () => Date;
+  onCloudPrintEnd?: (inventoryId: string) => void;
 }
 
 // Beim Start eines Auftrags: fuer jeden zugeordneten Slot mit bekanntem Fuellstand die Kalibrierung (Checkpoint)
@@ -149,6 +153,13 @@ async function finalizeEnd(printer: TrackedPrinter, status: PrinterLiveStatus, j
   }
 }
 
+function endCloudPrint(printer: TrackedPrinter, deps: PrintJobTrackerDeps): void {
+  const check = deps.onCloudPrintEnd ?? ((inventoryId: string) => schedulePrintHistoryCheck(inventoryId));
+  if (printer.inventoryId !== null) {
+    check(printer.inventoryId);
+  }
+}
+
 // Wird bei jedem MQTT-Status eines Druckers aufgerufen (aus printerRuntime). Nie in den Aufrufer werfen -
 // ein Fehler hier darf die Status-Anzeige/den Socket-Broadcast nicht stoeren.
 export async function processPrinterStatus(printer: TrackedPrinter, status: PrinterLiveStatus, deps: PrintJobTrackerDeps = {}): Promise<void> {
@@ -168,14 +179,20 @@ export async function processPrinterStatus(printer: TrackedPrinter, status: Prin
       await prisma.printer
         .update({ where: { id: printer.id }, data: { activeJobName: job.name, activeJobStartedAt: job.startedAt } })
         .catch(() => undefined);
-      await captureStart(printer, status);
+      if (printer.connectionMode !== "CLOUD") {
+        await captureStart(printer, status);
+      }
     } else if (transition === "end") {
       const job = activeJobs.get(printer.id);
       activeJobs.delete(printer.id);
       await prisma.printer
         .update({ where: { id: printer.id }, data: { activeJobName: null, activeJobStartedAt: null } })
         .catch(() => undefined);
-      await finalizeEnd(printer, status, job, now);
+      if (printer.connectionMode === "CLOUD") {
+        endCloudPrint(printer, deps);
+      } else {
+        await finalizeEnd(printer, status, job, now);
+      }
     }
   } catch (err) {
     logger.error("Automatische Verbrauchsbuchung aus Druckstatus fehlgeschlagen", { printerId: printer.id, err });

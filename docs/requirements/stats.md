@@ -58,6 +58,7 @@
   Spulen-Export) mit Zeitabschnitten, Gesamt-/Vorzeitraum-Summen und den drei Aufschluesselungen. Oberflaeche:
   "CSV exportieren"-Knopf in `components/ConsumptionChart.tsx`. Test: `tests/security/stats.test.ts`.
 
+- **R7**: Ab 0.46.0: Zunahmen des Restgewichts aus der Bambu-Cloud (`CLOUD_SYNC`/`CLOUD_IMPORT`) heben fruehere Abnahmen aus der Cloud derselben Spule auf (juengste zuerst, `cloudNetting.ts`), in Zeitverlauf, Summen, Vorzeitraum und CSV. Druck-, Wiege- und Handbuchungen bleiben unveraendert. Eine Abnahme vor dem geladenen Zeitraum (Beginn des Vorzeitraums) wird nicht mehr verrechnet. Test: `tests/unit/cloudNetting.test.ts`, `tests/security/stats.test.ts`.
 - **R6**: Ab 0.39.0: Die drei Aufschluesselungen der Statistik-Seite (Verbrauch nach Material-Typ, Material, Hersteller) sind wie
   "Restbestand nach Material-Typ" im Dashboard aufklappbar (siehe `dashboard.md` R4): Klick auf eine Zeile zeigt die Spulen dahinter
   (Farbpunkt, Farbname, Hersteller + Material, Farbbalken in Filamentfarbe, Gramm und Prozent Fuellstand, verbrauchte Gramm,

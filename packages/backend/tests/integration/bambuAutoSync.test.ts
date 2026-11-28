@@ -5,8 +5,9 @@ import { isDue, runAutoSyncOnce } from "../../src/services/bambuAutoSync.js";
 import { BambuCloudError, setBambuCloudClientForTests, type BambuCloudClient } from "../../src/services/bambuCloudClient.js";
 import { getConnectionInfo, saveConnection } from "../../src/services/bambuConnectionService.js";
 import { runCloudSync } from "../../src/services/bambuSyncRunner.js";
+import { disconnectAllPrinters } from "../../src/services/printerRuntime.js";
 import { createApp } from "../../src/app.js";
-import { createInventoryWithMembers, createLoggedInUser, resetInventoryData } from "../helpers/fixtures.js";
+import { createInventoryWithMembers, createLoggedInUser, createPrinterIn, resetInventoryData } from "../helpers/fixtures.js";
 
 const VENDORS = ["Bambu Lab"];
 let listCalls = 0;
@@ -56,6 +57,8 @@ describe("Automatischer Bambu-Abgleich", () => {
   });
 
   after(async () => {
+    // Ein abgelaufenes Token verbindet die Cloud-Drucker neu - deren Timer sonst den Testlauf offen halten.
+    disconnectAllPrinters();
     setBambuCloudClientForTests(null);
     await setInterval(0);
     await prisma.spool.deleteMany();
@@ -105,6 +108,8 @@ describe("Automatischer Bambu-Abgleich", () => {
 
   it("fragt die Druckhistorie nur beim Abgleich von Hand ab - ihr Fehler stoert den Abgleich nicht", async () => {
     await setInterval(60);
+    const { id } = await createPrinterIn(lager);
+    await prisma.printer.update({ where: { id }, data: { connectionMode: "CLOUD" } });
     await runAutoSyncOnce({ now, pauseMs: 0 });
     assert.equal(taskCalls, 0);
     const summary = await runCloudSync(lager, { id: null, username: "autosyncowner" }, false);

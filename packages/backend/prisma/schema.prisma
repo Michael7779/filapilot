@@ -480,6 +480,9 @@ model Printer {
   lastKnownPrintState String?
   activeJobName        String?
   activeJobStartedAt   DateTime?
+  // Ab diesem Zeitpunkt werden Drucke aus der Bambu-Cloud-Historie erfasst (nie rueckwirkend: wer damals im Fach lag,
+  // ist unbekannt). Neu gesetzt beim Verschieben in ein anderes Lager und bei geaenderter Verbindungsart/Seriennummer.
+  historyFrom         DateTime            @default(now())
 
   @@index([inventoryId])
   @@map("printers")
@@ -517,8 +520,12 @@ model PrintJob {
   succeeded     Boolean   @default(true)
   startedAt     DateTime
   finishedAt    DateTime?
+  // "<Auftrag der Bambu-Cloud>:<Slot>", damit derselbe Druck nie zweimal gebucht wird. Bewusst keine
+  // Datenbank-Eindeutigkeit (siehe Spool.bambuCloudId) - die Auswertung laeuft je Lager nacheinander.
+  cloudTaskKey  String?
 
   @@index([printerId])
+  @@index([printerId, cloudTaskKey])
   @@index([spoolId])
   @@map("print_jobs")
 }
