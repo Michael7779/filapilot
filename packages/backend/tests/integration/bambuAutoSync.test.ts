@@ -4,18 +4,24 @@ import { prisma } from "../../src/prisma.js";
 import { isDue, runAutoSyncOnce } from "../../src/services/bambuAutoSync.js";
 import { BambuCloudError, setBambuCloudClientForTests, type BambuCloudClient } from "../../src/services/bambuCloudClient.js";
 import { getConnectionInfo, saveConnection } from "../../src/services/bambuConnectionService.js";
+import { runCloudSync } from "../../src/services/bambuSyncRunner.js";
 import { createApp } from "../../src/app.js";
 import { createInventoryWithMembers, createLoggedInUser, resetInventoryData } from "../helpers/fixtures.js";
 
 const VENDORS = ["Bambu Lab"];
 let listCalls = 0;
 let failWith: BambuCloudError | null = null;
+let taskCalls = 0;
 
 const client: BambuCloudClient = {
   login: () => Promise.reject(new Error("nicht erwartet")),
   sendCode: () => Promise.resolve(),
   loginWithCode: () => Promise.reject(new Error("nicht erwartet")),
   getUserId: () => Promise.resolve("1"),
+  listTasks() {
+    taskCalls += 1;
+    return Promise.reject(new BambuCloudError("blocked"));
+  },
   listFilaments() {
     listCalls += 1;
     if (failWith) {
@@ -42,6 +48,7 @@ describe("Automatischer Bambu-Abgleich", () => {
   beforeEach(async () => {
     setBambuCloudClientForTests(client);
     listCalls = 0;
+    taskCalls = 0;
     failWith = null;
     await prisma.bambuConnection.deleteMany();
     await prisma.spool.deleteMany({ where: { inventoryId: lager } });
@@ -94,6 +101,16 @@ describe("Automatischer Bambu-Abgleich", () => {
     assert.equal(await runAutoSyncOnce({ now, pauseMs: 0 }), 1);
     assert.equal(listCalls, 2);
     assert.equal(await prisma.auditLog.count({ where: { area: "SPOOL", entityId: created.id } }), 1);
+  });
+
+  it("fragt die Druckhistorie nur beim Abgleich von Hand ab - ihr Fehler stoert den Abgleich nicht", async () => {
+    await setInterval(60);
+    await runAutoSyncOnce({ now, pauseMs: 0 });
+    assert.equal(taskCalls, 0);
+    const summary = await runCloudSync(lager, { id: null, username: "autosyncowner" }, false);
+    assert.equal(summary.archiveBlocked, false);
+    assert.equal(taskCalls, 1);
+    assert.equal((await getConnectionInfo(lager)).lastSyncError, null);
   });
 
   it("merkt Fehler mit Grund und versucht nicht sofort erneut; abgelaufenes Token verwirft die Verbindung", async () => {

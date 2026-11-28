@@ -43,6 +43,8 @@ export interface BambuCloudClient {
   listFilaments(region: BambuRegion, token: string): Promise<unknown[]>;
   // Numerische Nutzer-ID des Kontos; mit "u_" davor der Benutzername am MQTT-Broker der Cloud (steckt nicht im Token)
   getUserId(region: BambuRegion, token: string): Promise<string>;
+  // Roh-Eintraege der letzten Druckauftraege (Aufbau nicht dokumentiert, siehe bambuTaskProbe.ts)
+  listTasks(region: BambuRegion, token: string): Promise<unknown[]>;
 }
 
 interface RawResponse {
@@ -210,6 +212,17 @@ export const httpBambuCloudClient: BambuCloudClient = {
       throw invalid("Nutzer-ID", status, json);
     }
     return uid;
+  },
+
+  async listTasks(region, token) {
+    const { status, json } = await request("GET", `${BASE_URL[region]}/v1/user-service/my/tasks?limit=5`, {
+      step: "Druckhistorie",
+      token
+    });
+    if (status >= 400 || !Array.isArray(json.hits)) {
+      throw invalid("Druckhistorie", status, json);
+    }
+    return json.hits;
   }
 };
 

@@ -82,6 +82,14 @@ describe("Bambu-Cloud-Client (mit gefaelschten Antworten der Cloud)", () => {
     assert.equal((await failure(() => httpBambuCloudClient.getUserId("global", "tok"))).kind, "unauthorized");
   });
 
+  it("liest die letzten Druckauftraege - feste Adresse, hoechstens wenige, bei Fehlern ohne Inhalte", async () => {
+    const urls = fakeFetch([{ body: '{"total":1,"hits":[{"weight":5}]}' }, { body: '{"message":"GEHEIM"}' }]);
+    assert.deepEqual(await httpBambuCloudClient.listTasks("global", "tok"), [{ weight: 5 }]);
+    assert.equal(urls[0], "https://api.bambulab.com/v1/user-service/my/tasks?limit=5");
+    const err = await failure(() => httpBambuCloudClient.listTasks("global", "tok"));
+    assert.deepEqual(err.detail, { step: "Druckhistorie", status: 200, keys: ["message"] });
+  });
+
   it("beschreibt die Felder der Spulenliste nur mit Namen - und welche Notiz-artigen Felder Text enthalten, nie die Inhalte", () => {
     const described = describeHitFields([
       { id: "1", color: "FF0000", note: "", memoText: "GEHEIM-NOTIZ" },

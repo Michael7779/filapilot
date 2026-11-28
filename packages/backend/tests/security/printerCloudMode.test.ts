@@ -21,7 +21,8 @@ function rejectingClient(): BambuCloudClient {
     sendCode: () => Promise.reject(new Error("nicht erwartet")),
     loginWithCode: () => Promise.reject(new Error("nicht erwartet")),
     listFilaments: () => Promise.reject(new Error("nicht erwartet")),
-    getUserId: () => Promise.reject(new BambuCloudError("unauthorized", { step: "Nutzer-ID", status: 401 }))
+    getUserId: () => Promise.reject(new BambuCloudError("unauthorized", { step: "Nutzer-ID", status: 401 })),
+    listTasks: () => Promise.resolve([])
   };
 }
 

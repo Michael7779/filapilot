@@ -8,6 +8,11 @@ Schreibregel: Die Punkte unter "Hinzugefuegt", "Geändert", "Behoben" und "Siche
 Technisches für Admins (Datenbank, Skripte, Einstellungen des Servers) steht unter "Hinweis zum Update" und
 erscheint nicht in der App.
 
+## [0.45.2] - 2026-11-28
+
+### Hinweis zum Update
+- Diagnose für die Verbrauchserfassung: Beim Abgleich von Hand ("Aus Cloud aktualisieren") wird zusätzlich die Druckhistorie der Bambu Cloud abgefragt und nur ihr Aufbau protokolliert (Feldnamen, Gramm, Fach, Status; Zeile "Druckhistorie: Aufbau"). Gespeichert wird nichts, in der Oberfläche ändert sich nichts.
+
 ## [0.45.1] - 2026-11-27
 
 ### Behoben

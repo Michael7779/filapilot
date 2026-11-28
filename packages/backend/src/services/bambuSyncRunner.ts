@@ -7,6 +7,8 @@ import { describeSync, syncInventoryFromCloud } from "./bambuSyncService.js";
 import { recordAudit, type AuditActor } from "./auditService.js";
 import { autoAssignAmsSlots } from "./amsAutoAssign.js";
 import { logger } from "../logger.js";
+import { prisma } from "../prisma.js";
+import { probeTaskHistory } from "./bambuTaskProbe.js";
 import { getInventoryRow } from "./inventoryService.js";
 import { reconnectCloudPrintersInBackground } from "./printerRuntime.js";
 
@@ -39,6 +41,11 @@ export async function runCloudSync(inventoryId: string, actor: AuditActor, auto:
   await autoAssignAmsSlots(inventory, spools, actor).catch((err: unknown) => {
     logger.error("Automatische AMS-Zuordnung fehlgeschlagen", { inventoryId, err: err instanceof Error ? err.message : String(err) });
   });
+  // Diagnose zu OP-P11, nur beim Abgleich von Hand (nie im Zeitplan); wirft nie.
+  if (!auto) {
+    const printers = await prisma.printer.findMany({ where: { inventoryId }, select: { serialNumber: true } });
+    await probeTaskHistory(stored.region, stored.token, printers.map((printer) => printer.serialNumber));
+  }
   const text = describeSync(summary);
   await markSynced(inventoryId, text, auto);
   await recordAudit({
